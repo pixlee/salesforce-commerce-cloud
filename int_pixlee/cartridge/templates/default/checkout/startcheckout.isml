@@ -1,0 +1,46 @@
+<!--- TEMPLATENAME: startcheckout.isml --->
+
+<iscomment>Define Pixlee Analytics Endpoint</iscomment>
+<isinclude template="utils/analyticsendpoint"/>
+
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null }">
+	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
+	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
+
+	<script data="pixlee-start-checkout">
+	var cartArray = [];
+	var cartItem = {}
+	</script>
+
+	<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
+		<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
+			<isset name="lineItem" value="${FormLi.object}" scope="page" />
+			<script data="pixlee-start-checkout">
+			cartItem = {quantity:"${lineItem.quantityValue}", id:"${lineItem.productID}", name:"${lineItem.productName}",sku:"${lineItem.manufacturerSKU}",price:"${lineItem.price}"};
+			cartArray.push(cartItem);
+			</script>
+		</isloop>
+	</isloop>
+
+	<script data="pixlee-start-checkout">
+	var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
+	payload['cart'] = cartArray;
+	payload['API_KEY'] = "${pixleeApiKey}";
+	payload['uid'] = "${pixleeUserId}";
+	payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
+	payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
+	payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
+	
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", "${pixleeAnalyticsEndpoint}checkoutStart");
+	xhr.setRequestHeader('Content-type', 'application/json');
+	xhr.send(JSON.stringify(payload));
+
+	function getCookie(name) {
+		var value = "; " + document.cookie;
+		var parts = value.split("; " + name + "=");
+		if (parts.length == 2)
+			return parts.pop().split(";").shift();
+	}
+	</script>
+</isif>
