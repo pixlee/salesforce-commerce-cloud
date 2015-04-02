@@ -119,6 +119,7 @@ function postToAPI(payload : Object) {
 
 	var payloadJSON = JSON.stringify(payload);
 	var httpSvc : HTTPClient = new HTTPClient();
+	httpSvc.setTimeout(900000);
 	httpSvc.open("POST", urlToSend);
 	httpSvc.setRequestHeader("Content-Type", "application/json");
 	httpSvc.send(payloadJSON);
