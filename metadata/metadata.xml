@@ -2,6 +2,14 @@
 <metadata xmlns="http://www.demandware.com/xml/impex/metadata/2006-10-31">
 	<type-extension type-id="SitePreferences">
 		<custom-attribute-definitions>
+			<attribute-definition attribute-id="PixleeEnabled">
+				<display-name xml:lang="x-default">Enable Pixlee Plugin</display-name>
+				<type>boolean</type>
+				<mandatory-flag>false</mandatory-flag>
+				<externally-managed-flag>false</externally-managed-flag>
+				<min-length>0</min-length>
+				<field-length>0</field-length>
+			</attribute-definition>
 			<attribute-definition attribute-id="PixleeApiKey">
 				<display-name xml:lang="x-default">Pixlee API Key</display-name>
 				<type>string</type>
@@ -26,34 +34,45 @@
 				<min-length>0</min-length>
 				<field-length>0</field-length>
 			</attribute-definition>
+			<attribute-definition attribute-id="HttpTimeout">
+				<display-name xml:lang="x-default">HTTP Timeout</display-name>
+				<type>string</type>
+				<mandatory-flag>false</mandatory-flag>
+				<externally-managed-flag>false</externally-managed-flag>
+				<min-length>0</min-length>
+				<field-length>0</field-length>
+				<default-value>900000</default-value>
+			</attribute-definition>
 		</custom-attribute-definitions>
 		<group-definitions>
 			<attribute-group group-id="Pixlee">
 				<display-name xml:lang="x-default">Pixlee</display-name>
+				<attribute attribute-id="PixleeEnabled"/>
 				<attribute attribute-id="PixleeApiKey"/>
 				<attribute attribute-id="PixleeSecretKey"/>
 				<attribute attribute-id="PixleeUserId"/>
+				<attribute attribute-id="HttpTimeout"/>
 			</attribute-group>
 		</group-definitions>
 	</type-extension>
 
 	<type-extension type-id="OrganizationPreferences">
-        <custom-attribute-definitions>
-            <attribute-definition attribute-id="PixleeVersion">
-                <display-name xml:lang="x-default">Version Number</display-name>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>true</externally-managed-flag>
-                <min-length>0</min-length>
-                <field-length>0</field-length>
-                <default-value>1.0</default-value>
-            </attribute-definition>
-        </custom-attribute-definitions>
-        <group-definitions>
-            <attribute-group group-id="Pixlee">
-                <display-name xml:lang="x-default">Pixlee</display-name>
-                <attribute attribute-id="PixleeVersion"/>
-            </attribute-group>
-        </group-definitions>
-    </type-extension>
+		<custom-attribute-definitions>
+			<attribute-definition attribute-id="PixleeVersion">
+				<display-name xml:lang="x-default">Version Number</display-name>
+				<type>string</type>
+				<mandatory-flag>false</mandatory-flag>
+				<externally-managed-flag>true</externally-managed-flag>
+				<min-length>0</min-length>
+				<field-length>0</field-length>
+				<default-value>1.0</default-value>
+			</attribute-definition>
+		</custom-attribute-definitions>
+		<group-definitions>
+			<attribute-group group-id="Pixlee">
+				<display-name xml:lang="x-default">Pixlee</display-name>
+				<attribute attribute-id="PixleeVersion"/>
+			</attribute-group>
+		</group-definitions>
+	</type-extension>
 </metadata>

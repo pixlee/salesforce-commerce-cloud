@@ -3,7 +3,7 @@
 <iscomment>Define Pixlee Analytics Endpoint</iscomment>
 <isinclude template="utils/analyticsendpoint"/>
 
-<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeSecretKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null }">
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
 	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
 	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
 
