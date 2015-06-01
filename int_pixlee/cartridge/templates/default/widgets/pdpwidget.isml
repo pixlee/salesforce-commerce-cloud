@@ -1,2 +1,1 @@
 <!---  Insert your Pixlee PDP Widget Code below --->
-<div id="pixlee_container"></div><script type="text/javascript">window.PixleeAsyncInit = function() {Pixlee.init({apiKey:"${pixleeApiKey}"});Pixlee.addProductWidget({skuId:"${productSku}",recipeId:216,displayOptionsId:5170,type:"coverflow",accountId:200});};</script><script src="//assets.pixlee.com/assets/pixlee_widget_1_0_0.js"></script>
