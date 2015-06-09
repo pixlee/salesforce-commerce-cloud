@@ -86,27 +86,34 @@ function exportProduct(product : Product) {
 		// Product URL
 		var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
 
+		// Product Photo
+		var productPhoto : String = "";
+		if(product.getImage('large')){
+			productPhoto = product.getImage('large').getHttpURL().toString();
+		}
+
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl);
+			createProduct(productName, productSKU, productUrl, productPhoto);
 		}
 	}
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String) {
-	var dataObj = createDataObj(productName, productSKU, productUrl);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto);
 	var signedDataObj = signData(dataObj);
 	postToAPI( signedDataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
 	productObj.sku = productSku;
-	productObj.buy_now_link_url = productUrl;
+	productObj.buy_now_link_url = productUrl.toString();
+	productObj.product_photo = productPhoto;
 
     // Data
     var dataObj : Object = new Object();
