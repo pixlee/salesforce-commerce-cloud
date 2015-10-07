@@ -79,7 +79,9 @@ function exportProduct(product : Product) {
 
 		// SKU (SKU is unique to company, UPC is universal product code)
 		var productSKU : String = product.getID();
-		if(product.getManufacturerSKU() != null && !empty(product.getManufacturerSKU())) {
+
+		var skuReference = Site.current.preferences.custom.SkuReference;
+		if(product.getManufacturerSKU() != null && !empty(product.getManufacturerSKU()) && skuReference == 'Manufacturer SKU') {
 			productSKU = product.getManufacturerSKU();
 		}
 
@@ -91,7 +93,7 @@ function exportProduct(product : Product) {
 		if(product.getImage('large')){
 			productPhoto = product.getImage('large').getHttpURL().toString();
 		}
-
+		
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
 			createProduct(productName, productSKU, productUrl, productPhoto);
@@ -120,6 +122,8 @@ function createDataObj(productName : String, productSku : String, productUrl : S
     dataObj.title = productName;
     dataObj.product = productObj;
     dataObj.album_type = 'product';
+    dataObj.num_photos = 1;
+    dataObj.num_inbox_photos = 0;
 
     return dataObj;
 }
@@ -155,7 +159,7 @@ function getDistilleryBaseUrl() {
 	} else if(dw.system.System.getInstanceType() == dw.system.System.STAGING_SYSTEM) {
 		return DISTILLERY_BASE_URL_STAGING;
 	}
-
+	
 	return DISTILLERY_BASE_URL_DEVELOPMENT;
 }
 

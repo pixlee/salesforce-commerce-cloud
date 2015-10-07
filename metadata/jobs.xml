@@ -9,9 +9,6 @@
             <name>Pixlee</name>
             <startnode>RunExportProducts</startnode>
         </pipeline>
-        <sites>
-            <site site-id="pixlee-dev"/>
-        </sites>
         <run-once>2015-02-25T06:56:00.000Z</run-once>
         <notification>
             <enabled-flag>false</enabled-flag>

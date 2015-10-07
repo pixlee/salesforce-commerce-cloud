@@ -6,6 +6,7 @@
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
 	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
 	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
+	<isset name="skuReference" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('SkuReference')}" scope="page" />
 
 	<script data="pixlee-start-checkout">
 	var cartArray = [];
@@ -17,7 +18,7 @@
 			<isset name="lineItem" value="${FormLi.object}" scope="page" />
 			<script data="pixlee-start-checkout">
 			var productSku = "${lineItem.productID}";
-			if(${lineItem.manufacturerSKU != null}){
+			if(${lineItem.manufacturerSKU != null} && ${skuReference == 'Manufacturer SKU'}){
 				productSku = "${lineItem.manufacturerSKU}";
 			}
 		

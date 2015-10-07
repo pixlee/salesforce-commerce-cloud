@@ -6,12 +6,13 @@
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
 	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
 	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
+	<isset name="skuReference" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('SkuReference')}" scope="page" />
 
 	<isset name="triggeredActionObj" value="${pdict.TriggeredAction.object}" scope="page" />
 	<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(triggeredActionObj.productID)}" scope="page" />
 	<script data="pixlee-removefromcart">
 	var productSku = "${productObj.ID}";
-	if(${productObj.manufacturerSKU != null}){
+	if(${productObj.manufacturerSKU != null} && ${skuReference == 'Manufacturer SKU'}){
 		productSku = "${productObj.manufacturerSKU}";
 	}
 		
