@@ -6,18 +6,24 @@
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
 	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
 	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
+	<isset name="skuReference" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('SkuReference')}" scope="page" />
 
 	<isif condition="${!empty(pdict.Basket) && (pdict.Basket.productLineItems.size() > 0 || pdict.Basket.giftCertificateLineItems.size() > 0)}">
 		<isset name="productLineItem" value="${pdict.ProductLineItem}" scope="page" />
 		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(productLineItem.productID)}" scope="page" />
 
 		<script data="pixlee-addtocart">
-		var productItem = {id:"${productObj.ID}", name:"${productObj.name}", sku:"${productObj.manufacturerSKU}",price:"${productObj.priceModel.price}"};
+		var productSku = "${productObj.ID}";
+		if(${productObj.manufacturerSKU != null} && ${skuReference == 'Manufacturer SKU'}){
+			productSku = "${productObj.manufacturerSKU}";
+		}
+		
+		var productItem = {id:"${productObj.ID}", name:"${productObj.name}", sku:productSku, price:"${productObj.priceModel.price}"};
 
 		var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
 		payload['product'] = productItem;
 		payload['API_KEY'] = "${pixleeApiKey}";
-		payload['uid'] = "${pixleeUserId}";
+		payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
 		payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
 		payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
 		payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];

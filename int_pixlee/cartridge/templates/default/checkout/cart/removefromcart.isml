@@ -10,12 +10,17 @@
 	<isset name="triggeredActionObj" value="${pdict.TriggeredAction.object}" scope="page" />
 	<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(triggeredActionObj.productID)}" scope="page" />
 	<script data="pixlee-removefromcart">
-	var productItem = {id:"${productObj.ID}", name:"${productObj.name}", sku:"${productObj.manufacturerSKU}",price:"${productObj.priceModel.price}"};
+	var productSku = "${productObj.ID}";
+	if(${productObj.manufacturerSKU != null}){
+		productSku = "${productObj.manufacturerSKU}";
+	}
+		
+	var productItem = {id:"${productObj.ID}", name:"${productObj.name}", sku:productSku ,price:"${productObj.priceModel.price}"};
 
 	var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
 	payload['product'] = productItem;
 	payload['API_KEY'] = "${pixleeApiKey}";
-	payload['uid'] = "${pixleeUserId}";
+	payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
 	payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
 	payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
 	payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];

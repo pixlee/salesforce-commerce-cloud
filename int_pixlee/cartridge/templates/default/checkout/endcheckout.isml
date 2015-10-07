@@ -16,7 +16,12 @@
 		<isloop items="${BasketShipment.productLineItems}" alias="ProductLineItem" status="loopstate">
 			<isset name="lineItem" value="${FormLi.object}" scope="page" />
 			<script data="pixlee-end-checkout">
-			cartItem = {quantity:"${ProductLineItem.quantityValue}", id:"${ProductLineItem.productID}", name:"${ProductLineItem.productName}",sku:"${ProductLineItem.manufacturerSKU}",price:"${ProductLineItem.adjustedPrice}"};
+			var productSku = "${ProductLineItem.productID}";
+			if(${ProductLineItem.manufacturerSKU != null}){
+				productSku = "${ProductLineItem.manufacturerSKU}";
+			}
+			
+			cartItem = {quantity:"${ProductLineItem.quantityValue}", id:"${ProductLineItem.productID}", name:"${ProductLineItem.productName}",sku:"${ProductLineItem.manufacturerSKU}" ,price:"${ProductLineItem.adjustedPrice}"};
 			cartArray.push(cartItem);
 			</script>
 		</isloop>
@@ -26,7 +31,7 @@
 	var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
 	payload['cart'] = cartArray;
 	payload['API_KEY'] = "${pixleeApiKey}";
-	payload['uid'] = "${pixleeUserId}";
+	payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
 	payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
 	payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
 	payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];

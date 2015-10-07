@@ -43,6 +43,20 @@
 				<field-length>0</field-length>
 				<default-value>900000</default-value>
 			</attribute-definition>
+			<attribute-definition attribute-id="SkuReference">
+				<display-name xml:lang="x-default">SKU Reference</display-name>
+				<type>enum-of-string</type>
+				<mandatory-flag>false</mandatory-flag>
+				<externally-managed-flag>false</externally-managed-flag>
+				<value-definitions>
+		            <value-definition default="true">
+		                 <value>Product ID</value>
+		            </value-definition>
+		            <value-definition>
+		                 <value>Manufacturer SKU</value>
+		            </value-definition>
+	       		</value-definitions>
+			</attribute-definition>
 		</custom-attribute-definitions>
 		<group-definitions>
 			<attribute-group group-id="Pixlee">
@@ -52,6 +66,7 @@
 				<attribute attribute-id="PixleeSecretKey"/>
 				<attribute attribute-id="PixleeUserId"/>
 				<attribute attribute-id="HttpTimeout"/>
+				<attribute attribute-id="SkuReference"/>
 			</attribute-group>
 		</group-definitions>
 	</type-extension>
