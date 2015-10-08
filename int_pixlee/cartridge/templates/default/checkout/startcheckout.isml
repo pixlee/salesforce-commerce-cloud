@@ -6,7 +6,6 @@
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
 	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
 	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
-	<isset name="skuReference" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('SkuReference')}" scope="page" />
 
 	<script data="pixlee-start-checkout">
 	var cartArray = [];
@@ -16,13 +15,21 @@
 	<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
 		<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
 			<isset name="lineItem" value="${FormLi.object}" scope="page" />
+			<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
+			
+			<isif condition="${productObj.isMaster()}">
+				<isset name="masterProductObj" value="${productObj}" scope="page" />
+			<iselse/>
+				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+			</isif>
+			
 			<script data="pixlee-start-checkout">
-			var productSku = "${lineItem.productID}";
-			if(${lineItem.manufacturerSKU != null} && ${skuReference == 'Manufacturer SKU'}){
-				productSku = "${lineItem.manufacturerSKU}";
+			var productSku = "${masterProductObj.getID()}";
+			if(${masterProductObj.getManufacturerSKU() != null}){
+				productSku = "${masterProductObj.getManufacturerSKU()}";
 			}
 		
-			cartItem = {quantity:"${lineItem.quantityValue}", id:"${lineItem.productID}", name:"${lineItem.productName}",sku:productSku ,price:"${lineItem.price}"};
+			cartItem = {quantity:"${lineItem.getQuantityValue()}", id:"${masterProductObj.getID()}", name:"${masterProductObj.getName()}", sku:productSku, price:"${lineItem.getPrice()}"};
 			cartArray.push(cartItem);
 			</script>
 		</isloop>

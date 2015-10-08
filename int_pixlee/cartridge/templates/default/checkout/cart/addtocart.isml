@@ -11,14 +11,20 @@
 	<isif condition="${!empty(pdict.Basket) && (pdict.Basket.productLineItems.size() > 0 || pdict.Basket.giftCertificateLineItems.size() > 0)}">
 		<isset name="productLineItem" value="${pdict.ProductLineItem}" scope="page" />
 		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(productLineItem.productID)}" scope="page" />
+		
+		<isif condition="${productObj.isMaster()}">
+			<isset name="masterProductObj" value="${productObj}" scope="page" />
+		<iselse/>
+			<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+		</isif>
 
 		<script data="pixlee-addtocart">
-		var productSku = "${productObj.ID}";
-		if(${productObj.manufacturerSKU != null} && ${skuReference == 'Manufacturer SKU'}){
-			productSku = "${productObj.manufacturerSKU}";
+		var productSku = "${masterProductObj.getID()}";
+		if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
+			productSku = "${masterProductObj.getManufacturerSKU()}";
 		}
 		
-		var productItem = {id:"${productObj.ID}", name:"${productObj.name}", sku:productSku, price:"${productObj.priceModel.price}"};
+		var productItem = {id:"${masterProductObj.getID()}", name:"${masterProductObj.getName()}", sku:productSku, price:"${productObj.getPriceModel().getPrice()}"};
 
 		var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
 		payload['product'] = productItem;
