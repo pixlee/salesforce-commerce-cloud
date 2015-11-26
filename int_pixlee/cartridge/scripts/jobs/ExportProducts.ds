@@ -25,8 +25,8 @@ importPackage( dw.io );
 importPackage( dw.net );
 importPackage( dw.content );
 
-var DISTILLERY_BASE_URL_DEVELOPMENT = "https://backstage.distillery.pixlee.com/api/v2/albums";
-var DISTILLERY_BASE_URL_STAGING = "https://backstage.distillery.pixlee.com/api/v2/albums";
+var DISTILLERY_BASE_URL_DEVELOPMENT = "https://backstage-distillery.pixlee.com/api/v2/albums";
+var DISTILLERY_BASE_URL_STAGING = "https://backstage-distillery.pixlee.com/api/v2/albums";
 var DISTILLERY_BASE_URL_PRODUCTION = "http://distillery.pixlee.com/api/v2/albums";
 
 // Main method for export product execution

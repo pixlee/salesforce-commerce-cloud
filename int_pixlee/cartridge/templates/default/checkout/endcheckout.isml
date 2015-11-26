@@ -13,16 +13,24 @@
 	var cartItem = {};
 	</script>
 
-	<isloop items="${pdict.Basket.shipments}" var="BasketShipment" status="loopstate">
-		<isloop items="${BasketShipment.productLineItems}" alias="ProductLineItem" status="loopstate">
-			<isset name="lineItem" value="${FormLi.object}" scope="page" />
+	<isloop items="${pdict.Order.shipments}" var="Shipment" status="loopstate">
+		<isloop items="${Shipment.productLineItems}" alias="ProductLineItem" status="loopstate">
+			
+			<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(ProductLineItem.productID)}" scope="page" />
+			
+			<isif condition="${productObj.isMaster()}">
+				<isset name="masterProductObj" value="${productObj}" scope="page" />
+			<iselse/>
+				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+			</isif>
+			
 			<script data="pixlee-end-checkout">
-			var productSku = "${ProductLineItem.productID}";
-			if(${ProductLineItem.manufacturerSKU != null} && ${skuReference == 'Manufacturer SKU'}){
-				productSku = "${ProductLineItem.manufacturerSKU}";
+			var productSku = "${masterProductObj.getID()}";
+			if(${masterProductObj.getManufacturerSKU() != null}){
+				productSku = "${masterProductObj.getManufacturerSKU()}";
 			}
 			
-			cartItem = {quantity:"${ProductLineItem.quantityValue}", id:"${ProductLineItem.productID}", name:"${ProductLineItem.productName}",sku:"${ProductLineItem.manufacturerSKU}" ,price:"${ProductLineItem.adjustedPrice}"};
+			cartItem = {quantity:"${ProductLineItem.quantityValue}", id:"${ProductLineItem.productID}", name:"${ProductLineItem.productName}",sku:productSku ,price:"${ProductLineItem.adjustedPrice}"};
 			cartArray.push(cartItem);
 			</script>
 		</isloop>
@@ -38,7 +46,7 @@
 	payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
 	
 	var xhr = new XMLHttpRequest();
-	xhr.open("POST", "${pixleeAnalyticsEndpoint}checkoutEnd");
+	xhr.open("POST", "${pixleeAnalyticsEndpoint}conversion");
 	xhr.setRequestHeader('Content-type', 'application/json');
 	xhr.send(JSON.stringify(payload));
 	
