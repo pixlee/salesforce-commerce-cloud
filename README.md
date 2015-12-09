@@ -6,4 +6,4 @@ Please note that the actual Demandware repository is in [bitbucket](https://bitb
 Manual Distribution of Demandware Cartridge
 ------------------------------------------
 
-If there is a need to distribute the cartridge manually, zip the whole repository up and distribute it.
+If there is a need to distribute the cartridge manually, zip the whole repository up (excluding unnecessary directories like .git and this README.md) and distribute it.
