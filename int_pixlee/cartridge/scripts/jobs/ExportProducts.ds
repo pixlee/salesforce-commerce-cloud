@@ -122,7 +122,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
     dataObj.title = productName;
     dataObj.product = productObj;
     dataObj.album_type = 'product';
-    dataObj.num_photos = 1;
+    dataObj.num_photos = 0;
     dataObj.num_inbox_photos = 0;
 
     return dataObj;
