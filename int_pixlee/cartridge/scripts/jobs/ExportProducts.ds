@@ -87,6 +87,11 @@ function exportProduct(product : Product) {
 
 		// Product URL
 		var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
+		// URLUtils.http generates URLs based on the Demandware hostname: dev.web.XXX.demandware.net, etc.
+		// If the 'ProductHost' custom preference is provided, replace the hostname with that.
+		if (Site.current.preferences.custom.ProductHost != null) {
+			productUrl = productUrl.host(Site.current.preferences.custom.ProductHost);
+		}
 
 		// Product Photo
 		var productPhoto : String = "";
