@@ -11,6 +11,7 @@
 	<script data="pixlee-end-checkout">
 	var cartArray = [];
 	var cartItem = {};
+	var cartTotal = 0;
 	</script>
 
 	<isloop items="${pdict.Order.shipments}" var="Shipment" status="loopstate">
@@ -32,13 +33,15 @@
 			
 			cartItem = {quantity:"${ProductLineItem.quantityValue}", id:"${ProductLineItem.productID}", name:"${ProductLineItem.productName}",sku:productSku ,price:"${ProductLineItem.adjustedPrice}"};
 			cartArray.push(cartItem);
+			cartTotal += parseFloat("${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,""));
 			</script>
 		</isloop>
 	</isloop>
 
 	<script data="pixlee-end-checkout">
 	var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
-	payload['cart'] = cartArray;
+	payload['cart_products'] = cartArray;
+	payload['cart_total'] = cartTotal;
 	payload['API_KEY'] = "${pixleeApiKey}";
 	payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
 	payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
