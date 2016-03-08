@@ -25,9 +25,7 @@ importPackage( dw.io );
 importPackage( dw.net );
 importPackage( dw.content );
 
-//var DISTILLERY_BASE_URL_DEVELOPMENT = "https://backstage-distillery.pixlee.com/api/v2/albums";
-//var DISTILLERY_BASE_URL_DEVELOPMENT = "http://5da22966.ngrok.com/api/v2/albums";
-var DISTILLERY_BASE_URL_DEVELOPMENT = "http://b5b5655.ngrok.com/api/v2/albums";
+var DISTILLERY_BASE_URL_DEVELOPMENT = "https://backstage-distillery.pixlee.com/api/v2/albums";
 var DISTILLERY_BASE_URL_STAGING = "https://backstage-distillery.pixlee.com/api/v2/albums";
 var DISTILLERY_BASE_URL_PRODUCTION = "http://distillery.pixlee.com/api/v2/albums";
 
@@ -37,7 +35,6 @@ function execute( args : PipelineDictionary ) : Number
 	try {
 		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
 			Logger.error("Pixlee Secret Key is not defined.");
-			Logger.error("FUCKING BULLSHIT I SEE IT RIGHT THERE");
 			return PIPELET_ERROR;  
 		}
 
@@ -58,9 +55,6 @@ function execute( args : PipelineDictionary ) : Number
 
 // Iterates through the products and prepare the data to be exported
 function exportProducts() {
-	Logger.warn("PRODUCT EXPORT TRIGGERED");
-	Logger.warn("HELLO WORLD 5");
-	Logger.warn(getDistilleryBaseUrl());
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
 
 	var product : Product = productIterator.first();
@@ -68,14 +62,9 @@ function exportProducts() {
 	if(product){
 		exportProduct(product);
 
-		var counter = 0;
 		while(productIterator.hasNext()) {
-			if (counter > 1){
-				return;
-			}
 			product = productIterator.next();
 			exportProduct(product);
-			counter++;
 		}
 	}
 
@@ -85,18 +74,6 @@ function exportProducts() {
 // Extract Demandware data and create product data
 function exportProduct(product : Product) {
 	if(product.online && product.searchable && !product.variant) {
-		Logger.warn("0 Can I get the whole product?");
-		Logger.warn(product);
-		Logger.warn("UPC?");
-		Logger.warn(product.getUPC());
-		Logger.warn("How about its availability model?");
-		Logger.warn(product.getAvailabilityModel());
-		Logger.warn(product.getAvailabilityModel().availability);
-		Logger.warn(parseInt(product.getAvailabilityModel().availability + 0.5));
-		Logger.warn(product.getAvailabilityModel().availabilityStatus);
-		Logger.warn(product.getAvailabilityModel().inStock);
-		Logger.warn(product.getAvailabilityModel().orderable);
-
 		// Name
 		var productName : String = product.getName();
 
@@ -146,7 +123,6 @@ function exportProduct(product : Product) {
 
 // Create JSON object, sign data and post to API
 function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int) {
-//function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String) {
 	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productStock);
 	var signedDataObj = signData(dataObj);
 	postToAPI( signedDataObj );
@@ -154,7 +130,6 @@ function createProduct(productName : String, productSKU : String, productUrl : S
 
 // Create JSON object
 function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int) {
-//function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
@@ -188,8 +163,6 @@ function postToAPI(payload : Object) {
 	var urlToSend = baseUrl+"?api_key="+Site.current.preferences.custom.PixleeApiKey;
 
 	var payloadJSON = JSON.stringify(payload);
-	Logger.warn("PAYLOAD IS");
-	Logger.warn(payloadJSON);
 	var httpSvc : HTTPClient = new HTTPClient();
 	
 	if(isPositiveInt(Site.current.preferences.custom.HttpTimeout)){
