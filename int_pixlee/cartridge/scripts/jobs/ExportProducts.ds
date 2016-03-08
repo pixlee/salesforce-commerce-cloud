@@ -26,7 +26,8 @@ importPackage( dw.net );
 importPackage( dw.content );
 
 //var DISTILLERY_BASE_URL_DEVELOPMENT = "https://backstage-distillery.pixlee.com/api/v2/albums";
-var DISTILLERY_BASE_URL_DEVELOPMENT = "http://5da22966.ngrok.com/api/v2/albums";
+//var DISTILLERY_BASE_URL_DEVELOPMENT = "http://5da22966.ngrok.com/api/v2/albums";
+var DISTILLERY_BASE_URL_DEVELOPMENT = "http://b5b5655.ngrok.com/api/v2/albums";
 var DISTILLERY_BASE_URL_STAGING = "https://backstage-distillery.pixlee.com/api/v2/albums";
 var DISTILLERY_BASE_URL_PRODUCTION = "http://distillery.pixlee.com/api/v2/albums";
 
@@ -58,7 +59,7 @@ function execute( args : PipelineDictionary ) : Number
 // Iterates through the products and prepare the data to be exported
 function exportProducts() {
 	Logger.warn("PRODUCT EXPORT TRIGGERED");
-	Logger.warn("HELLO WORLD 2");
+	Logger.warn("HELLO WORLD 5");
 	Logger.warn(getDistilleryBaseUrl());
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
 
