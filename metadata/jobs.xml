@@ -9,7 +9,21 @@
             <name>Pixlee</name>
             <startnode>RunExportProducts</startnode>
         </pipeline>
-        <run-once>2015-02-25T06:56:00.000Z</run-once>
+        <recurrence>
+            <date-from>1970-01-01Z</date-from>
+            <date-to>2070-01-01Z</date-to>
+            <start-time>06:00:00.000Z</start-time>
+            <interval>1d</interval>
+            <day-of-week>
+                <weekday>Sunday</weekday>
+                <weekday>Monday</weekday>
+                <weekday>Tuesday</weekday>
+                <weekday>Wednesday</weekday>
+                <weekday>Thursday</weekday>
+                <weekday>Friday</weekday>
+                <weekday>Saturday</weekday>
+            </day-of-week>
+        </recurrence>
         <notification>
             <enabled-flag>false</enabled-flag>
             <hang-detection-enabled-flag>false</hang-detection-enabled-flag>
