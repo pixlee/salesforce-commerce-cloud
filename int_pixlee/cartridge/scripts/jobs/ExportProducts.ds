@@ -31,7 +31,7 @@ var DISTILLERY_BASE_URL_PRODUCTION = "http://distillery.pixlee.com/api/v2/albums
 
 // Main method for export product execution
 function execute( args : PipelineDictionary ) : Number
-{		
+{
 	try {
 		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
 			Logger.error("Pixlee Secret Key is not defined.");
@@ -99,28 +99,45 @@ function exportProduct(product : Product) {
 			productPhoto = product.getImage('large').getHttpURL().toString();
 		}
 		
+		// Product UPC, checking for a non-null ret just in case (even though as of 2016-02-29, it's defaulting to empty string)
+		var productUPC : String = "";
+		if (product.getUPC()){
+			productUPC = product.getUPC();
+		}
+
+		// Product Stock
+		var productStock : Long = null;
+		if (product.getAvailabilityModel()){
+			// I've seen at least one case of availabililty return a float very close to, but not quite, 1
+			// [2016-03-01 07:31:24.870 GMT] WARN JobThread|11116134|Pixlee.ExportProducts|Pixlee-RunExportProducts custom   0.9992857142857143
+			// So, we'll add .5, cast to int, and let the casting chop off the decimals
+			productStock = parseInt(product.getAvailabilityModel().availability + 0.5);
+		}
+		
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl, productPhoto);
+			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productStock);
 		}
 	}
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productStock);
 	var signedDataObj = signData(dataObj);
 	postToAPI( signedDataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
 	productObj.sku = productSku;
 	productObj.buy_now_link_url = productUrl.toString();
 	productObj.product_photo = productPhoto;
+	productObj.upc = productUPC;
+	productObj.stock = productStock;
 
     // Data
     var dataObj : Object = new Object();
