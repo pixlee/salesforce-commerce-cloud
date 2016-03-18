@@ -3,7 +3,7 @@
 <isinclude template="utils/launchevents"/>
 
 <script data="pixlee-addtocart">
-	ar cartItem = {}
+	var cartItem = {}
 </script>
 
 <isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">

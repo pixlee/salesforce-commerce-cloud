@@ -10,12 +10,6 @@
 </script>
 
 <isloop items="${pdict.Order.shipments}" var="Shipment" status="loopstate">
-
-<script>
-	console.log("PDICT Shipping Address " + JSON.stringify("${pdict.shippingAddress}"));
-	console.log("PDICT Billing Address " +  JSON.stringify("${pdict.Order.billingAddress}"));
-
-</script>
 	<isloop items="${Shipment.productLineItems}" alias="ProductLineItem" status="loopstate">
 
 		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(ProductLineItem.productID)}" scope="page" />
