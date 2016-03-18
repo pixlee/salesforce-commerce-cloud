@@ -55,6 +55,7 @@ var createPixleeAnalyticsCookie = function() {
 };
 
 if (getCookie('pixlee_analytics_cookie') === false) {
-	window.addEventListener('load', createPixleeAnalyticsCookie);	
+	window.addEventListener('load', createPixleeAnalyticsCookie);
 }
+
 </script>

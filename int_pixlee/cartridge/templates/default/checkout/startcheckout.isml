@@ -2,6 +2,7 @@
 
 <iscomment>Define Pixlee Analytics Endpoint</iscomment>
 <isinclude template="utils/analyticsendpoint"/>
+<isinclude template="utils/versionhash"/>
 
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
 	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
@@ -33,12 +34,12 @@
 			}
 
 			cartItem = {
-				quantity: parseInt("${lineItem.getQuantityValue()}"), 
-				product_id: parseInt("${masterProductObj.getID()}"),  
-				product_sku: productSku, 
+				quantity: parseInt("${lineItem.getQuantityValue()}"),
+				product_id: parseInt("${masterProductObj.getID()}"),
+				product_sku: productSku,
 				price: "${lineItem.getPrice()}"
 			};
-			
+
 			cartArray.push(cartItem);
 			cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
 			cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
@@ -51,7 +52,7 @@
 	for (var i = 0; i < checkoutButtons.length; i++) {
 		checkoutButtons[i].addEventListener('click', checkoutStartHandler);
 	}
-	
+
 	function checkoutStartHandler(event) {
 		var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
 		payload['cart_contents'] = cartArray;
@@ -62,6 +63,7 @@
 		payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
 		payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
 		payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
+		payload['version_hash'] = getVersionHash();
 
 		var xhr = new XMLHttpRequest();
 		xhr.open("POST", "${pixleeAnalyticsEndpoint}checkoutStart");

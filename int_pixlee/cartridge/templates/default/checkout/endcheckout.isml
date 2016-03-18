@@ -2,6 +2,7 @@
 
 <iscomment>Define Pixlee Analytics Endpoint</iscomment>
 <isinclude template="utils/analyticsendpoint"/>
+<isinclude template="utils/versionhash"/>
 
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
 	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
@@ -16,35 +17,35 @@
 	</script>
 
 	<isloop items="${pdict.Order.shipments}" var="Shipment" status="loopstate">
-	
+
 	<script>
 		console.log("PDICT Shipping Address " + JSON.stringify("${pdict.shippingAddress}"));
 		console.log("PDICT Billing Address " +  JSON.stringify("${pdict.Order.billingAddress}"));
-		
+
 	</script>
 		<isloop items="${Shipment.productLineItems}" alias="ProductLineItem" status="loopstate">
-			
+
 			<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(ProductLineItem.productID)}" scope="page" />
-			
+
 			<isif condition="${productObj.isMaster()}">
 				<isset name="masterProductObj" value="${productObj}" scope="page" />
 			<iselse/>
 				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
 			</isif>
-			
+
 			<script data="pixlee-end-checkout">
 				var productSku = "${masterProductObj.getID()}";
 				if(${masterProductObj.getManufacturerSKU() != null}){
 					productSku = "${masterProductObj.getManufacturerSKU()}";
 				}
-				
+
 				cartItem = {
-					quantity: parseInt("${ProductLineItem.quantityValue}"), 
-					product_id: parseInt("${ProductLineItem.productID}"), 
+					quantity: parseInt("${ProductLineItem.quantityValue}"),
+					product_id: parseInt("${ProductLineItem.productID}"),
 					product_sku: productSku,
 					price:"${ProductLineItem.adjustedPrice}"
 				};
-				
+
 				cartArray.push(cartItem);
 				cartTotal += parseFloat("${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,""));
 				cartTotalQuantity += parseInt("${ProductLineItem.quantityValue}");
@@ -61,7 +62,7 @@
 			zip: "${pdict.Order.billingAddress.postalCode}",
 			country: "${pdict.Order.billingAddress.countryCode}"
 		};
-	
+
 		var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
 		payload['cart_contents'] = cartArray;
 		payload['cart_total'] = cartTotal;
@@ -77,12 +78,13 @@
 		payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
 		payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
 		payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
-		
+		payload['version_hash'] = getVersionHash();
+
 		var xhr = new XMLHttpRequest();
 		xhr.open("POST", "${pixleeAnalyticsEndpoint}conversion");
 		xhr.setRequestHeader('Content-type', 'application/json');
 		xhr.send(JSON.stringify(payload));
-		
+
 		function getCookie(name) {
 			var value = "; " + document.cookie;
 			var parts = value.split("; " + name + "=");
