@@ -21,21 +21,21 @@
 		</isif>
 
 		<script data="pixlee-start-checkout">
-		var productSku = "${masterProductObj.getID()}";
-		if(${masterProductObj.getManufacturerSKU() != null}){
-			productSku = "${masterProductObj.getManufacturerSKU()}";
-		}
+			var productSku = "${masterProductObj.getID()}";
+			if(${masterProductObj.getManufacturerSKU() != null}){
+				productSku = "${masterProductObj.getManufacturerSKU()}";
+			}
 
-		cartItem = {
-			quantity: parseInt("${lineItem.getQuantityValue()}"),
-			product_id: parseInt("${masterProductObj.getID()}"),
-			product_sku: productSku,
-			price: "${lineItem.getPrice()}"
-		};
+			cartItem = {
+				quantity: parseInt("${lineItem.getQuantityValue()}"),
+				product_id: parseInt("${masterProductObj.getID()}"),
+				product_sku: productSku,
+				price: "${lineItem.getPrice()}"
+			};
 
-		cartArray.push(cartItem);
-		cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
-		cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
+			cartArray.push(cartItem);
+			cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
+			cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
 		</script>
 	</isloop>
 </isloop>
