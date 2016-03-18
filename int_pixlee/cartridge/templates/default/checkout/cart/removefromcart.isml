@@ -1,25 +1,17 @@
 <!--- TEMPLATENAME: addtocart.isml --->
 
-<iscomment>Define Pixlee Analytics Endpoint</iscomment>
-<isinclude template="utils/analyticsendpoint"/>
-<isinclude template="utils/versionhash"/>
+<isinclude template="utils/launchevents"/>
 
-<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
-	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
-	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
-	<isset name="skuReference" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('SkuReference')}" scope="page" />
+<isset name="triggeredActionObj" value="${pdict.TriggeredAction.object}" scope="page" />
+<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(triggeredActionObj.productID)}" scope="page" />
 
-	<isset name="triggeredActionObj" value="${pdict.TriggeredAction.object}" scope="page" />
-	<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(triggeredActionObj.productID)}" scope="page" />
+<isif condition="${productObj.isMaster()}">
+	<isset name="masterProductObj" value="${productObj}" scope="page" />
+<iselse/>
+	<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+</isif>
 
-	<isif condition="${productObj.isMaster()}">
-		<isset name="masterProductObj" value="${productObj}" scope="page" />
-	<iselse/>
-		<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
-	</isif>
-
-	<script data="pixlee-removefromcart">
-
+<script data="pixlee-removefromcart">
 	var productSku = "${masterProductObj.getID()}";
 	if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
 		productSku = "${masterProductObj.getManufacturerSKU()}";
@@ -34,5 +26,4 @@
 	var payload = {};
 	payload['product'] = productItem;
 	launchEvent('removeFromCart', payload);
-	</script>
-</isif>
+</script>

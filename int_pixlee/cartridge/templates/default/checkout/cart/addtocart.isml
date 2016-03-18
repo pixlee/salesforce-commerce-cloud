@@ -2,49 +2,41 @@
 
 <isinclude template="utils/launchevents"/>
 
-<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
-	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
-	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
-	<isset name="skuReference" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('SkuReference')}" scope="page" />
+<script data="pixlee-addtocart">
+	ar cartItem = {}
+</script>
 
+<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
+	<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
+		<isset name="lineItem" value="${FormLi.object}" scope="page" />
+		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
 
-		<script data="pixlee-addtocart">
-		var cartItem = {}
-		</script>
-
-		<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
-			<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
-				<isset name="lineItem" value="${FormLi.object}" scope="page" />
-				<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
-
-				<isif condition="${productObj.isMaster()}">
-					<isset name="masterProductObj" value="${productObj}" scope="page" />
-				<iselse/>
-					<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
-				</isif>
-
-				<script data="pixlee-addtocart">
-				var productSku = "${masterProductObj.getID()}";
-				if(${masterProductObj.getManufacturerSKU() != null}){
-					productSku = "${masterProductObj.getManufacturerSKU()}";
-				}
-
-				cartItem = {
-					quantity:"${lineItem.getQuantityValue()}",
-					product_id:"${masterProductObj.getID()}",
-					product_sku:productSku,
-					price:"${lineItem.getPrice()}"
-				};
-
-				</script>
-			</isloop>
-		</isloop>
-
+		<isif condition="${productObj.isMaster()}">
+			<isset name="masterProductObj" value="${productObj}" scope="page" />
+		<iselse/>
+			<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+		</isif>
 
 		<script data="pixlee-addtocart">
-			var payload = {};
-			payload['product'] = cartItem;
-			launchEvent('addToCart', payload);
-		</script>
+		var productSku = "${masterProductObj.getID()}";
+		if(${masterProductObj.getManufacturerSKU() != null}){
+			productSku = "${masterProductObj.getManufacturerSKU()}";
+		}
 
-</isif>
+		cartItem = {
+			quantity:"${lineItem.getQuantityValue()}",
+			product_id:"${masterProductObj.getID()}",
+			product_sku:productSku,
+			price:"${lineItem.getPrice()}"
+		};
+
+		</script>
+	</isloop>
+</isloop>
+
+
+<script data="pixlee-addtocart">
+	var payload = {};
+	payload['product'] = cartItem;
+	launchEvent('addToCart', payload);
+</script>

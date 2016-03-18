@@ -1,64 +1,56 @@
 <!--- TEMPLATENAME: startcheckout.isml --->
 
-<iscomment>Define Pixlee Analytics Endpoint</iscomment>
-<isinclude template="utils/analyticsendpoint"/>
-<isinclude template="utils/versionhash"/>
+<isinclude template="utils/launchevents"/>
 
-<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
-	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
-	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
-
-	<script data="pixlee-start-checkout">
-	console.log("asdasasdsa");
+<script data="pixlee-start-checkout">
 	var cartArray = [];
 	var cartItem = {};
 	var cartTotal = 0;
 	var cartTotalQuantity = 0;
-	</script>
+</script>
 
-	<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
-		<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
-			<isset name="lineItem" value="${FormLi.object}" scope="page" />
-			<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
+<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
+	<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
+		<isset name="lineItem" value="${FormLi.object}" scope="page" />
+		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
 
-			<isif condition="${productObj.isMaster()}">
-				<isset name="masterProductObj" value="${productObj}" scope="page" />
-			<iselse/>
-				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
-			</isif>
+		<isif condition="${productObj.isMaster()}">
+			<isset name="masterProductObj" value="${productObj}" scope="page" />
+		<iselse/>
+			<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+		</isif>
 
-			<script data="pixlee-start-checkout">
-			var productSku = "${masterProductObj.getID()}";
-			if(${masterProductObj.getManufacturerSKU() != null}){
-				productSku = "${masterProductObj.getManufacturerSKU()}";
-			}
+		<script data="pixlee-start-checkout">
+		var productSku = "${masterProductObj.getID()}";
+		if(${masterProductObj.getManufacturerSKU() != null}){
+			productSku = "${masterProductObj.getManufacturerSKU()}";
+		}
 
-			cartItem = {
-				quantity: parseInt("${lineItem.getQuantityValue()}"),
-				product_id: parseInt("${masterProductObj.getID()}"),
-				product_sku: productSku,
-				price: "${lineItem.getPrice()}"
-			};
+		cartItem = {
+			quantity: parseInt("${lineItem.getQuantityValue()}"),
+			product_id: parseInt("${masterProductObj.getID()}"),
+			product_sku: productSku,
+			price: "${lineItem.getPrice()}"
+		};
 
-			cartArray.push(cartItem);
-			cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
-			cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
-			</script>
-		</isloop>
+		cartArray.push(cartItem);
+		cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
+		cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
+		</script>
 	</isloop>
+</isloop>
 
-	<script data="pixlee-start-checkout">
-	var checkoutButtons = document.getElementsByName('${pdict.CurrentForms.cart.checkoutCart.htmlName}');
-	for (var i = 0; i < checkoutButtons.length; i++) {
-		checkoutButtons[i].addEventListener('click', checkoutStartHandler);
-	}
+<script data="pixlee-start-checkout">
+var checkoutButtons = document.getElementsByName('${pdict.CurrentForms.cart.checkoutCart.htmlName}');
+for (var i = 0; i < checkoutButtons.length; i++) {
+	checkoutButtons[i].addEventListener('click', checkoutStartHandler);
+}
 
-	function checkoutStartHandler(event) {
-		var payload = {};
-		payload['cart_contents'] = cartArray;
-		payload['cart_total'] = cartTotal;
-		payload['cart_total_quantity'] = cartTotalQuantity;
-		launchEvent('checkoutStart', payload);
-	};
-	</script>
-</isif>
+function checkoutStartHandler(event) {
+	var payload = {};
+	payload['cart_contents'] = cartArray;
+	payload['cart_total'] = cartTotal;
+	payload['cart_total_quantity'] = cartTotalQuantity;
+	launchEvent('checkoutStart', payload);
+};
+</script>
