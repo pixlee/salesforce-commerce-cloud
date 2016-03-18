@@ -8,49 +8,66 @@
 	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
 
 	<script data="pixlee-start-checkout">
+	console.log("asdasasdsa");
 	var cartArray = [];
 	var cartItem = {};
 	var cartTotal = 0;
+	var cartTotalQuantity = 0;
 	</script>
 
 	<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
 		<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
 			<isset name="lineItem" value="${FormLi.object}" scope="page" />
 			<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
-			
+
 			<isif condition="${productObj.isMaster()}">
 				<isset name="masterProductObj" value="${productObj}" scope="page" />
 			<iselse/>
 				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
 			</isif>
-			
+
 			<script data="pixlee-start-checkout">
 			var productSku = "${masterProductObj.getID()}";
 			if(${masterProductObj.getManufacturerSKU() != null}){
 				productSku = "${masterProductObj.getManufacturerSKU()}";
 			}
-		
-			cartItem = {quantity:"${lineItem.getQuantityValue()}", id:"${masterProductObj.getID()}", name:"${masterProductObj.getName()}", sku:productSku, price:"${lineItem.getPrice()}"};
+
+			cartItem = {
+				quantity: parseInt("${lineItem.getQuantityValue()}"), 
+				product_id: parseInt("${masterProductObj.getID()}"),  
+				product_sku: productSku, 
+				price: "${lineItem.getPrice()}"
+			};
+			
 			cartArray.push(cartItem);
 			cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
+			cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
 			</script>
 		</isloop>
 	</isloop>
 
 	<script data="pixlee-start-checkout">
-	var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
-	payload['cart_products'] = cartArray;
-	payload['cart_total'] = cartTotal;
-	payload['API_KEY'] = "${pixleeApiKey}";
-	payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
-	payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
-	payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
-	payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
+	var checkoutButtons = document.getElementsByName('${pdict.CurrentForms.cart.checkoutCart.htmlName}');
+	for (var i = 0; i < checkoutButtons.length; i++) {
+		checkoutButtons[i].addEventListener('click', checkoutStartHandler);
+	}
 	
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST", "${pixleeAnalyticsEndpoint}checkoutStart");
-	xhr.setRequestHeader('Content-type', 'application/json');
-	xhr.send(JSON.stringify(payload));
+	function checkoutStartHandler(event) {
+		var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
+		payload['cart_contents'] = cartArray;
+		payload['cart_total'] = cartTotal;
+		payload['cart_total_quantity'] = cartTotalQuantity;
+		payload['API_KEY'] = "${pixleeApiKey}";
+		payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
+		payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
+		payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
+		payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
+
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", "${pixleeAnalyticsEndpoint}checkoutStart");
+		xhr.setRequestHeader('Content-type', 'application/json');
+		xhr.send(JSON.stringify(payload));
+	};
 
 	function getCookie(name) {
 		var value = "; " + document.cookie;

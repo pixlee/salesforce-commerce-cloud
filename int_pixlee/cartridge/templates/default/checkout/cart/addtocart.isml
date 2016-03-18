@@ -30,7 +30,13 @@
 					productSku = "${masterProductObj.getManufacturerSKU()}";
 				}
 			
-				cartItem = {quantity:"${lineItem.getQuantityValue()}", id:"${masterProductObj.getID()}", name:"${masterProductObj.getName()}", sku:productSku, price:"${lineItem.getPrice()}"};
+				cartItem = {
+					quantity:"${lineItem.getQuantityValue()}", 
+					product_id:"${masterProductObj.getID()}",  
+					product_sku:productSku, 
+					price:"${lineItem.getPrice()}"
+				};
+				
 				</script>
 			</isloop>
 		</isloop>
