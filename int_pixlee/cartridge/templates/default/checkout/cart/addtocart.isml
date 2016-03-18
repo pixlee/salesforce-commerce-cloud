@@ -1,8 +1,6 @@
 <!--- TEMPLATENAME: addtocart.isml --->
 
-<iscomment>Define Pixlee Analytics Endpoint</iscomment>
-<isinclude template="utils/analyticsendpoint"/>
-<isinclude template="utils/versionhash"/>
+<isinclude template="utils/launchevents"/>
 
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
 	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
@@ -44,28 +42,9 @@
 
 
 		<script data="pixlee-addtocart">
-			var payload = JSON.parse(getAnalyticsCookie());
+			var payload = {};
 			payload['product'] = cartItem;
-			payload['API_KEY'] = "${pixleeApiKey}";
-			payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
-			payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
-			payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
-			payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
-			payload['version_hash'] = getVersionHash();
-
-			var xhr = new XMLHttpRequest();
-			xhr.open("POST", "${pixleeAnalyticsEndpoint}addToCart");
-			xhr.setRequestHeader('Content-type', 'application/json');
-			xhr.send(JSON.stringify(payload));
-
-			function getAnalyticsCookie() {
-				var value = "; " + document.cookie;
-				var parts = value.split("; " + "pixlee_analytics_cookie" + "=");
-				if (parts.length == 2){
-					var encoded_value = parts.pop().split(";").shift();
-					return decodeURIComponent(encoded_value);
-				}
-			};
+			launchEvent('addToCart', payload);
 		</script>
 
 </isif>

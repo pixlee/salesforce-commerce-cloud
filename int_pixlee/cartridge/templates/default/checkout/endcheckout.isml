@@ -73,25 +73,7 @@
 		payload['email'] = "${pdict.Order.customerEmail}";
 		payload['cart_type'] = 'demandware';
 		payload['order_id'] = "${pdict.Order.orderNo}";
-		payload['API_KEY'] = "${pixleeApiKey}";
-		payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
-		payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
-		payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
-		payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
-		payload['version_hash'] = getVersionHash();
 
-		var xhr = new XMLHttpRequest();
-		xhr.open("POST", "${pixleeAnalyticsEndpoint}conversion");
-		xhr.setRequestHeader('Content-type', 'application/json');
-		xhr.send(JSON.stringify(payload));
-
-		function getCookie(name) {
-			var value = "; " + document.cookie;
-			var parts = value.split("; " + name + "=");
-			if (parts.length == 2){
-				var encoded_value = parts.pop().split(";").shift();
-				return decodeURIComponent(encoded_value);
-			}
-		}
+		launchEvent('conversion', payload);
 	</script>
 </isif>
