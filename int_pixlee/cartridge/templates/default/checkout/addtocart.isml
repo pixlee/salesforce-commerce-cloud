@@ -3,7 +3,7 @@
 <isinclude template="utils/launchevents"/>
 
 <script data="pixlee-addtocart">
-	var cartItem = {}
+	var cartItem = {};
 </script>
 
 <isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
@@ -18,18 +18,17 @@
 		</isif>
 
 		<script data="pixlee-addtocart">
-		var productSku = "${masterProductObj.getID()}";
-		if(${masterProductObj.getManufacturerSKU() != null}){
-			productSku = "${masterProductObj.getManufacturerSKU()}";
-		}
+			var productSku = "${masterProductObj.getID()}";
+			if(${masterProductObj.getManufacturerSKU() != null}){
+				productSku = "${masterProductObj.getManufacturerSKU()}";
+			}
 
-		cartItem = {
-			quantity:"${lineItem.getQuantityValue()}",
-			product_id:"${masterProductObj.getID()}",
-			product_sku:productSku,
-			price:"${lineItem.getPrice()}"
-		};
-
+			cartItem = {
+				quantity:"${lineItem.getQuantityValue()}",
+				product_id:"${masterProductObj.getID()}",
+				product_sku:productSku,
+				price:"${lineItem.getPrice()}"
+			};
 		</script>
 	</isloop>
 </isloop>
