@@ -24,10 +24,10 @@
 			}
 
 			cartItem = {
-				quantity:"${lineItem.getQuantityValue()}",
-				product_id:"${masterProductObj.getID()}",
-				product_sku:productSku,
-				price:"${lineItem.getPrice()}"
+				quantity: parseInt("${lineItem.getQuantityValue()}"),
+				product_id: parseInt("${masterProductObj.getID()}"),
+				product_sku: productSku,
+				price: "${lineItem.getPrice()}".replace(/[^0-9\.]+/g,"")
 			};
 		</script>
 	</isloop>
@@ -35,7 +35,5 @@
 
 
 <script data="pixlee-addtocart">
-	var payload = {};
-	payload['product'] = cartItem;
-	launchEvent('addToCart', payload);
+	launchEvent('addToCart', cartItem);
 </script>

@@ -50,9 +50,9 @@
 		country: "${pdict.Order.billingAddress.countryCode}"
 	};
 
-	var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
+	payload = {};
 	payload['cart_contents'] = cartArray;
-	payload['cart_total'] = cartTotal;
+	payload['cart_total'] = cartTotal.toString();
 	payload['cart_total_quantity'] = cartTotalQuantity;
 	payload['currency'] = "${pdict.Order.currencyCode}";
 	payload['shipping_address'];

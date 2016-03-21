@@ -49,7 +49,7 @@ for (var i = 0; i < checkoutButtons.length; i++) {
 function checkoutStartHandler(event) {
 	var payload = {};
 	payload['cart_contents'] = cartArray;
-	payload['cart_total'] = cartTotal;
+	payload['cart_total'] = cartTotal.toString();
 	payload['cart_total_quantity'] = cartTotalQuantity;
 	launchEvent('checkoutStart', payload);
 };
