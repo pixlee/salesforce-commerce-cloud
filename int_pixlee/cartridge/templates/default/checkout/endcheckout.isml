@@ -22,7 +22,7 @@
 
 		<script data="pixlee-end-checkout">
 			var productSku = "${masterProductObj.getID()}";
-			if(${masterProductObj.getManufacturerSKU() != null}){
+			if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
 				productSku = "${masterProductObj.getManufacturerSKU()}";
 			}
 

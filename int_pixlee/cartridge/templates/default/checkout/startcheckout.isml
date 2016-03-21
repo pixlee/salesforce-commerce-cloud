@@ -22,7 +22,7 @@
 
 		<script data="pixlee-start-checkout">
 			var productSku = "${masterProductObj.getID()}";
-			if(${masterProductObj.getManufacturerSKU() != null}){
+			if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
 				productSku = "${masterProductObj.getManufacturerSKU()}";
 			}
 
@@ -42,9 +42,13 @@
 
 <script data="pixlee-start-checkout">
 var checkoutButtons = document.getElementsByName('${pdict.CurrentForms.cart.checkoutCart.htmlName}');
+var miniCartCheckoutLink = document.getElementsByClassName('mini-cart-link-checkout')[0];
+
 for (var i = 0; i < checkoutButtons.length; i++) {
 	checkoutButtons[i].addEventListener('click', checkoutStartHandler);
 }
+
+miniCartCheckoutLink.addEventListener('click', checkoutStartHandler);
 
 function checkoutStartHandler(event) {
 	var payload = {};
@@ -53,4 +57,5 @@ function checkoutStartHandler(event) {
 	payload['cart_total_quantity'] = cartTotalQuantity;
 	launchEvent('checkoutStart', payload);
 };
+
 </script>
