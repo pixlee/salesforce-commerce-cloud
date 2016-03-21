@@ -26,14 +26,6 @@
 				<min-length>0</min-length>
 				<field-length>0</field-length>
 			</attribute-definition>
-			<attribute-definition attribute-id="PixleeUserId">
-				<display-name xml:lang="x-default">Pixlee User ID</display-name>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
 			<attribute-definition attribute-id="HttpTimeout">
 				<display-name xml:lang="x-default">HTTP Timeout</display-name>
 				<type>string</type>
@@ -72,7 +64,6 @@
 				<attribute attribute-id="PixleeEnabled"/>
 				<attribute attribute-id="PixleeApiKey"/>
 				<attribute attribute-id="PixleeSecretKey"/>
-				<attribute attribute-id="PixleeUserId"/>
 				<attribute attribute-id="HttpTimeout"/>
 				<attribute attribute-id="SkuReference"/>
 				<attribute attribute-id="ProductHost"/>
