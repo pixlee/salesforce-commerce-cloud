@@ -30,7 +30,7 @@
 				quantity: parseInt("${ProductLineItem.quantityValue}"),
 				product_id: parseInt("${ProductLineItem.productID}"),
 				product_sku: productSku,
-				price:"${ProductLineItem.adjustedPrice}"
+				price:"${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,"")
 			};
 
 			cartArray.push(cartItem);

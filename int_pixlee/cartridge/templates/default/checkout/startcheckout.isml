@@ -30,7 +30,7 @@
 				quantity: parseInt("${lineItem.getQuantityValue()}"),
 				product_id: parseInt("${masterProductObj.getID()}"),
 				product_sku: productSku,
-				price: "${lineItem.getPrice()}"
+				price: "${lineItem.getPrice()}".replace(/[^0-9\.]+/g,"")
 			};
 
 			cartArray.push(cartItem);
