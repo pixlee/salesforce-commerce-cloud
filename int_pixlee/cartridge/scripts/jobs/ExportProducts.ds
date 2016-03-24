@@ -85,6 +85,13 @@ function exportProduct(product : Product) {
 			productSKU = product.getManufacturerSKU();
 		}
 
+		// Now that we have a proper place to store the native ID,
+		// we'll get the same value, but put it in a more reasonable place
+		// This is more for in the case that we DO have manufacturer SKUs
+		// NOTE: THERE IS NO LONG TYPE IN JAVASCRIPT, WHICH .DS IS BASED ON
+		// I TRIED, OH LORD I TRIED
+		var productNativeId : Int = parseInt(product.getID());
+
 		// Product URL
 		var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
 		// URLUtils.http generates URLs based on the Demandware hostname: dev.web.XXX.demandware.net, etc.
@@ -100,36 +107,50 @@ function exportProduct(product : Product) {
 		}
 		
 		// Product UPC, checking for a non-null ret just in case (even though as of 2016-02-29, it's defaulting to empty string)
-		var productUPC : String = "";
+		var productUPC : String = null;
 		if (product.getUPC()){
 			productUPC = product.getUPC();
 		}
 
 		// Product Stock
-		var productStock : Long = null;
+		var productStock : Int = null;
 		if (product.getAvailabilityModel()){
-			// I've seen at least one case of availabililty return a float very close to, but not quite, 1
-			// [2016-03-01 07:31:24.870 GMT] WARN JobThread|11116134|Pixlee.ExportProducts|Pixlee-RunExportProducts custom   0.9992857142857143
-			// So, we'll add .5, cast to int, and let the casting chop off the decimals
-			productStock = parseInt(product.getAvailabilityModel().availability + 0.5);
+			// 2016-03-23: product.getAvailabilityModel().availability uses some fancy algorithm,
+			// described by the documentation as the following:
+			// If inventory lists are in use:
+			// 	If no inventory record exists and the inventory list default-in-stock flag is true this method returns 1.
+			//	If no inventory record exists the inventory list default-in-stock flag is false this method returns 0.
+			//	If the product is not available this method returns 0.
+			//	If the product is perpetually available this method returns 1.
+			//	Otherwise this method returns the ATS / allocation.
+			// What I really want is the sum of all variants
+			// BUT I DON'T HAVE IT BECAUSE I NEVER FIGURED OUT HOW TO LOOP THROUGH VARIANTS
+			// IN DEMANDWARE - Instead, I'll settle for a 0/1, which I've tested
+			// Check CR-534
+			productInventoryRecord = product.getAvailabilityModel().getInventoryRecord();
+			if (product.getAvailabilityModel().isInStock()) {
+				productStock = 1;
+			} else {
+				productStock = 0;
+			}
 		}
 		
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productStock);
+			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productStock, productNativeId);
 		}
 	}
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productStock);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int, productNativeId : Int) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productStock, productNativeId);
 	var signedDataObj = signData(dataObj);
 	postToAPI( signedDataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int, productNativeId : Int) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
@@ -138,6 +159,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 	productObj.product_photo = productPhoto;
 	productObj.upc = productUPC;
 	productObj.stock = productStock;
+	productObj.native_product_id = productNativeId;
 
     // Data
     var dataObj : Object = new Object();
