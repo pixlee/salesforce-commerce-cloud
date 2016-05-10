@@ -25,9 +25,7 @@ importPackage( dw.io );
 importPackage( dw.net );
 importPackage( dw.content );
 
-var DISTILLERY_BASE_URL_DEVELOPMENT = "https://backstage-distillery.pixlee.com/api/v2/albums";
-var DISTILLERY_BASE_URL_STAGING = "https://backstage-distillery.pixlee.com/api/v2/albums";
-var DISTILLERY_BASE_URL_PRODUCTION = "http://distillery.pixlee.com/api/v2/albums";
+var DISTILLERY_BASE_URL = "http://distillery.pixlee.com/api/v2/albums";
 
 // Main method for export product execution
 function execute( args : PipelineDictionary ) : Number
@@ -219,14 +217,10 @@ function postToAPI(payload : Object) {
 }
 
 // Determine endpoint based on the environment
+// 2016-05-10: Anything customer-facing is "production" as far as WE are concerned
+// Don't point someone to OUR staging DB, which is volatile
 function getDistilleryBaseUrl() {
-	if(dw.system.System.getInstanceType() == dw.system.System.PRODUCTION_SYSTEM) {
-		return DISTILLERY_BASE_URL_PRODUCTION;
-	} else if(dw.system.System.getInstanceType() == dw.system.System.STAGING_SYSTEM) {
-		return DISTILLERY_BASE_URL_STAGING;
-	}
-	
-	return DISTILLERY_BASE_URL_DEVELOPMENT;
+    return DISTILLERY_BASE_URL;
 }
 
 // Check if input is a number
