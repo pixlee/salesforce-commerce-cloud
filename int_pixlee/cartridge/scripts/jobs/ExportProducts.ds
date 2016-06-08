@@ -131,6 +131,12 @@ function exportProduct(product : Product) {
 			productUPC = product.getUPC();
 		}
 
+        // Product Price
+        var productPrice : Decimal = null;
+        if (product.getPriceModel()){
+            productPrice = product.getPriceModel().getPrice().decimalValue;
+        }
+
 		// Product Stock
 		var productStock : Int = null;
 		if (product.getAvailabilityModel()){
@@ -156,14 +162,14 @@ function exportProduct(product : Product) {
 		
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productStock, productNativeId);
+			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId);
 		}
 	}
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int, productNativeId : Int) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productStock, productNativeId);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId);
 	var signedDataObj = signData(dataObj);
 	postToAPI( signedDataObj );
 }
