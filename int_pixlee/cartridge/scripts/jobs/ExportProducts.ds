@@ -131,6 +131,18 @@ function exportProduct(product : Product) {
 			productUPC = product.getUPC();
 		}
 
+        // Product Price
+        var productPrice : Decimal = null;
+        if (product.getPriceModel()){
+            // Master products don't have price, we need to get a variant to get price
+            // getDefaultVariant() will give us either the default variant or an arbitrary one
+            // I'm okay with getting an arbitrary one
+            try {
+            	productPrice = product.getVariationModel().getDefaultVariant().getPriceModel().getPrice().decimalValue.valueOf();
+            } catch(err) {
+            }
+        }
+
 		// Product Stock
 		var productStock : Int = null;
 		if (product.getAvailabilityModel()){
@@ -156,20 +168,20 @@ function exportProduct(product : Product) {
 		
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productStock, productNativeId);
+			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId);
 		}
 	}
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int, productNativeId : Int) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productStock, productNativeId);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId);
 	var signedDataObj = signData(dataObj);
 	postToAPI( signedDataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int, productNativeId : Int) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
@@ -177,6 +189,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 	productObj.buy_now_link_url = productUrl.toString();
 	productObj.product_photo = productPhoto;
 	productObj.upc = productUPC;
+	productObj.price = productPrice;
 	productObj.stock = productStock;
 	productObj.native_product_id = productNativeId;
 
