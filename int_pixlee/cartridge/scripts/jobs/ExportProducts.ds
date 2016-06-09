@@ -134,7 +134,13 @@ function exportProduct(product : Product) {
         // Product Price
         var productPrice : Decimal = null;
         if (product.getPriceModel()){
-            productPrice = product.getPriceModel().getPrice().decimalValue;
+            // Master products don't have price, we need to get a variant to get price
+            // getDefaultVariant() will give us either the default variant or an arbitrary one
+            // I'm okay with getting an arbitrary one
+            try {
+            	productPrice = product.getVariationModel().getDefaultVariant().getPriceModel().getPrice().decimalValue.valueOf();
+            } catch(err) {
+            }
         }
 
 		// Product Stock
@@ -175,7 +181,7 @@ function createProduct(productName : String, productSKU : String, productUrl : S
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productStock : Int, productNativeId : Int) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
@@ -183,6 +189,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 	productObj.buy_now_link_url = productUrl.toString();
 	productObj.product_photo = productPhoto;
 	productObj.upc = productUPC;
+	productObj.price = productPrice;
 	productObj.stock = productStock;
 	productObj.native_product_id = productNativeId;
 
