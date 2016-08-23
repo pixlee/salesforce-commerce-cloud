@@ -1,2 +1,2 @@
 <!--- TEMPLATENAME: analyticsendpoint.isml --->
-<isset name="pixleeAnalyticsEndpoint" value="https://limitless-beyond-4328.herokuapp.com/events/" scope="page" />
+<isset name="pixleeAnalyticsEndpoint" value="https://inbound-analytics.pixlee.com/events/" scope="page" />
