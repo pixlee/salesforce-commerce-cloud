@@ -10,7 +10,6 @@
         var payload = JSON.parse(getAnalyticsCookie());
         payload['API_KEY'] = "${pixleeApiKey}";
         payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
-        payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
         payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
         payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
         payload['version_hash'] = getVersionHash();
