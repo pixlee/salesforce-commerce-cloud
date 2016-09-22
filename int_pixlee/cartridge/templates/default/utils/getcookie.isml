@@ -42,8 +42,7 @@ var createPixleeAnalyticsCookie = function() {
                     var distinct_user_hash_linker = eventData.value;
                     setCookie('pixlee_analytics_cookie', encodeURIComponent(JSON.stringify({
                         CURRENT_PIXLEE_USER_ID: distinct_user_hash_linker,
-                        CURRENT_PIXLEE_ALBUM_PHOTOS: [],
-                        HORIZONTAL_PAGE: []
+                        CURRENT_PIXLEE_ALBUM_PHOTOS: []
                     })), 30);
                 }
             }

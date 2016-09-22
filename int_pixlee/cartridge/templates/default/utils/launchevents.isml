@@ -11,7 +11,6 @@
         payload['API_KEY'] = "${pixleeApiKey}";
         payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
         payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
-        payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
         payload['version_hash'] = getVersionHash();
         payload['ecommerce_platform'] = "demandware";
         payload['ecommerce_platform_version'] = "2.0.0";
