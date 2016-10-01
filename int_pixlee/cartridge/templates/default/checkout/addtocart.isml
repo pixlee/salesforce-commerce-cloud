@@ -6,34 +6,29 @@
 	var cartItem = {};
 </script>
 
-<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
-	<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
-		<isset name="lineItem" value="${FormLi.object}" scope="page" />
-		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
+<isloop items="${pdict.Basket.productLineItems}" var="CartItem" status="loopstate">
+	<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(CartItem.productID)}" scope="page" />
 
-		<isif condition="${productObj.isMaster()}">
-			<isset name="masterProductObj" value="${productObj}" scope="page" />
-		<iselse/>
-			<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
-		</isif>
+	<isif condition="${productObj.isMaster()}">
+		<isset name="masterProductObj" value="${productObj}" scope="page" />
+	<iselse/>
+		<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+	</isif>
 
-		<script data="pixlee-addtocart">
-			
-			var productSku = "${masterProductObj.getID()}";
-			if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
-				productSku = "${masterProductObj.getManufacturerSKU()}";
-			}
+	<script data="pixlee-addtocart">
+		var productSku = "${masterProductObj.getID()}";
+		if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
+			productSku = "${masterProductObj.getManufacturerSKU()}";
+		}
 
-			cartItem = {
-				quantity: parseInt("${lineItem.getQuantityValue()}"),
-				product_id: parseInt("${masterProductObj.getID()}"),
-				product_sku: productSku,
-				price: "${lineItem.getPrice()}".replace(/[^0-9\.]+/g,"")
-			};
-		</script>
-	</isloop>
+		cartItem = {
+			quantity: parseInt("${CartItem.getQuantityValue()}"),
+			product_id: parseInt("${masterProductObj.getID()}"),
+			product_sku: productSku,
+			price: "${CartItem.getPrice()}".replace(/[^0-9\.]+/g,"")
+		};
+	</script>
 </isloop>
-
 
 <script data="pixlee-addtocart">
 	launchEvent('addToCart', cartItem);
