@@ -1,2 +1,3 @@
 <!--- TEMPLATENAME: analyticsendpoint.isml --->
-<isset name="pixleeAnalyticsEndpoint" value="https://inbound-analytics.pixlee.com/events/" scope="page" />
+<!-- <isset name="pixleeAnalyticsEndpoint" value="https://inbound-analytics.pixlee.com/events/" scope="page" /> -->
+<isset name="pixleeAnalyticsEndpoint" value="https://7b62ad18.ngrok.io/events/" scope="page" />

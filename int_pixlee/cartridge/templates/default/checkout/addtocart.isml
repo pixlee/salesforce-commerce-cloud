@@ -6,8 +6,58 @@
 	var cartItem = {};
 </script>
 
-<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">
+<script data="pixlee-addtocart">
+		console.log("HELLO");
+</script>
+
+<isif condition="${!pdict.Product.isMaster()}">
+	<script data="pixlee-addtocart">
+		console.log("WARUDO?");
+	</script>
+</isif>
+
+<isloop items="${pdict.Basket.productLineItems}" var="CartItem" status="loopstate">
+	<script data="pixlee-addtocart">
+		
+		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(CartItem.productID)}" scope="page" />
+	
+		console.log("GOD DAMNIT");
+		console.log("${productObj.getID()}");
+		console.log("${productObj.isMaster()}");
+		<isif condition="${productObj.isMaster()}">
+			<isset name="masterProductObj" value="${productObj}" scope="page" />
+		<iselse/>
+			<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+		</isif>
+		
+		var productSku = "${masterProductObj.getID()}";
+		if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
+			productSku = "${masterProductObj.getManufacturerSKU()}";
+		}
+
+		cartItem = {
+			quantity: parseInt("${CartItem.getQuantityValue()}"),
+			product_id: parseInt("${masterProductObj.getID()}"),
+			product_sku: productSku,
+			price: "${CartItem.getPrice()}".replace(/[^0-9\.]+/g,"")
+		};
+		console.log(cartItem);
+
+		/*
+		console.log("${CartItem.productID}");
+		console.log("${lineItem.productID}");
+		*/
+	</script>
+</isloop>
+
+<isloop items="${pdict.CurrentForms.cart.shipments}" var="CartShipment" status="loopstate">	
+
+	<script data="pixlee-addtocart">
+		console.log("WORLD");
+	</script>
+
 	<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
+	
 		<isset name="lineItem" value="${FormLi.object}" scope="page" />
 		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
 
@@ -18,6 +68,9 @@
 		</isif>
 
 		<script data="pixlee-addtocart">
+			
+			console.log("I HAVE A PRODUCT OH SHIIIIIIIIII");
+			launchEvent('addToCart', {ccc: 3, ddd: 4, fff: "${pdict.CurrentForms.cart.shipments}" });
 			
 			var productSku = "${masterProductObj.getID()}";
 			if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
@@ -30,6 +83,7 @@
 				product_sku: productSku,
 				price: "${lineItem.getPrice()}".replace(/[^0-9\.]+/g,"")
 			};
+			cartItem = {"foo": 1, "bar": "hi mom"};
 		</script>
 	</isloop>
 </isloop>
@@ -37,4 +91,20 @@
 
 <script data="pixlee-addtocart">
 	launchEvent('addToCart', cartItem);
+	console.log("${pdict.CurrentForms.cart}");
+	console.log("${pdict.CurrentForms.cart.htmlName}");
+	console.log("${pdict.CurrentForms.cart.shipments}");
+	console.log("${pdict.CurrentForms.cart.shipments.items}");
+	console.log("${pdict.CurrentForms.cart.shipments.items[0]}");
+	console.log("${pdict.CurrentForms.cart.items}");
+	console.log("${pdict.CurrentForms.cart.items[0]}");
+	console.log("${pdict.Order}");
+	console.log("${pdict.Product}");
+	console.log("${pdict.Product.getID()}");
+	console.log("${pdict.Product.sku}");
+	console.log("${pdict.Product.getSku()}");
+	console.log("${pdict.CurrentForms.orders.orderlist}");
+	console.log("HI MOM");
+	console.log(cartItem);
+	//launchEvent('addToCart', {ccc: 3, ddd: 4, eee: "${pdict.CurrentForms.cart.shipments.items}" });
 </script>

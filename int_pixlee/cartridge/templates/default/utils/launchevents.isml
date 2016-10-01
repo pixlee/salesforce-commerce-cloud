@@ -14,7 +14,11 @@
         payload['version_hash'] = getVersionHash();
         payload['ecommerce_platform'] = "demandware";
         payload['ecommerce_platform_version'] = "2.0.0";
-
+        var thingy = {aaa: 1, bbb: 2};
+		payload['testing'] = JSON.stringify(thingy);
+        payload['testing'] = JSON.stringify(analyticsData);
+        
+        //for (var property in analyticsData) {
         for (var property in analyticsData) {
             if (analyticsData.hasOwnProperty(property)) {
                 payload[property] = analyticsData[property];
