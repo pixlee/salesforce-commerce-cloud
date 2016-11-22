@@ -1,0 +1,176 @@
+<!-- <script src="https://cdn.ravenjs.com/3.8.1/raven.min.js" crossorigin="anonymous"></script> -->
+
+<script data="pixlee-sentry-logging">
+
+	console.log("*** SENTRYLOGGING LOADED! ***");
+    
+	function checkOrLoadScripts() {
+		console.log("CHECK SOME SHIT");
+		var scriptsToLoad = [];
+		
+	    if (typeof Raven === 'undefined') scriptsToLoad.push('//cdn.ravenjs.com/3.8.0/raven.min.js');
+	    if (typeof jQuery === 'undefined') scriptsToLoad.push('//code.jquery.com/jquery-3.1.1.min.js');
+	    if (scriptsToLoad.length > 0) {
+	    	console.log("scriptsToLoad: " + scriptsToLoad);
+	        loadScripts(scriptsToLoad, [loadRaven]);
+	    } else {
+	    	console.log("LOAD RAVEN?????");
+	        loadRaven();
+	    };
+	    
+	    console.log("Finished that checky thing");
+	}
+	
+	// AW SHIT SON CHECK SOME SHIT
+	//checkOrLoadScripts();
+	
+	// Given some scripts, load them into the browser
+    function loadScripts(scripts, complete) {
+    	console.log("LOAD SCRIPTS");
+        var loadScript = function(src) {
+            var xmlhttp, next;
+            if (window.XMLHttpRequest) {
+                xmlhttp = new XMLHttpRequest();
+            } else {
+                try {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                } catch (e) {
+                    return;
+                }
+            }
+
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    eval(xmlhttp.responseText);
+                    next = scripts.shift();
+                    if (next) {
+                        loadScript(next);
+                    } else if (typeof complete == 'object') {
+                        complete.forEach(function(fn) {
+                            fn();
+                        });
+                    }
+                }
+            }
+            xmlhttp.open("GET", src, true);
+            xmlhttp.send();
+        };
+
+        loadScript(scripts.shift());
+    }
+    
+	// Try to guard, but first check that Raven is loaded
+	// If it's not, load it and then guard
+    function checkAndGuard(fn, params) {
+		
+		// When we know scripts are loaded, call this
+		function guardedFunction() {
+			return guard(fn, params);
+		};
+		
+		var scriptsToLoad = [];
+	    if (typeof Raven === 'undefined') scriptsToLoad.push('//cdn.ravenjs.com/3.8.0/raven.min.js');
+	    if (typeof jQuery === 'undefined') scriptsToLoad.push('//code.jquery.com/jquery-3.1.1.min.js');
+	    if (scriptsToLoad.length > 0) {
+	    	console.log("Before calling guardedFunction, scriptsToLoad: " + scriptsToLoad);
+	    	loadScripts(scriptsToLoad, [loadRaven, guardedFunction]);
+	    } else {
+	    	console.log("No scripts to load, just check for Raven config and call guarded function");
+	        loadRaven();
+	        guardedFunction();
+	    };
+    };
+
+    function guard(fn, params) {
+    	console.log("GUARDS!");
+        try {
+        	console.log("you lived?");
+            fn.apply(this, params);
+        } catch (e) {
+        	console.log("DEATH TO ALL TRAITORS");
+            var extraFields = {
+                functionName: fn.name
+            };
+
+            logError(e, extraFields);
+        }
+    };
+
+    function guardCallback(fn, params) {
+        return function(callbackData) {
+            try {
+                var finalParams = [];
+                if (params) {
+                    finalParams = finalParams.concat(params);
+                }
+                if (callbackData) {
+                    finalParams.push(callbackData);
+                }
+                fn.apply(this, finalParams);
+            } catch (e) {
+                logError(e);
+            }
+        };
+    };
+
+    function logError(exception, extraFields) {
+        if (typeof console !== 'undefined') {
+        	console.log("SHIT NO RAVENS");
+            console.log(exception);
+        }
+        if (typeof window.pixRaven !== 'undefined') {
+        	console.log("SEND THE RAVENS");
+            extraFields = extraFields || '';
+            window.pixRaven.captureException(exception, {
+                tags: {
+                    source: 'Demandware'
+                },
+                extra: {
+                    objectBody: extraFields
+                }
+            });
+        }
+    };
+
+    function logMessage(message) {
+        if (typeof console !== 'undefined') {
+            console.log(message);
+        }
+        if (typeof window.pixRaven !== 'undefined') {
+            window.pixRaven.captureMessage(message, {
+                tags: {
+                    source: 'Demandware'
+                }
+            });
+        }
+    };
+
+    function loadRaven() {
+    	console.log("LOAD RAVEN!");
+    	console.log("Typeof Raven");
+    	console.log(typeof Raven);
+    	console.log("Raven compare string");
+    	console.log(typeof Raven !== 'undefined');
+    	console.log("Raven compare primitive");
+    	console.log(typeof Raven !== undefined);
+    	console.log("Typeof window.pixRaven");
+    	console.log(typeof window.pixRaven);
+    	console.log("window.pixRaven compare string");
+    	console.log(typeof window.pixRaven !== 'undefined');
+    	console.log("window.pixRaven compare primitive");
+    	console.log(typeof window.pixRaven !== undefined);
+    	// NOTE TO SELF ASK SATNAM WHAT'S GOING ON HERE
+        if (typeof Raven !== 'undefined' && typeof window.pixRaven === 'undefined') {
+            console.log("DID NOT EXIST, LOAD IT!!!");
+        	
+        	window.pixRaven = Raven.noConflict();
+
+            window.pixRaven.config('https://e406fcd3b1654902bec5ff10640b9ade@sentry.io/77928', {
+                ignoreUrls: [/pdp\.dev/, /widget\.dev/, /codepen/],
+                ignoreErrors: [/Permission denied/]
+            });
+        } else {
+        	console.log("WTF ALREADY LOADED? MY ASS");
+        }
+    };
+</script>

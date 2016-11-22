@@ -1,6 +1,7 @@
 <!--- TEMPLATENAME: endcheckout.isml --->
 
 <isinclude template="utils/launchevents"/>
+<isinclude template="utils/sentrylogging"/>
 
 <script data="pixlee-end-checkout">
 	var cartArray = [];
@@ -61,5 +62,6 @@
 	payload['cart_type'] = 'demandware';
 	payload['order_id'] = "${pdict.Order.orderNo}";
 
-	launchEvent('conversion', payload);
+	//launchEvent('conversion', payload);
+	checkAndGuard(launchEvent, ['conversion', payload]);
 </script>

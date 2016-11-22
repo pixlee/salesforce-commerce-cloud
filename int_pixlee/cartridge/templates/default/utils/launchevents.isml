@@ -20,6 +20,10 @@
             }
         }
 
+        console.log("hulloo?");
+        testing_sentry += 3;
+        console.log("why didn't you die?");
+
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "${pixleeAnalyticsEndpoint}" + type);
         xhr.setRequestHeader('Content-type', 'application/json');

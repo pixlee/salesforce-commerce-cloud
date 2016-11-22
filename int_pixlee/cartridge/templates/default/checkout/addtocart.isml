@@ -1,6 +1,7 @@
 <!--- TEMPLATENAME: addtocart.isml --->
 
 <isinclude template="utils/launchevents"/>
+<isinclude template="utils/sentrylogging"/>
 
 <script data="pixlee-addtocart">
 	var cartItem = {};
@@ -31,5 +32,9 @@
 </isloop>
 
 <script data="pixlee-addtocart">
-	launchEvent('addToCart', cartItem);
+	//loadRaven();
+	//guard(launchEvent('addToCart', cartItem));
+	//guard(launchEvent, ['addToCart', cartItem]);
+	checkAndGuard(launchEvent, ['addToCart', cartItem]);
+	//launchEvent('addToCart', cartItem);
 </script>
