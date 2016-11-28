@@ -58,7 +58,6 @@ function checkoutStartHandler(event) {
 	payload['cart_contents'] = cartArray;
 	payload['cart_total'] = cartTotal.toString();
 	payload['cart_total_quantity'] = cartTotalQuantity;
-	//launchEvent('checkoutStart', payload);
 	checkAndGuard(launchEvent, ['checkoutStart', payload]);
 };
 

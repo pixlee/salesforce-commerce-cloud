@@ -20,9 +20,9 @@
             }
         }
 
-        console.log("hulloo?");
+        console.log("*** MANUALLY CAUSING EXCEPTION ***");
         testing_sentry += 3;
-        console.log("why didn't you die?");
+        console.log("*** AFTER MANUAL EXCEPTION ***");
 
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "${pixleeAnalyticsEndpoint}" + type);

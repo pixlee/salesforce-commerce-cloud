@@ -1,24 +1,19 @@
 <!-- <script src="https://cdn.ravenjs.com/3.8.1/raven.min.js" crossorigin="anonymous"></script> -->
 
 <script data="pixlee-sentry-logging">
-
-	console.log("*** SENTRYLOGGING LOADED! ***");
     
 	function checkOrLoadScripts() {
-		console.log("CHECK SOME SHIT");
+
 		var scriptsToLoad = [];
 		
 	    if (typeof Raven === 'undefined') scriptsToLoad.push('//cdn.ravenjs.com/3.8.0/raven.min.js');
 	    if (typeof jQuery === 'undefined') scriptsToLoad.push('//code.jquery.com/jquery-3.1.1.min.js');
 	    if (scriptsToLoad.length > 0) {
-	    	console.log("scriptsToLoad: " + scriptsToLoad);
 	        loadScripts(scriptsToLoad, [loadRaven]);
 	    } else {
-	    	console.log("LOAD RAVEN?????");
 	        loadRaven();
 	    };
-	    
-	    console.log("Finished that checky thing");
+
 	}
 	
 	// AW SHIT SON CHECK SOME SHIT
@@ -26,7 +21,6 @@
 	
 	// Given some scripts, load them into the browser
     function loadScripts(scripts, complete) {
-    	console.log("LOAD SCRIPTS");
         var loadScript = function(src) {
             var xmlhttp, next;
             if (window.XMLHttpRequest) {
@@ -58,6 +52,23 @@
 
         loadScript(scripts.shift());
     }
+	
+
+    // If raven.js is loaded, try to configure for Pixlee
+    // Otherwise, do nothing, and remote logging won't work
+    function loadRaven() {
+
+        if (typeof Raven !== 'undefined' && typeof window.pixRaven === 'undefined') {
+        	
+        	window.pixRaven = Raven.noConflict();
+
+            window.pixRaven.config('https://e406fcd3b1654902bec5ff10640b9ade@sentry.io/77928', {
+                ignoreUrls: [/pdp\.dev/, /widget\.dev/, /codepen/],
+                ignoreErrors: [/Permission denied/]
+            });
+        };
+    };
+
     
 	// Try to guard, but first check that Raven is loaded
 	// If it's not, load it and then guard
@@ -72,24 +83,31 @@
 	    if (typeof Raven === 'undefined') scriptsToLoad.push('//cdn.ravenjs.com/3.8.0/raven.min.js');
 	    if (typeof jQuery === 'undefined') scriptsToLoad.push('//code.jquery.com/jquery-3.1.1.min.js');
 	    if (scriptsToLoad.length > 0) {
-	    	console.log("Before calling guardedFunction, scriptsToLoad: " + scriptsToLoad);
 	    	loadScripts(scriptsToLoad, [loadRaven, guardedFunction]);
 	    } else {
-	    	console.log("No scripts to load, just check for Raven config and call guarded function");
 	        loadRaven();
 	        guardedFunction();
 	    };
     };
 
+    // Wrap any JS call in a try/except, where exceptions are passed to Raven/Sentry
     function guard(fn, params) {
-    	console.log("GUARDS!");
         try {
-        	console.log("you lived?");
             fn.apply(this, params);
         } catch (e) {
-        	console.log("DEATH TO ALL TRAITORS");
+        	
+        	// Sentry apparently has problems with function bodies, if we pass in callbacks
+        	// So I'll only ask to log params that aren't functions
+        	var paramsNotFns = [];
+        	params.forEach(function(param) {
+        		if (typeof param !== 'function') {
+        			paramsNotFns.push(param);
+        		}
+        	});
+        	
             var extraFields = {
-                functionName: fn.name
+                functionName: fn.name,
+                paramsNotFns: paramsNotFns
             };
 
             logError(e, extraFields);
@@ -115,11 +133,9 @@
 
     function logError(exception, extraFields) {
         if (typeof console !== 'undefined') {
-        	console.log("SHIT NO RAVENS");
             console.log(exception);
         }
         if (typeof window.pixRaven !== 'undefined') {
-        	console.log("SEND THE RAVENS");
             extraFields = extraFields || '';
             window.pixRaven.captureException(exception, {
                 tags: {
@@ -145,32 +161,4 @@
         }
     };
 
-    function loadRaven() {
-    	console.log("LOAD RAVEN!");
-    	console.log("Typeof Raven");
-    	console.log(typeof Raven);
-    	console.log("Raven compare string");
-    	console.log(typeof Raven !== 'undefined');
-    	console.log("Raven compare primitive");
-    	console.log(typeof Raven !== undefined);
-    	console.log("Typeof window.pixRaven");
-    	console.log(typeof window.pixRaven);
-    	console.log("window.pixRaven compare string");
-    	console.log(typeof window.pixRaven !== 'undefined');
-    	console.log("window.pixRaven compare primitive");
-    	console.log(typeof window.pixRaven !== undefined);
-    	// NOTE TO SELF ASK SATNAM WHAT'S GOING ON HERE
-        if (typeof Raven !== 'undefined' && typeof window.pixRaven === 'undefined') {
-            console.log("DID NOT EXIST, LOAD IT!!!");
-        	
-        	window.pixRaven = Raven.noConflict();
-
-            window.pixRaven.config('https://e406fcd3b1654902bec5ff10640b9ade@sentry.io/77928', {
-                ignoreUrls: [/pdp\.dev/, /widget\.dev/, /codepen/],
-                ignoreErrors: [/Permission denied/]
-            });
-        } else {
-        	console.log("WTF ALREADY LOADED? MY ASS");
-        }
-    };
 </script>

@@ -25,6 +25,14 @@ importPackage( dw.io );
 importPackage( dw.net );
 importPackage( dw.content );
 
+var sentrylogging = require('../../controllers/sentrylogging');
+var Raven = require('../../controllers/raven.3.8.1.min');
+
+Raven.config('https://e406fcd3b1654902bec5ff10640b9ade@sentry.io/77928').install();
+Raven.captureException("Hello? World?");
+
+sentrylogging.World();
+
 var DISTILLERY_BASE_URL = "http://distillery.pixlee.com/api/v2/albums";
 
 // Main method for export product execution
@@ -41,7 +49,7 @@ function execute( args : PipelineDictionary ) : Number
 			return PIPELET_ERROR;  
 		}
 
-		exportProducts();
+		//exportProducts();
 	} catch(ex) {
 		var error = ex.message;
 		Logger.error("Exception caught" + ex.message);

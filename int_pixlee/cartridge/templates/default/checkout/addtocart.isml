@@ -32,9 +32,5 @@
 </isloop>
 
 <script data="pixlee-addtocart">
-	//loadRaven();
-	//guard(launchEvent('addToCart', cartItem));
-	//guard(launchEvent, ['addToCart', cartItem]);
 	checkAndGuard(launchEvent, ['addToCart', cartItem]);
-	//launchEvent('addToCart', cartItem);
 </script>

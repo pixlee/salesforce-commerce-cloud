@@ -62,6 +62,5 @@
 	payload['cart_type'] = 'demandware';
 	payload['order_id'] = "${pdict.Order.orderNo}";
 
-	//launchEvent('conversion', payload);
 	checkAndGuard(launchEvent, ['conversion', payload]);
 </script>
