@@ -1,0 +1,35 @@
+<!--- TEMPLATENAME: addtocart.isml --->
+
+<isinclude template="utils/launchevents"/>
+
+<script data="pixlee-addtocart">
+	var cartItem = {};
+</script>
+
+<isloop items="${pdict.Basket.productLineItems}" var="CartItem" status="loopstate">
+	<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(CartItem.productID)}" scope="page" />
+
+	<isif condition="${productObj.isMaster()}">
+		<isset name="masterProductObj" value="${productObj}" scope="page" />
+	<iselse/>
+		<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+	</isif>
+
+	<script data="pixlee-addtocart">
+		var productSku = "${masterProductObj.getID()}";
+		if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
+			productSku = "${masterProductObj.getManufacturerSKU()}";
+		}
+
+		cartItem = {
+			quantity: parseInt("${CartItem.getQuantityValue()}"),
+			product_id: parseInt("${masterProductObj.getID()}"),
+			product_sku: productSku,
+			price: "${CartItem.getPrice()}".replace(/[^0-9\.]+/g,"")
+		};
+	</script>
+</isloop>
+
+<script data="pixlee-addtocart">
+	launchEvent('addToCart', cartItem);
+</script>

@@ -1,62 +1,65 @@
 <!--- TEMPLATENAME: endcheckout.isml --->
 
-<iscomment>Define Pixlee Analytics Endpoint</iscomment>
-<isinclude template="utils/analyticsendpoint"/>
+<isinclude template="utils/launchevents"/>
 
-<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId') != null && dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled') == true}">
-	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
-	<isset name="pixleeUserId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeUserId')}" scope="page" />
-	<isset name="skuReference" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('SkuReference')}" scope="page" />
-
-	<script data="pixlee-end-checkout">
+<script data="pixlee-end-checkout">
 	var cartArray = [];
 	var cartItem = {};
-	</script>
+	var cartTotal = 0;
+	var cartTotalQuantity = 0;
+</script>
 
-	<isloop items="${pdict.Order.shipments}" var="Shipment" status="loopstate">
-		<isloop items="${Shipment.productLineItems}" alias="ProductLineItem" status="loopstate">
-			
-			<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(ProductLineItem.productID)}" scope="page" />
-			
-			<isif condition="${productObj.isMaster()}">
-				<isset name="masterProductObj" value="${productObj}" scope="page" />
-			<iselse/>
-				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
-			</isif>
-			
-			<script data="pixlee-end-checkout">
+<isloop items="${pdict.Order.shipments}" var="Shipment" status="loopstate">
+	<isloop items="${Shipment.productLineItems}" alias="ProductLineItem" status="loopstate">
+
+		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(ProductLineItem.productID)}" scope="page" />
+
+		<isif condition="${productObj.isMaster()}">
+			<isset name="masterProductObj" value="${productObj}" scope="page" />
+		<iselse/>
+			<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+		</isif>
+
+		<script data="pixlee-end-checkout">
 			var productSku = "${masterProductObj.getID()}";
-			if(${masterProductObj.getManufacturerSKU() != null}){
+			if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
 				productSku = "${masterProductObj.getManufacturerSKU()}";
 			}
-			
-			cartItem = {quantity:"${ProductLineItem.quantityValue}", id:"${ProductLineItem.productID}", name:"${ProductLineItem.productName}",sku:productSku ,price:"${ProductLineItem.adjustedPrice}"};
-			cartArray.push(cartItem);
-			</script>
-		</isloop>
-	</isloop>
 
-	<script data="pixlee-end-checkout">
-	var payload = JSON.parse(getCookie("pixlee_analytics_cookie"));
-	payload['cart'] = cartArray;
-	payload['API_KEY'] = "${pixleeApiKey}";
-	payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
-	payload['pixlee_album_photos_timestamps'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS_TIMESTAMP'];
-	payload['pixlee_album_photos'] = payload['CURRENT_PIXLEE_ALBUM_PHOTOS'];
-	payload['horizontal_page'] = payload['HORIZONTAL_PAGE'];
-	
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST", "${pixleeAnalyticsEndpoint}conversion");
-	xhr.setRequestHeader('Content-type', 'application/json');
-	xhr.send(JSON.stringify(payload));
-	
-	function getCookie(name) {
-		var value = "; " + document.cookie;
-		var parts = value.split("; " + name + "=");
-		if (parts.length == 2){
-			var encoded_value = parts.pop().split(";").shift();
-			return decodeURIComponent(encoded_value);
-		}
-	}
-	</script>
-</isif>
+			cartItem = {
+				quantity: parseInt("${ProductLineItem.quantityValue}"),
+				product_id: parseInt("${ProductLineItem.productID}"),
+				product_sku: productSku,
+				price:"${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,"")
+			};
+
+			cartArray.push(cartItem);
+			cartTotal += parseFloat("${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,""));
+			cartTotalQuantity += parseInt("${ProductLineItem.quantityValue}");
+		</script>
+	</isloop>
+</isloop>
+
+<script data="pixlee-end-checkout">
+	var address = {
+		street1: "${pdict.Order.billingAddress.address1}",
+		street2: "${pdict.Order.billingAddress.address2}",
+		city: "${pdict.Order.billingAddress.city}",
+		state: "${pdict.Order.billingAddress.stateCode}",
+		zip: "${pdict.Order.billingAddress.postalCode}",
+		country: "${pdict.Order.billingAddress.countryCode}"
+	};
+
+	payload = {};
+	payload['cart_contents'] = cartArray;
+	payload['cart_total'] = cartTotal.toString();
+	payload['cart_total_quantity'] = cartTotalQuantity;
+	payload['currency'] = "${pdict.Order.currencyCode}";
+	payload['shipping_address'];
+	payload['billing_address'] = JSON.stringify(address);
+	payload['email'] = "${pdict.Order.customerEmail}";
+	payload['cart_type'] = 'demandware';
+	payload['order_id'] = "${pdict.Order.orderNo}";
+
+	launchEvent('conversion', payload);
+</script>

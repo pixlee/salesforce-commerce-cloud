@@ -1,0 +1,37 @@
+<!--- TEMPLATENAME: launchevents.isml --->
+
+<isinclude template="utils/analyticsendpoint"/>
+<isinclude template="utils/versionhash"/>
+
+<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
+
+<script data="pixlee-launch-event">
+    function launchEvent(type, analyticsData) {
+        var payload = JSON.parse(getAnalyticsCookie());
+        payload['API_KEY'] = "${pixleeApiKey}";
+        payload['uid'] = payload['CURRENT_PIXLEE_USER_ID'];
+        payload['version_hash'] = getVersionHash();
+        payload['ecommerce_platform'] = "demandware";
+        payload['ecommerce_platform_version'] = "2.0.0";
+
+        for (var property in analyticsData) {
+            if (analyticsData.hasOwnProperty(property)) {
+                payload[property] = analyticsData[property];
+            }
+        }
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "${pixleeAnalyticsEndpoint}" + type);
+        xhr.setRequestHeader('Content-type', 'application/json');
+        xhr.send(JSON.stringify(payload));
+    }
+
+    function getAnalyticsCookie() {
+        var value = "; " + document.cookie;
+        var parts = value.split("; " + "pixlee_analytics_cookie" + "=");
+        if (parts.length == 2){
+            var encoded_value = parts.pop().split(";").shift();
+            return decodeURIComponent(encoded_value);
+        }
+    };
+</script>
