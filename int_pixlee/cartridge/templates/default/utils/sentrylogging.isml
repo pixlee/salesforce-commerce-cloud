@@ -54,15 +54,42 @@
     }
 	
 
+	// Use our pixleeApiKey to try to get a Sentry URL: If we're unauthorized we don't get to log to Sentry
+	function getSentryUrl() {
+
+		// If anything should fail, we'll eventually return a null
+		var sentryUrl = null;
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', "https://distillery.pixlee.com/api/v1/getSentryUrl?api_key=${pixleeApiKey}&team=Pixlee+Demandware&project=Frontend", false);
+		try {
+			xhr.send();
+		} catch (err) {
+			// Do nothing, fall through to returning a null
+		}
+
+		if (xhr.status === 200) {
+			try {
+				sentryUrl = JSON.parse(xhr.responseText).url;
+			} catch (err) {
+				// Do nothing, fall through to returning a null
+			}
+		}
+
+		console.log(sentryUrl);
+		return sentryUrl;
+	}
+
+
     // If raven.js is loaded, try to configure for Pixlee
     // Otherwise, do nothing, and remote logging won't work
     function loadRaven() {
 
         if (typeof Raven !== 'undefined' && typeof window.pixRaven === 'undefined') {
-        	
-        	window.pixRaven = Raven.noConflict();
 
-            window.pixRaven.config('https://e406fcd3b1654902bec5ff10640b9ade@sentry.io/77928', {
+        	window.pixRaven = Raven.noConflict();
+        	var sentryUrl = getSentryUrl();
+
+        	window.pixRaven.config(sentryUrl, {
                 ignoreUrls: [/pdp\.dev/, /widget\.dev/, /codepen/],
                 ignoreErrors: [/Permission denied/]
             });
