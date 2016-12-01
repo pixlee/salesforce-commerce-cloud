@@ -2,15 +2,10 @@
 
 <isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
 
-<script>
-	console.log("*** HELLO FROM pixleeevents.isml! ***");
-</script>
-
 <script src="https://assets.pixlee.com/assets/pixlee_events.js" type="text/javascript"></script>
 <!-- Putting demandware.v1.stage.js should ensure that by the time it runs, we have access to all the stuff pixlee_events.js makes available -->
-<script src="https://92671ed4.ngrok.io/pixlee.demandware.v1.stage.js" type="text/javascript"></script>
+<script src="https://assets.pixlee.com/demandware/pixlee.demandware.v1.prod.js" type="text/javascript"></script>
 
 <script>
-	console.log("Initializing pixlee_analytics, (THIS SHOULD BE AFTER pixlee.demandware.v1.stage.js IS LOADED!)");
 	var pixlee_analytics = new Pixlee_Analytics("${pixleeApiKey}");
 </script>
