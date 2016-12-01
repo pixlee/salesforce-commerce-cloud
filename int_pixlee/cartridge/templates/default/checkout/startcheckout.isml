@@ -1,7 +1,6 @@
 <!--- TEMPLATENAME: startcheckout.isml --->
 
 <isinclude template="utils/launchevents"/>
-<isinclude template="utils/sentrylogging"/>
 
 <script data="pixlee-start-checkout">
 	var cartArray = [];
@@ -58,7 +57,7 @@ function checkoutStartHandler(event) {
 	payload['cart_contents'] = cartArray;
 	payload['cart_total'] = cartTotal.toString();
 	payload['cart_total_quantity'] = cartTotalQuantity;
-	checkAndGuard(launchEvent, ['checkoutStart', payload]);
+	launchEvent('checkout:start', payload);
 };
 
 </script>
