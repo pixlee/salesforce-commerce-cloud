@@ -41,7 +41,7 @@ function execute( args : PipelineDictionary ) : Number
 			return PIPELET_ERROR;  
 		}
 
-		//exportProducts();
+		exportProducts();
 	} catch(ex) {
 		var error = ex.message;
 		Logger.error("Exception caught" + ex.message);
