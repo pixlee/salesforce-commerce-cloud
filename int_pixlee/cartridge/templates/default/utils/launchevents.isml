@@ -3,6 +3,9 @@
 <isinclude template="utils/pixleeevents"/>
 <isinclude template="utils/versionhash"/>
 
+<!-- utils/sentrylogging isn't used directly here, but all the .isml files that include launchevents.isml will need it -->
+<isinclude template="utils/sentrylogging"/>
+
 <script data="pixlee-launch-event">
 
 	function launchEvent(event, obj) {
@@ -10,6 +13,7 @@
 		obj.ecommerce_platform = "demandware";
 		obj.ecommerce_platform_version = "2.1.0";
 
+		// pixlee_analytics.events.trigger has its own version of guard, so we won't define one
 		pixlee_analytics.events.trigger(event, obj);
     };
 
