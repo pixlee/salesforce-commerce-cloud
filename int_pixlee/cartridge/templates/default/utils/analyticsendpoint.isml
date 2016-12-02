@@ -1,2 +1,0 @@
-<!--- TEMPLATENAME: analyticsendpoint.isml --->
-<isset name="pixleeAnalyticsEndpoint" value="https://inbound-analytics.pixlee.com/events/" scope="page" />

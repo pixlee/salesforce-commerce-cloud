@@ -21,45 +21,57 @@
 		</isif>
 
 		<script data="pixlee-end-checkout">
-			var productSku = "${masterProductObj.getID()}";
-			if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
-				productSku = "${masterProductObj.getManufacturerSKU()}";
-			}
+			function createEndCheckoutCartItem() {
 
-			cartItem = {
-				quantity: parseInt("${ProductLineItem.quantityValue}"),
-				product_id: parseInt("${ProductLineItem.productID}"),
-				product_sku: productSku,
-				price:"${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,"")
+				var productSku = "${masterProductObj.getID()}";
+				if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
+					productSku = "${masterProductObj.getManufacturerSKU()}";
+				}
+
+				cartItem = {
+					quantity: parseInt("${ProductLineItem.quantityValue}"),
+					product_id: parseInt("${ProductLineItem.productID}"),
+					product_sku: productSku,
+					price:"${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,"")
+				};
+
+				cartArray.push(cartItem);
+				cartTotal += parseFloat("${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,""));
+				cartTotalQuantity += parseInt("${ProductLineItem.quantityValue}");
 			};
-
-			cartArray.push(cartItem);
-			cartTotal += parseFloat("${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,""));
-			cartTotalQuantity += parseInt("${ProductLineItem.quantityValue}");
+			// Guard the creation of cartItem so that if something breaks, we'll get the log
+			guard(createEndCheckoutCartItem, []);
 		</script>
 	</isloop>
 </isloop>
 
 <script data="pixlee-end-checkout">
-	var address = {
-		street1: "${pdict.Order.billingAddress.address1}",
-		street2: "${pdict.Order.billingAddress.address2}",
-		city: "${pdict.Order.billingAddress.city}",
-		state: "${pdict.Order.billingAddress.stateCode}",
-		zip: "${pdict.Order.billingAddress.postalCode}",
-		country: "${pdict.Order.billingAddress.countryCode}"
-	};
 
 	payload = {};
-	payload['cart_contents'] = cartArray;
-	payload['cart_total'] = cartTotal.toString();
-	payload['cart_total_quantity'] = cartTotalQuantity;
-	payload['currency'] = "${pdict.Order.currencyCode}";
-	payload['shipping_address'];
-	payload['billing_address'] = JSON.stringify(address);
-	payload['email'] = "${pdict.Order.customerEmail}";
-	payload['cart_type'] = 'demandware';
-	payload['order_id'] = "${pdict.Order.orderNo}";
 
-	launchEvent('conversion', payload);
+	function createEndCheckoutPayload() {
+		var address = {
+			street1: "${pdict.Order.billingAddress.address1}",
+			street2: "${pdict.Order.billingAddress.address2}",
+			city: "${pdict.Order.billingAddress.city}",
+			state: "${pdict.Order.billingAddress.stateCode}",
+			zip: "${pdict.Order.billingAddress.postalCode}",
+			country: "${pdict.Order.billingAddress.countryCode}"
+		};
+
+		payload['cart_contents'] = cartArray;
+		payload['cart_total'] = cartTotal.toString();
+		payload['cart_total_quantity'] = cartTotalQuantity;
+		payload['currency'] = "${pdict.Order.currencyCode}";
+		payload['shipping_address'];
+		payload['billing_address'] = JSON.stringify(address);
+		payload['email'] = "${pdict.Order.customerEmail}";
+		payload['cart_type'] = 'demandware';
+		payload['order_id'] = "${pdict.Order.orderNo}";
+	}
+	// Guard the creation of payload so that if something breaks, we'll get the log
+	guard(createEndCheckoutPayload, []);
+
+	// The listener on the other side of this function has its own guard
+	launchEvent('converted:photo', payload);
 </script>
