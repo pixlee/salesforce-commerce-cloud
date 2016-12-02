@@ -1,9 +1,5 @@
 <!--- TEMPLATENAME: sentrylogging.isml --->
 
-<!-- Expect that pixlee_events.js will instantiate a window.pixRaven object for us to use -->
-<!--  If it doesn't exist, our guard function will fail nicely and simply print to console -->
-<isinclude template="utils/pixleeevents"/>
-
 <!-- However, pixlee_analytics's guard function is not in the global scope, so we have to define our own here -->
 <script data="pixlee-sentry-logging">
 
