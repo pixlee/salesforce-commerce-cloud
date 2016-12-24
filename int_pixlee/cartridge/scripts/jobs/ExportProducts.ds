@@ -100,7 +100,7 @@ function exportProduct(product : Product) {
 
 		// Product Photo
 		var productPhoto : String = "";
-		
+
 		var image = product.getImage('large',0);
 		// This was our original case, where we look for the 'large' version of
 		// the master product, and use that image if it exists
@@ -125,6 +125,13 @@ function exportProduct(product : Product) {
 			productPhoto = URLUtils.absStatic('/images/noimagesmall.png');
 		}
 		
+		// As of 2016-12, we also want the rest of the images
+		var allImages = product.getImages('large');
+		var allProductPhotos = []
+		for each(var image in allImages) {
+			allProductPhotos.push(image.absURL.toString());
+		}
+
 		// Product UPC, checking for a non-null ret just in case (even though as of 2016-02-29, it's defaulting to empty string)
 		var productUPC : String = null;
 		if (product.getUPC()){
@@ -166,22 +173,27 @@ function exportProduct(product : Product) {
 			}
 		}
 		
+		// Extra Fields
+		var productExtraFields = {
+			"product_photos": allProductPhotos
+		};
+
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId);
+			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields);
 		}
 	}
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int, productExtraFields : Object) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields);
 	var signedDataObj = signData(dataObj);
 	postToAPI( signedDataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int, productExtraFields : Object) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
@@ -192,6 +204,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 	productObj.price = productPrice;
 	productObj.stock = productStock;
 	productObj.native_product_id = productNativeId;
+	productObj.extra_fields = productExtraFields;
 
     // Data
     var dataObj : Object = new Object();
