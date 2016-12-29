@@ -141,7 +141,7 @@ function exportProduct(product : Product) {
             try {
             	productPrice = product.getVariationModel().getDefaultVariant().getPriceModel().getPrice().decimalValue.valueOf();
             } catch(err) {
-            	Logger.warn("Could not get the price for product id: {}", product.ID);
+            	Logger.warn("Could not get the price for product id: " + product.ID);
             	Logger.warn(err.message);
             }
         }
@@ -175,7 +175,7 @@ function exportProduct(product : Product) {
 		}
 	}
     } catch (ex) {
-               Logger.warn("The following exception occured for the product id: {}", product.ID);
+               Logger.warn("The following exception occured for the product id: " +  product.ID);
                Logger.warn(ex.message);
     }
 }
