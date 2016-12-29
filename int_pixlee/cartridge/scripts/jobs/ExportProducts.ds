@@ -71,6 +71,7 @@ function exportProducts() {
 
 // Extract Demandware data and create product data
 function exportProduct(product : Product) {
+	try {
 	if(product.online && product.searchable && !product.variant) {
 		// Name
 		var productName : String = product.getName();
@@ -140,6 +141,8 @@ function exportProduct(product : Product) {
             try {
             	productPrice = product.getVariationModel().getDefaultVariant().getPriceModel().getPrice().decimalValue.valueOf();
             } catch(err) {
+            	Logger.warn("Could not get the price for product id: {}", product.ID);
+            	Logger.warn(err.message);
             }
         }
 
@@ -171,6 +174,10 @@ function exportProduct(product : Product) {
 			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId);
 		}
 	}
+    } catch (ex) {
+               Logger.warn("The following exception occured for the product id: {}", product.ID);
+               Logger.warn(ex.message);
+    }
 }
 
 // Create JSON object, sign data and post to API
