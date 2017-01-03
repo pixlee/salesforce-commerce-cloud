@@ -1,0 +1,21 @@
+/**
+ * Initialize HTTP services for a cartridge
+ */
+importPackage( dw.system );
+importPackage( dw.svc );
+importPackage( dw.net );
+importPackage( dw.io );
+
+ServiceRegistry.configure("int_pixlee.http.distillery.post", {
+	createRequest: function(svc:HTTPService, args){
+		if(args) {
+			svc.addHeader("Content-Type", "text/json");
+			return JSON.stringify(args);
+		} else {
+			return null;
+		}
+	},
+	parseResponse: function(svc:HTTPService, client:HTTPClient) {
+		return client.text;
+	}
+});
