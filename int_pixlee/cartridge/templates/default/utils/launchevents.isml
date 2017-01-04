@@ -1,6 +1,4 @@
 <!--- TEMPLATENAME: launchevents.isml --->
-
-<isinclude template="utils/pixleeevents"/>
 <isinclude template="utils/versionhash"/>
 
 <!-- utils/sentrylogging isn't used directly here, but all the .isml files that include launchevents.isml will need it -->

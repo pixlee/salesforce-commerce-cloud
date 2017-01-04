@@ -71,6 +71,7 @@ function exportProducts() {
 
 // Extract Demandware data and create product data
 function exportProduct(product : Product) {
+	try {
 	if(product.online && product.searchable && !product.variant) {
 		// Name
 		var productName : String = product.getName();
@@ -141,12 +142,24 @@ function exportProduct(product : Product) {
         // Product Price
         var productPrice : Decimal = null;
         if (product.getPriceModel()){
-            // Master products don't have price, we need to get a variant to get price
-            // getDefaultVariant() will give us either the default variant or an arbitrary one
-            // I'm okay with getting an arbitrary one
+            
             try {
-            	productPrice = product.getVariationModel().getDefaultVariant().getPriceModel().getPrice().decimalValue.valueOf();
+        	
+            	// For the most part, master products don't have price, we need to get from a variant
+	            // getDefaultVariant() will give us either the default variant or an arbitrary one
+	            // I'm okay with getting an arbitrary one
+            	var productVariant = product.getVariationModel().getDefaultVariant();
+
+            	if (productVariant == null) {
+            		productPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
+            	// But some products don't have variants, and have a PriceModel object on the Product
+            	} else {
+            		productPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
+            	}
+            	
             } catch(err) {
+            	Logger.warn("Could not get the price for product id: " + product.ID);
+            	Logger.warn(err.message);
             }
         }
 
@@ -183,6 +196,10 @@ function exportProduct(product : Product) {
 			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields);
 		}
 	}
+    } catch (ex) {
+               Logger.warn("The following exception occured for the product id: " +  product.ID);
+               Logger.warn(ex.message);
+    }
 }
 
 // Create JSON object, sign data and post to API
