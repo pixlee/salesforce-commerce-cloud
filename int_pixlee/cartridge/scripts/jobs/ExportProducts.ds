@@ -24,6 +24,7 @@ importPackage( dw.web );
 importPackage( dw.io );
 importPackage( dw.net );
 importPackage( dw.content );
+importPackage( dw.svc );
 
 var DISTILLERY_BASE_URL = "http://distillery.pixlee.com/api/v2/albums";
 
@@ -60,7 +61,8 @@ function exportProducts() {
 	if(product){
 		exportProduct(product);
 
-		while(productIterator.hasNext()) {
+
+		while (productIterator.hasNext()) {
 			product = productIterator.next();
 			exportProduct(product);
 		}
@@ -244,19 +246,14 @@ function signData(dataObj : Object) {
 
 // Post JSON data to API
 function postToAPI(payload : Object) {
-	var baseUrl = getDistilleryBaseUrl();
-	var urlToSend = baseUrl+"?api_key="+Site.current.preferences.custom.PixleeApiKey;
+	var service:Service;
+	var result:Result;
 
-	var payloadJSON = JSON.stringify(payload);
-	var httpSvc : HTTPClient = new HTTPClient();
-	
-	if(isPositiveInt(Site.current.preferences.custom.HttpTimeout)){
-		httpSvc.setTimeout(Site.current.preferences.custom.HttpTimeout);
-	}
+	service = ServiceRegistry.get("int_pixlee.http.distillery.post");
+	service.URL = getDistilleryBaseUrl() + "?api_key="+Site.current.preferences.custom.PixleeApiKey;
 
-	httpSvc.open("POST", urlToSend);
-	httpSvc.setRequestHeader("Content-Type", "application/json");
-	httpSvc.send(payloadJSON);
+	result = service.call(payload);
+	return result;
 }
 
 // Determine endpoint based on the environment
