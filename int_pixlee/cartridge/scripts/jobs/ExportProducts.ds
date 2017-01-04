@@ -128,7 +128,7 @@ function exportProduct(product : Product) {
 		
 		// As of 2016-12, we also want the rest of the images
 		var allImages = product.getImages('large');
-		var allProductPhotos = []
+		var allProductPhotos = [];
 		for each(var image in allImages) {
 			allProductPhotos.push(image.absURL.toString());
 		}
