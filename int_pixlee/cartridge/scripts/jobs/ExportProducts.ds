@@ -189,9 +189,9 @@ function exportProduct(product : Product) {
 		}
 		
 		// Extra Fields
-		var productExtraFields = {
+		var productExtraFields = JSON.stringify({
 			"product_photos": allProductPhotos
-		};
+		});
 
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
