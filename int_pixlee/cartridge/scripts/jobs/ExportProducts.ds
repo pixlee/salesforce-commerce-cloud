@@ -207,17 +207,16 @@ function exportProduct(product : Product) {
 			}
 		}
 		var productVariants = JSON.stringify(productVariantsTemp);
-		Logger.warn(productVariants);
 
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
 			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, productVariants);
 		}
 	}
-} catch (ex) {
-           Logger.warn("The following exception occured for the product id: " +  product.ID);
-           Logger.warn(ex.message);
-}
+	} catch (ex) {
+	           Logger.warn("The following exception occured for the product id: " +  product.ID);
+	           Logger.warn(ex.message);
+	}
 }
 
 // Create JSON object, sign data and post to API
