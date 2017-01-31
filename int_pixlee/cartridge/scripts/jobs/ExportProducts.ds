@@ -74,150 +74,150 @@ function exportProducts() {
 // Extract Demandware data and create product data
 function exportProduct(product : Product) {
 	try {
-		if(product.online && product.searchable && !product.variant) {
-			// Name
-			var productName : String = product.getName();
-	
-			// SKU (SKU is unique to company, UPC is universal product code)
-			var productSKU : String = product.getID();
-	
-			var skuReference = Site.current.preferences.custom.SkuReference;
-			if(product.getManufacturerSKU() != null && !empty(product.getManufacturerSKU()) && skuReference == 'Manufacturer SKU') {
-				productSKU = product.getManufacturerSKU();
-			}
-	
-			// Now that we have a proper place to store the native ID,
-			// we'll get the same value, but put it in a more reasonable place
-			// This is more for in the case that we DO have manufacturer SKUs
-			// NOTE: THERE IS NO LONG TYPE IN JAVASCRIPT, WHICH .DS IS BASED ON
-			// I TRIED, OH LORD I TRIED
-			var productNativeId : Int = parseInt(product.getID());
-	
-			// Product URL
-			var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
-			// URLUtils.http generates URLs based on the Demandware hostname: dev.web.XXX.demandware.net, etc.
-			// If the 'ProductHost' custom preference is provided, replace the hostname with that.
-			if (Site.current.preferences.custom.ProductHost != null) {
-				productUrl = productUrl.host(Site.current.preferences.custom.ProductHost);
-			}
-	
-			// Product Photo
-			var productPhoto : String = "";
-	
-			var image = product.getImage('large',0);
-			// This was our original case, where we look for the 'large' version of
-			// the master product, and use that image if it exists
-			if (!empty(image)){
-				productPhoto = image.absURL.toString();
-			// This is thanks to Dan Veksler (BUGZ-1104), where the master product
-			// might not have an image, and we just try to use the first variation's 'large' image.
-			// Even this misses the edge case that the first variation it checks doesn't have
-			// an image, but another one does
-			} else {
-				var varModel : dw.catalog.ProductVariationModel = product.variationModel;
-				if (!empty(varModel) && !empty(varModel.defaultVariant) && !empty(varModel.defaultVariant.getImage('large',0)) ) {
-					productPhoto = varModel.defaultVariant.getImage('large',0).getHttpURL().toString();
-				}
-			}
-			// Demandware storefronts by default, seem to all have an /images/noimagesmall.png file
-			// However, even if it's not valid, and 404s, it looks like out platform
-			// will process the product correctly, nonetheless, and just serve an empty image
-			// where the product image would be
-			// tl;dr - I'm okay with hardcoding /images/noimagesmall.png here
-			if (empty(productPhoto)) {
-				productPhoto = URLUtils.absStatic('/images/noimagesmall.png');
-			}
-			
-			// As of 2016-12, we also want the rest of the images
-			var allImages = product.getImages('large');
-			var allProductPhotos = [];
-			for each(var image in allImages) {
-				allProductPhotos.push(image.absURL.toString());
-			}
-	
-			// Product UPC, checking for a non-null ret just in case (even though as of 2016-02-29, it's defaulting to empty string)
-			var productUPC : String = null;
-			if (product.getUPC()){
-				productUPC = product.getUPC();
-			}
-	
-	        // Product Price
-	        var productPrice : Decimal = null;
-	        if (product.getPriceModel()){
-	            
-	            try {
-	        	
-	            	// For the most part, master products don't have price, we need to get from a variant
-		            // getDefaultVariant() will give us either the default variant or an arbitrary one
-		            // I'm okay with getting an arbitrary one
-	            	var productVariant = product.getVariationModel().getDefaultVariant();
-	
-	            	if (productVariant == null) {
-	            		productPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
-	            	// But some products don't have variants, and have a PriceModel object on the Product
-	            	} else {
-	            		productPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
-	            	}
-	            	
-	            } catch(err) {
-	            	Logger.warn("Could not get the price for product id: " + product.ID);
-	            	Logger.warn(err.message);
-	            }
-	        }
-	
-			// Product Stock
-			var productStock : Int = null;
-			if (product.getAvailabilityModel()){
-				// 2016-03-23: product.getAvailabilityModel().availability uses some fancy algorithm,
-				// described by the documentation as the following:
-				// If inventory lists are in use:
-				// 	If no inventory record exists and the inventory list default-in-stock flag is true this method returns 1.
-				//	If no inventory record exists the inventory list default-in-stock flag is false this method returns 0.
-				//	If the product is not available this method returns 0.
-				//	If the product is perpetually available this method returns 1.
-				//	Otherwise this method returns the ATS / allocation.
-				// What I really want is the sum of all variants
-				// BUT I DON'T HAVE IT BECAUSE I NEVER FIGURED OUT HOW TO LOOP THROUGH VARIANTS
-				// IN DEMANDWARE - Instead, I'll settle for a 0/1, which I've tested
-				// Check CR-534
-				productInventoryRecord = product.getAvailabilityModel().getInventoryRecord();
-				if (product.getAvailabilityModel().isInStock()) {
-					productStock = 1;
-				} else {
-					productStock = 0;
-				}
-			}
-			
-			// Extra Fields
-			var productExtraFields = JSON.stringify({
-				"product_photos": allProductPhotos
-			});
+	if(product.online && product.searchable && !product.variant) {
+		// Name
+		var productName : String = product.getName();
 
-			// Variants
-			var productVariantsTemp = {};
-			Logger.warn(product.getManufacturerSKU());
-			if (!product.getVariants().empty) {
-				for each(var variant in product.getVariants()) {
-					productVariantsTemp[variant.getID()] = {
-						"variant_sku": variant.getManufacturerSKU(),
-						"variant_upc": variant.getUPC(),
-						"variant_stock": variant.getAvailabilityModel().getInventoryRecord().getStockLevel().getValue(),
-						"variant_price": variant.getPriceModel().getPrice().decimalValue.valueOf()
-					}
-				}
-			}
-			var productVariants = JSON.stringify(productVariantsTemp);
-			Logger.warn(productVariants);
-	
-			if(productName && productSKU && productUrl){
-				// Create album through Pixlee API
-				createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, productVariants);
+		// SKU (SKU is unique to company, UPC is universal product code)
+		var productSKU : String = product.getID();
+
+		var skuReference = Site.current.preferences.custom.SkuReference;
+		if(product.getManufacturerSKU() != null && !empty(product.getManufacturerSKU()) && skuReference == 'Manufacturer SKU') {
+			productSKU = product.getManufacturerSKU();
+		}
+
+		// Now that we have a proper place to store the native ID,
+		// we'll get the same value, but put it in a more reasonable place
+		// This is more for in the case that we DO have manufacturer SKUs
+		// NOTE: THERE IS NO LONG TYPE IN JAVASCRIPT, WHICH .DS IS BASED ON
+		// I TRIED, OH LORD I TRIED
+		var productNativeId : Int = parseInt(product.getID());
+
+		// Product URL
+		var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
+		// URLUtils.http generates URLs based on the Demandware hostname: dev.web.XXX.demandware.net, etc.
+		// If the 'ProductHost' custom preference is provided, replace the hostname with that.
+		if (Site.current.preferences.custom.ProductHost != null) {
+			productUrl = productUrl.host(Site.current.preferences.custom.ProductHost);
+		}
+
+		// Product Photo
+		var productPhoto : String = "";
+
+		var image = product.getImage('large',0);
+		// This was our original case, where we look for the 'large' version of
+		// the master product, and use that image if it exists
+		if (!empty(image)){
+			productPhoto = image.absURL.toString();
+		// This is thanks to Dan Veksler (BUGZ-1104), where the master product
+		// might not have an image, and we just try to use the first variation's 'large' image.
+		// Even this misses the edge case that the first variation it checks doesn't have
+		// an image, but another one does
+		} else {
+			var varModel : dw.catalog.ProductVariationModel = product.variationModel;
+			if (!empty(varModel) && !empty(varModel.defaultVariant) && !empty(varModel.defaultVariant.getImage('large',0)) ) {
+				productPhoto = varModel.defaultVariant.getImage('large',0).getHttpURL().toString();
 			}
 		}
-    } catch (ex) {
-               Logger.warn("The following exception occured for the product id: " +  product.ID);
-               Logger.warn(ex.message);
-    }
+		// Demandware storefronts by default, seem to all have an /images/noimagesmall.png file
+		// However, even if it's not valid, and 404s, it looks like out platform
+		// will process the product correctly, nonetheless, and just serve an empty image
+		// where the product image would be
+		// tl;dr - I'm okay with hardcoding /images/noimagesmall.png here
+		if (empty(productPhoto)) {
+			productPhoto = URLUtils.absStatic('/images/noimagesmall.png');
+		}
+		
+		// As of 2016-12, we also want the rest of the images
+		var allImages = product.getImages('large');
+		var allProductPhotos = [];
+		for each(var image in allImages) {
+			allProductPhotos.push(image.absURL.toString());
+		}
+
+		// Product UPC, checking for a non-null ret just in case (even though as of 2016-02-29, it's defaulting to empty string)
+		var productUPC : String = null;
+		if (product.getUPC()){
+			productUPC = product.getUPC();
+		}
+
+        // Product Price
+        var productPrice : Decimal = null;
+        if (product.getPriceModel()){
+            
+            try {
+        	
+            	// For the most part, master products don't have price, we need to get from a variant
+	            // getDefaultVariant() will give us either the default variant or an arbitrary one
+	            // I'm okay with getting an arbitrary one
+            	var productVariant = product.getVariationModel().getDefaultVariant();
+
+            	if (productVariant == null) {
+            		productPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
+            	// But some products don't have variants, and have a PriceModel object on the Product
+            	} else {
+            		productPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
+            	}
+            	
+            } catch(err) {
+            	Logger.warn("Could not get the price for product id: " + product.ID);
+            	Logger.warn(err.message);
+            }
+        }
+
+		// Product Stock
+		var productStock : Int = null;
+		if (product.getAvailabilityModel()){
+			// 2016-03-23: product.getAvailabilityModel().availability uses some fancy algorithm,
+			// described by the documentation as the following:
+			// If inventory lists are in use:
+			// 	If no inventory record exists and the inventory list default-in-stock flag is true this method returns 1.
+			//	If no inventory record exists the inventory list default-in-stock flag is false this method returns 0.
+			//	If the product is not available this method returns 0.
+			//	If the product is perpetually available this method returns 1.
+			//	Otherwise this method returns the ATS / allocation.
+			// What I really want is the sum of all variants
+			// BUT I DON'T HAVE IT BECAUSE I NEVER FIGURED OUT HOW TO LOOP THROUGH VARIANTS
+			// IN DEMANDWARE - Instead, I'll settle for a 0/1, which I've tested
+			// Check CR-534
+			productInventoryRecord = product.getAvailabilityModel().getInventoryRecord();
+			if (product.getAvailabilityModel().isInStock()) {
+				productStock = 1;
+			} else {
+				productStock = 0;
+			}
+		}
+		
+		// Extra Fields
+		var productExtraFields = JSON.stringify({
+			"product_photos": allProductPhotos
+		});
+
+		// Variants
+		var productVariantsTemp = {};
+		Logger.warn(product.getManufacturerSKU());
+		if (!product.getVariants().empty) {
+			for each(var variant in product.getVariants()) {
+				productVariantsTemp[variant.getID()] = {
+					"variant_sku": variant.getManufacturerSKU(),
+					"variant_upc": variant.getUPC(),
+					"variant_stock": variant.getAvailabilityModel().getInventoryRecord().getStockLevel().getValue(),
+					"variant_price": variant.getPriceModel().getPrice().decimalValue.valueOf()
+				}
+			}
+		}
+		var productVariants = JSON.stringify(productVariantsTemp);
+		Logger.warn(productVariants);
+
+		if(productName && productSKU && productUrl){
+			// Create album through Pixlee API
+			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, productVariants);
+		}
+	}
+} catch (ex) {
+           Logger.warn("The following exception occured for the product id: " +  product.ID);
+           Logger.warn(ex.message);
+}
 }
 
 // Create JSON object, sign data and post to API
