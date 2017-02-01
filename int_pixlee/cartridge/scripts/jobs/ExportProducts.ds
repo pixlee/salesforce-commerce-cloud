@@ -60,8 +60,8 @@ function exportProducts() {
 
 	if(product){
 		exportProduct(product);
-
-
+		
+		
 		while (productIterator.hasNext()) {
 			product = productIterator.next();
 			exportProduct(product);
@@ -188,14 +188,28 @@ function exportProduct(product : Product) {
 			}
 		}
 		
+		// Categories
+		var categories = product.getAllCategories();
+		var categoriesFormatted = [];
+		for (var i = 0; i < categories.length; i++) {
+			categoriesFormatted.push({
+				'category_name': categories[i].getDisplayName(),
+				'category_id': categories[i].getID()
+			});
+		}
+
 		// Extra Fields
 		var productExtraFields = JSON.stringify({
-			"product_photos": allProductPhotos
+			"product_photos": allProductPhotos,
+			"categories": categoriesFormatted
 		});
+
+		// Currency
+		var currency : String = Site.getCurrent().getDefaultCurrency();
 
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields);
+			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency);
 		}
 	}
     } catch (ex) {
@@ -205,14 +219,14 @@ function exportProduct(product : Product) {
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int, productExtraFields : Object) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency : String) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency);
 	var signedDataObj = signData(dataObj);
 	postToAPI( signedDataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int, productExtraFields : Object) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency: String) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
@@ -224,6 +238,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 	productObj.stock = productStock;
 	productObj.native_product_id = productNativeId;
 	productObj.extra_fields = productExtraFields;
+	productObj.currency = currency;
 
     // Data
     var dataObj : Object = new Object();
