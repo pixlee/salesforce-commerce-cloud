@@ -8,6 +8,7 @@
 
 <isloop items="${pdict.Basket.productLineItems}" var="CartItem" status="loopstate">
 	<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(CartItem.productID)}" scope="page" />
+	<isset name="Session" value="${dw.system.Session}" scope="page" />
 
 	<isif condition="${productObj.isMaster()}">
 		<isset name="masterProductObj" value="${productObj}" scope="page" />
@@ -22,13 +23,13 @@
 			if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
 				productSku = "${masterProductObj.getManufacturerSKU()}";
 			}
-
+			
 			cartItem = {
 				quantity: parseInt("${CartItem.getQuantityValue()}"),
 				product_id: parseInt("${masterProductObj.getID()}"),
 				product_sku: productSku,
 				price: "${CartItem.getPrice()}".replace(/[^0-9\.]+/g,""),
-				currency: "${CartItem.getPrice()}".replace(/[(0-9|.|\s)]+/g,"")
+				currency: "${productObj.getPriceModel().getPrice().getCurrencyCode()}"
 			};
 		};
 		// Guard the creation of cartItem so that if something breaks, we'll get the log
