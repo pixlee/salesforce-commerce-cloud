@@ -33,7 +33,7 @@
 					product_id: parseInt("${ProductLineItem.productID}"),
 					product_sku: productSku,
 					price:"${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,""),
-					currency: "${ProductLineItem.adjustedPrice}".replace(/[(0-9|.|\s)]+/g,"")
+					currency: "${productObj.getPriceModel().getPrice().getCurrencyCode()}"
 				};
 
 				cartArray.push(cartItem);
