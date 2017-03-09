@@ -1,0 +1,83 @@
+<!--- TEMPLATENAME: sentrylogging.isml --->
+
+<!-- Expect that pixlee_events.js will instantiate a window.pixRaven object for us to use -->
+<!--  If it doesn't exist, our guard function will fail nicely and simply print to console -->
+
+<!-- However, pixlee_analytics's guard function is not in the global scope, so we have to define our own here -->
+<script data="pixlee-sentry-logging">
+
+    // Wrap any JS call in a try/except, where exceptions are passed to Raven/Sentry
+    function guard(fn, params) {
+    	
+        try {
+            fn.apply(this, params);
+        } catch (e) {
+
+        	// Sentry apparently has problems with function bodies, if we pass in callbacks
+        	// So I'll only ask to log params that aren't functions
+        	var paramsNotFns = [];
+        	params.forEach(function(param) {
+        		if (typeof param !== 'function') {
+        			paramsNotFns.push(param);
+        		}
+        	});
+        	
+            var extraFields = {
+                functionName: fn.name,
+                paramsNotFns: paramsNotFns
+            };
+
+            logError(e, extraFields);
+        }
+    };
+
+    function guardCallback(fn, params) {
+        return function(callbackData) {
+            try {
+                var finalParams = [];
+                if (params) {
+                    finalParams = finalParams.concat(params);
+                }
+                if (callbackData) {
+                    finalParams.push(callbackData);
+                }
+                fn.apply(this, finalParams);
+            } catch (e) {
+                logError(e);
+            }
+        };
+    };
+
+    function logError(exception, extraFields) {
+    	
+        if (typeof console !== 'undefined') {
+            console.log(exception);
+        }
+        if (typeof window.pixRaven !== 'undefined') {
+            extraFields = extraFields || '';
+            window.pixRaven.captureException(exception, {
+                tags: {
+                    source: 'Demandware'
+                },
+                extra: {
+                    objectBody: extraFields
+                }
+            });
+        }
+    };
+
+    function logMessage(message) {
+    	
+        if (typeof console !== 'undefined') {
+            console.log(message);
+        }
+        if (typeof window.pixRaven !== 'undefined') {
+            window.pixRaven.captureMessage(message, {
+                tags: {
+                    source: 'Demandware'
+                }
+            });
+        }
+    };
+
+</script>

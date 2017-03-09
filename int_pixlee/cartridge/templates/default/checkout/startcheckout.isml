@@ -21,21 +21,26 @@
 		</isif>
 
 		<script data="pixlee-start-checkout">
-			var productSku = "${masterProductObj.getID()}";
-			if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
-				productSku = "${masterProductObj.getManufacturerSKU()}";
-			}
+			function createStartCheckoutCartItem() {
 
-			cartItem = {
-				quantity: parseInt("${lineItem.getQuantityValue()}"),
-				product_id: parseInt("${masterProductObj.getID()}"),
-				product_sku: productSku,
-				price: "${lineItem.getPrice()}".replace(/[^0-9\.]+/g,"")
+				var productSku = "${masterProductObj.getID()}";
+				if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
+					productSku = "${masterProductObj.getManufacturerSKU()}";
+				}
+
+				cartItem = {
+					quantity: parseInt("${lineItem.getQuantityValue()}"),
+					product_id: parseInt("${masterProductObj.getID()}"),
+					product_sku: productSku,
+					price: "${lineItem.getPrice()}".replace(/[^0-9\.]+/g,"")
+				};
+
+				cartArray.push(cartItem);
+				cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
+				cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
 			};
-
-			cartArray.push(cartItem);
-			cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
-			cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
+			// Guard the creation of cartItem so that if something breaks, we'll get the log
+			guard(createStartCheckoutCartItem, []);
 		</script>
 	</isloop>
 </isloop>
@@ -57,7 +62,9 @@ function checkoutStartHandler(event) {
 	payload['cart_contents'] = cartArray;
 	payload['cart_total'] = cartTotal.toString();
 	payload['cart_total_quantity'] = cartTotalQuantity;
-	launchEvent('checkoutStart', payload);
+
+	// The listener on the other side of this function has its own guard
+	launchEvent('checkout:start', payload);
 };
 
 </script>
