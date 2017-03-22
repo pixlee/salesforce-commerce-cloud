@@ -56,7 +56,7 @@ function execute( args : PipelineDictionary ) : Number
 function exportProducts() {
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
 
-	var product : Product = productIterator.first();
+	var product : Product = productIterator.next();
 
 	if(product){
 		exportProduct(product);
@@ -221,8 +221,7 @@ function exportProduct(product : Product) {
 // Create JSON object, sign data and post to API
 function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency : String) {
 	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency);
-	var signedDataObj = signData(dataObj);
-	postToAPI( signedDataObj );
+	postToAPI( dataObj );
 }
 
 // Create JSON object
@@ -252,22 +251,21 @@ function createDataObj(productName : String, productSku : String, productUrl : S
     return dataObj;
 }
 
-// Sign and authenticate the JSON data
-function signData(dataObj : Object) {
-	dataObj.api_key = Site.current.preferences.custom.PixleeApiKey;
-	dataObj.signature = dw.util.StringUtils.encodeBase64(Mac(dw.crypto.Mac.HMAC_SHA_1).digest(JSON.stringify(dataObj), Site.current.preferences.custom.PixleeSecretKey));
-	return dataObj;
+// Given an object, generate the signature
+function generateSignature(dataObj : Object) {
+	return dw.crypto.Encoding.toBase64(Mac(dw.crypto.Mac.HMAC_SHA_1).digest(JSON.stringify(dataObj), Site.current.preferences.custom.PixleeSecretKey));
 }
 
 // Post JSON data to API
 function postToAPI(payload : Object) {
 	var service:Service;
 	var result:Result;
+	var signature = generateSignature(payload);
 
 	service = ServiceRegistry.get("int_pixlee.http.distillery.post");
 	service.URL = getDistilleryBaseUrl() + "?api_key="+Site.current.preferences.custom.PixleeApiKey;
 
-	result = service.call(payload);
+	result = service.call(payload, signature);
 	return result;
 }
 
