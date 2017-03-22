@@ -7,10 +7,11 @@ importPackage( dw.net );
 importPackage( dw.io );
 
 ServiceRegistry.configure("int_pixlee.http.distillery.post", {
-	createRequest: function(svc:HTTPService, args){
-		if(args) {
+	createRequest: function(svc:HTTPService, payload, signature){
+		if(payload) {
 			svc.addHeader("Content-Type", "text/json");
-			return JSON.stringify(args);
+			svc.addHeader("Signature", signature);
+			return JSON.stringify(payload);
 		} else {
 			return null;
 		}
