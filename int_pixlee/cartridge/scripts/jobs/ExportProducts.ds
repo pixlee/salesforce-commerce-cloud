@@ -29,7 +29,7 @@ importPackage( dw.svc );
 var DISTILLERY_BASE_URL = "http://distillery.pixlee.com/api/v2/albums";
 
 // Main method for export product execution
-function execute( args : PipelineDictionary ) : Number
+function execute()
 {
 	try {
 		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
@@ -253,7 +253,8 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 
 // Given an object, generate the signature
 function generateSignature(dataObj : Object) {
-	return dw.crypto.Encoding.toBase64(Mac(dw.crypto.Mac.HMAC_SHA_1).digest(JSON.stringify(dataObj), Site.current.preferences.custom.PixleeSecretKey));
+	return dw.crypto.Encoding.toBase64(Mac(dw.crypto.Mac.HMAC_SHA_1).digest(JSON.stringify(dataObj),
+																			Site.current.preferences.custom.PixleeSecretKey));
 }
 
 // Post JSON data to API
@@ -283,4 +284,11 @@ function isPositiveInt(s)
     if (i < 0) return false; // make sure it's positive
     if (i != ~~i) return false; // make sure there's no decimal part
     return true;
+}
+
+// Export the "execute" function for the Job Schedule
+module.exports = {
+	execute: function(){
+		return execute();
+	}
 }

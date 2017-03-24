@@ -1,34 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schedules xmlns="http://www.demandware.com/xml/impex/schedules/2007-03-31">
-
-    <schedule schedule-id="Pixlee.ExportProducts">
-        <description/>
-        <enabled-flag>true</enabled-flag>
-        <execution-scope>site</execution-scope>
-        <pipeline>
-            <name>Pixlee</name>
-            <startnode>RunExportProducts</startnode>
-        </pipeline>
-        <recurrence>
-            <date-from>1970-01-01Z</date-from>
-            <date-to>2070-01-01Z</date-to>
-            <start-time>06:00:00.000Z</start-time>
-            <interval>1d</interval>
-            <day-of-week>
-                <weekday>Sunday</weekday>
-                <weekday>Monday</weekday>
-                <weekday>Tuesday</weekday>
-                <weekday>Wednesday</weekday>
-                <weekday>Thursday</weekday>
-                <weekday>Friday</weekday>
-                <weekday>Saturday</weekday>
-            </day-of-week>
-        </recurrence>
-        <notification>
-            <enabled-flag>false</enabled-flag>
-            <hang-detection-enabled-flag>false</hang-detection-enabled-flag>
-            <failure-rule>continue</failure-rule>
-        </notification>
-    </schedule>
-
-</schedules>
+<jobs xmlns="http://www.demandware.com/xml/impex/jobs/2015-07-01">
+    <job job-id="Pixlee Product Export" priority="0">
+        <description>Exports products to PIxlee's API.</description>
+        <parameters/>
+        <flow>
+            <context site-id="Site"/>
+            <step step-id="Pixlee Product Export" type="ExecuteScriptModule" enforce-restart="false">
+                <description>Export current site's products</description>
+                <parameters>
+                    <parameter name="ExecuteScriptModule.Module">int_pixlee/cartridge/scripts/jobs/ExportProducts.ds</parameter>
+                    <parameter name="ExecuteScriptModule.FunctionName">execute</parameter>
+                    <parameter name="ExecuteScriptModule.Transactional">false</parameter>
+                </parameters>
+            </step>
+        </flow>
+        <rules/>
+        <triggers>
+            <run-recurring enabled="true">
+                <recurrence>
+                    <date-from>2017-03-13Z</date-from>
+                    <date-to>2117-03-13Z</date-to>
+                    <start-time>05:00:00.000Z</start-time>
+                    <interval>1d</interval>
+                    <day-of-week/>
+                </recurrence>
+            </run-recurring>
+        </triggers>
+    </job>
+</jobs>
