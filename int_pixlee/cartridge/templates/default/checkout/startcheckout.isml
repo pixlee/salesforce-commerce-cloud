@@ -13,6 +13,7 @@
 	<isloop items="${CartShipment.items}" alias="FormLi" status="loopstate">
 		<isset name="lineItem" value="${FormLi.object}" scope="page" />
 		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(lineItem.productID)}" scope="page" />
+		<isset name="skuReference" value="${dw.system.Site.current.preferences.custom.SkuReference}" scope="page" />
 
 		<isif condition="${productObj.isMaster()}">
 			<isset name="masterProductObj" value="${productObj}" scope="page" />
@@ -24,6 +25,7 @@
 			function createStartCheckoutCartItem() {
 
 				var productSku = "${masterProductObj.getID()}";
+				
 				if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
 					productSku = "${masterProductObj.getManufacturerSKU()}";
 				}
