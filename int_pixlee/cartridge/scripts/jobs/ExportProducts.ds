@@ -219,13 +219,13 @@ function exportProduct(product : Product) {
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency : String) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency : String, variantsJson: Object) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, variantsJson);
 	postToAPI( dataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency: String) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency: String, variantsJson: Object) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
@@ -238,6 +238,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 	productObj.native_product_id = productNativeId;
 	productObj.extra_fields = productExtraFields;
 	productObj.currency = currency;
+	productObj.variants_json = variantsJson;
 
     // Data
     var dataObj : Object = new Object();
