@@ -214,6 +214,7 @@ function exportProduct(product : Product) {
 			var variantID = variant.getID();
 			var variantObj : Object = new Object();
 			variantObj["variant_stock"] = variant.getAvailabilityModel().getInventoryRecord().getStockLevel().getValue();
+			variantObj["variant_sku"] = variantID;
 			variantsDict[variantID] = variantObj;
 		}
 		
