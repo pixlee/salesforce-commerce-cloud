@@ -213,7 +213,8 @@ function exportProduct(product : Product) {
 			
 			var variantPhotos = variant.getImages('large');
 			for (var i = 0; i < variantPhotos.length; i++) {
-				allProductPhotos.push(variantPhotos[i].absURL.toString());
+				var photoURL = variantPhotos[i].absURL.toString();
+				if (allProductPhotos.indexOf(photoURL) === -1) allProductPhotos.push(photoURL);
 			}
 		}
 
