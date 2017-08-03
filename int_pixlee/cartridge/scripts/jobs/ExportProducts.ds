@@ -198,12 +198,6 @@ function exportProduct(product : Product) {
 			});
 		}
 
-		// Extra Fields
-		var productExtraFields = JSON.stringify({
-			"product_photos": allProductPhotos,
-			"categories": categoriesFormatted
-		});
-
 		// Currency
 		var currency : String = Site.getCurrent().getDefaultCurrency();
 		var variantIterator = product.getVariants().iterator();
@@ -216,7 +210,18 @@ function exportProduct(product : Product) {
 			variantObj["variant_stock"] = variant.getAvailabilityModel().getInventoryRecord().getStockLevel().getValue();
 			variantObj["variant_sku"] = variantID;
 			variantsDict[variantID] = variantObj;
+			
+			var variantPhotos = variant.getImages('large');
+			for (var i = 0; i < variantPhotos.length; i++) {
+				allProductPhotos.push(variantPhotos[i].absURL.toString());
+			}
 		}
+
+		// Extra Fields
+		var productExtraFields = JSON.stringify({
+			"product_photos": allProductPhotos,
+			"categories": categoriesFormatted
+		});
 		
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
