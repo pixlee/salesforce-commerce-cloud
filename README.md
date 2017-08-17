@@ -7,3 +7,8 @@ Manual Distribution of Demandware Cartridge
 ------------------------------------------
 
 If there is a need to distribute the cartridge manually, zip the whole repository up (excluding unnecessary directories like .git and this README.md) and distribute it.
+
+Relavant Branches
+-----------------
+
+- feature/CR-2093/satnam (Changes the conversions architecture to an hourly job vs. DW script)
