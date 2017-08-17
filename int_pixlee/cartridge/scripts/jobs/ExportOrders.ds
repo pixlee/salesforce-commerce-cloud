@@ -1,23 +1,16 @@
-importPackage( dw.system );
-importPackage( dw.crypto );
-importPackage( dw.util );
-importPackage( dw.catalog );
-importPackage( dw.web );
-importPackage( dw.io );
-importPackage( dw.net );
-importPackage( dw.content );
-importPackage( dw.svc );
-importPackage( dw.order );
+importPackage(dw.util);
+importPackage(dw.net);
+importPackage(dw.order);
+importPackage(dw.system);
 
-// Main method for export product execution
 function execute()
-{
+{	
 	try {
 		exportOrders();
 	} catch(ex) {
 		var error = ex.message;
 		Logger.error("Exception caught" + ex.message);
-		return PIPELET_ERROR;    
+		return PIPELET_ERROR;
 	}
 
 	return PIPELET_NEXT;
@@ -40,13 +33,12 @@ function exportOrders() {
 		}
 	}
 	ordersIterator.close();
-
+	sendToLimitless(result);
 }
 
 function getOrderBody(order) {
 	var cart_contents = [];
 	var orderProducts = order.getAllProductLineItems().toArray();
-	Logger.warn("_______________________________");
 	for (var i = 0; i < orderProducts.length; i++) {
 		cart_contents.push({
 			product_sku: orderProducts[i].getManufacturerSKU() || orderProducts[i].getProductID(),
@@ -83,23 +75,23 @@ function getOrderBody(order) {
 		cart_contents: cart_contents
  	};
 
- 	Logger.warn(JSON.stringify(result));
+ 	return result;
 };
 
 // Post JSON data to API
 function sendToLimitless(orders) {
-	var service:Service;
-	var result:Result;
-	var signature = generateSignature(payload);
-
-	service = ServiceRegistry.get("int_pixlee.http.distillery.post");
-	service.URL = getDistilleryBaseUrl() + "?api_key="+Site.current.preferences.custom.PixleeApiKey;
-
-	result = service.call(payload, signature);
-	return result;
+	var httpClient : HTTPClient = new HTTPClient();
+	httpClient.open('POST', 'https://a079ae44.ngrok.io' + '/events/demandwareConversions');
+	httpClient.setRequestHeader('Content-Type', 'application/json');
+	
+	httpClient.send(JSON.stringify(orders));
+	if (httpClient.statusCode == 200) {
+		Logger.warn("REQUEST MADE");
+	} else {
+		Logger.warn("REQUEST FAILED");
+	}
 }
 
-// Export the "execute" function for the Job Schedule
 module.exports = {
 	execute: function(){
 		return execute();
