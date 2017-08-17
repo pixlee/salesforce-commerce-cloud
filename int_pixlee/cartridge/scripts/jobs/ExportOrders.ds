@@ -6,6 +6,16 @@ importPackage(dw.system);
 function execute()
 {	
 	try {
+		if(Site.current.preferences.custom.PixleeEnabled == false){
+			Logger.error("Cartridge not enabled.");
+			return PIPELET_ERROR;  
+		}
+		
+		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
+			Logger.error("Pixlee Secret Key or the API Key is not defined.");
+			return PIPELET_ERROR;  
+		}
+
 		exportOrders();
 	} catch(ex) {
 		var error = ex.message;
@@ -84,7 +94,12 @@ function sendToLimitless(orders) {
 	httpClient.open('POST', 'https://a079ae44.ngrok.io' + '/events/demandwareConversions');
 	httpClient.setRequestHeader('Content-Type', 'application/json');
 	
-	httpClient.send(JSON.stringify(orders));
+	var post_body = {
+		API_KEY: Site.current.preferences.custom.PixleeApiKey,
+		orders: orders
+	};
+	
+	httpClient.send(JSON.stringify(post_body));
 	if (httpClient.statusCode == 200) {
 		Logger.warn("REQUEST MADE");
 	} else {
