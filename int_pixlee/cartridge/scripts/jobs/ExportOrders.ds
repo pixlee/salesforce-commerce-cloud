@@ -1,0 +1,107 @@
+importPackage( dw.system );
+importPackage( dw.crypto );
+importPackage( dw.util );
+importPackage( dw.catalog );
+importPackage( dw.web );
+importPackage( dw.io );
+importPackage( dw.net );
+importPackage( dw.content );
+importPackage( dw.svc );
+importPackage( dw.order );
+
+// Main method for export product execution
+function execute()
+{
+	try {
+		exportOrders();
+	} catch(ex) {
+		var error = ex.message;
+		Logger.error("Exception caught" + ex.message);
+		return PIPELET_ERROR;    
+	}
+
+	return PIPELET_NEXT;
+}
+
+function exportOrders() {
+	var timeOneHourAgo = Date.now() - (3600 * 1000);
+	var sortString = "creationDate DESC";
+	var queryString = "creationDate > {0}";
+	var ordersIterator : SeekableIterator = OrderMgr.searchOrders(queryString, sortString, new Date(timeOneHourAgo));
+	var order : Order = ordersIterator.next();
+	var result = [];
+	
+	if(order){
+		result.push(getOrderBody(order));
+		
+		while (ordersIterator.hasNext()) {
+			order = ordersIterator.next();
+			result.push(getOrderBody(order));
+		}
+	}
+	ordersIterator.close();
+
+}
+
+function getOrderBody(order) {
+	var cart_contents = [];
+	var orderProducts = order.getAllProductLineItems().toArray();
+	Logger.warn("_______________________________");
+	for (var i = 0; i < orderProducts.length; i++) {
+		cart_contents.push({
+			product_sku: orderProducts[i].getManufacturerSKU() || orderProducts[i].getProductID(),
+			price: orderProducts[i].getAdjustedGrossPrice().getValue(),
+			quantity: orderProducts[i].getQuantityValue(),
+			currency: order.getCurrencyCode()
+		});
+	}
+	
+	var billingAddress = order.getBillingAddress();
+	var billing_address = {
+		name: billingAddress.getFullName(),
+		company: billingAddress.getCompanyName(),
+		address1: billingAddress.getAddress1(),
+		address2: billingAddress.getAddress2(),
+		city: billingAddress.getCity(),
+		state_code: billingAddress.getStateCode(),
+		postal_code: billingAddress.getPostalCode(),
+		phone: billingAddress.getPhone()
+		
+	};
+
+	var result = {
+		ecommerce_platform: 'demandware',
+		ecommerce_platform_version: '2.5.0',
+		currency: order.getCurrencyCode(),
+		email: order.getCustomerEmail(),
+		billing_address: billing_address,
+		order_id: order.getOrderNo(),
+		customer_id: order.getCustomerNo(),
+		cart_type: 'demandware',
+		cart_total: order.getTotalGrossPrice().getValue(),
+		cart_total_quantity: order.getProductQuantityTotal(),
+		cart_contents: cart_contents
+ 	};
+
+ 	Logger.warn(JSON.stringify(result));
+};
+
+// Post JSON data to API
+function sendToLimitless(orders) {
+	var service:Service;
+	var result:Result;
+	var signature = generateSignature(payload);
+
+	service = ServiceRegistry.get("int_pixlee.http.distillery.post");
+	service.URL = getDistilleryBaseUrl() + "?api_key="+Site.current.preferences.custom.PixleeApiKey;
+
+	result = service.call(payload, signature);
+	return result;
+}
+
+// Export the "execute" function for the Job Schedule
+module.exports = {
+	execute: function(){
+		return execute();
+	}
+}
