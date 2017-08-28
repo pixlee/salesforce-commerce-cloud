@@ -54,25 +54,27 @@ function execute()
 
 // Iterates through the products and prepare the data to be exported
 function exportProducts() {
-	var jobId = generateUniqueId();
-	notifyExportStatus("started", jobId);
-	
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
+	
+	var jobId = generateUniqueId();
+	notifyExportStatus("started", jobId, productIterator.getCount());
 
 	var product : Product = productIterator.next();
+	var counter = 0;
 
 	if(product){
 		exportProduct(product);
-		
+		counter += 1;
 		
 		while (productIterator.hasNext()) {
+			counter += 1;
 			product = productIterator.next();
 			exportProduct(product);
 		}
 	}
 
 	productIterator.close();
-	notifyExportStatus("finished", jobId);
+	notifyExportStatus("finished", jobId, counter);
 }
 
 // Extract Demandware data and create product data
@@ -308,7 +310,7 @@ function isPositiveInt(s)
     return true;
 }
 
-function notifyExportStatus(status, jobId) {
+function notifyExportStatus(status, jobId, numProducts) {
 	var apiKey = Site.current.preferences.custom.PixleeApiKey;
 	var httpClient : HTTPClient = new HTTPClient();
 	httpClient.open('POST', 'https://distillery.pixlee.com/api/v1/notifyExportStatus?api_key=' + apiKey);
@@ -318,6 +320,7 @@ function notifyExportStatus(status, jobId) {
 		api_key: apiKey,
 		status: status,
 		job_id: jobId,
+		num_products: numProducts,
 		platform: "demandware"
 	};
 	
