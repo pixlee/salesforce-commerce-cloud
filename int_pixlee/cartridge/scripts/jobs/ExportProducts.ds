@@ -196,17 +196,19 @@ function exportProduct(product : Product, categoriesMap: Object) {
 		}
 		
 		// Categories
-		var categories = product.getAllCategories();
+		var categoryAssignments = product.getCategoryAssignments();
 		var idsSeen = [];
 		
 		var categoriesFormatted = [];
-		for (var i = 0; i < categories.length; i++) {
-			var categoryId = categories[i].getID();
+		for (var i = 0; i < categoryAssignments.length; i++) {
+			var category = categoryAssignments[i].getCategory();
+			var categoryId = category.getID();
+			Logger.warn('Visiting CategoryID: ' + categoryId);
 			if (idsSeen.indexOf(categoryId) === -1) {
 				categoriesFormatted.push({
 					'category_name': categoriesMap[categoryId]['fullName'],
 					'category_id': categoryId,
-					'category_url': categories[i].getPageURL()
+					'category_url': category.getPageURL()
 				});
 				idsSeen.push(categoryId);
 			};
@@ -215,6 +217,7 @@ function exportProduct(product : Product, categoriesMap: Object) {
 			var parentCategoriesIds = categoriesMap[categoryId]['parentIDs'];
 			for (var j = 0; j < parentCategoriesIds.length; j++) {
 				var categoryId = parentCategoriesIds[j];
+				Logger.warn('Visiting CategoryID: ' + categoryId);
 				if (idsSeen.indexOf(categoryId) === -1) {
 					categoriesFormatted.push({
 						'category_id': categoryId,
@@ -351,7 +354,6 @@ function getCategoriesMap() {
 		
 		// For all the children of this node, add the current category to the path
 		pathToNode.push(categoryID);
-		Logger.warn('Adding ' + childrenNodes.length + ' nodes');
 		for (var i = 0; i < childrenNodes.length; i++) {
 			queue.push({ 'node': childrenNodes[i], 'path': pathToNode.slice() });
 		}
