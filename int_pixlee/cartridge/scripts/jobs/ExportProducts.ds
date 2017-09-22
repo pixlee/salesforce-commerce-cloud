@@ -54,6 +54,7 @@ function execute()
 
 // Iterates through the products and prepare the data to be exported
 function exportProducts() {
+	var categoriesMap = getCategoriesMap();
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
 	
 	var jobId = generateUniqueId();
@@ -63,13 +64,13 @@ function exportProducts() {
 	var counter = 0;
 
 	if(product){
-		exportProduct(product);
+		exportProduct(product, categoriesMap);
 		counter += 1;
 		
 		while (productIterator.hasNext()) {
 			counter += 1;
 			product = productIterator.next();
-			exportProduct(product);
+			exportProduct(product, categoriesMap);
 		}
 	}
 
@@ -78,7 +79,7 @@ function exportProducts() {
 }
 
 // Extract Demandware data and create product data
-function exportProduct(product : Product) {
+function exportProduct(product : Product, categoriesMap: Object) {
 	try {
 	if(product.online && product.searchable && !product.variant) {
 		// Name
@@ -196,12 +197,34 @@ function exportProduct(product : Product) {
 		
 		// Categories
 		var categories = product.getAllCategories();
+		var idsSeen = [];
+		
 		var categoriesFormatted = [];
 		for (var i = 0; i < categories.length; i++) {
-			categoriesFormatted.push({
-				'category_name': categories[i].getDisplayName(),
-				'category_id': categories[i].getID()
-			});
+			var categoryId = categories[i].getID();
+			if (idsSeen.indexOf(categoryId) === -1) {
+				categoriesFormatted.push({
+					'category_name': categoriesMap[categoryId]['fullName'],
+					'category_id': categoryId,
+					'category_url': categories[i].getPageURL()
+				});
+				idsSeen.push(categoryId);
+			};
+			
+			// We also want to get the parent categories in here
+			var parentCategoriesIds = categoriesMap[categoryId]['parentIDs'];
+			for (var j = 0; j < parentCategoriesIds.length; j++) {
+				var categoryId = parentCategoriesIds[j];
+				if (idsSeen.indexOf(categoryId) === -1) {
+					categoriesFormatted.push({
+						'category_id': categoryId,
+						'category_name': categoriesMap[categoryId]['fullName'],
+						'category_url': categoriesMap[categoryId]['url']
+					});
+					idsSeen.push(categoryId);
+				}
+			}
+			
 		}
 
 		// Currency
@@ -274,6 +297,79 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 
     return dataObj;
 }
+
+function getCategoriesMap() {
+	// Very Easy
+	// The root node is available to us.
+	// We're gonna do a BFS (iterative) to traverse the entire tree with an small modification, we will keep track of the path to the current node.
+	// By path, we mean an array of category ids from the parent category all the way to the root category.
+	// The way we do it is by attaching the path along with the children when enqueuing them.
+	// The result we want is a hash with category_ids as keys and an object with two properties as values.
+	// The first property of the object will be the full name of the category. For example - Women > SkinCare > Sunscreen.
+	// The second property would be the path to the parent.
+
+	// One more thing, sorry
+	// We need to keep track of the path in such a way that getting both full names and paths is cheap i.e. without additional API calls.
+	// We can do this in many ways, but I'm use more space and keep track of all category_ids and names (not full names) in a seperate hash. 
+	// We'll call it namesMap.
+
+	var catalog = CatalogMgr.getSiteCatalog();
+	var root = catalog.getRoot();
+	
+	var queue = [];
+	var namesMap = {};
+	var result = {};
+	
+	// We want to skip the root node in front of all categories
+	var topLevelCategories = root.getSubCategories();
+	for (var i = 0; i < topLevelCategories.length; i++) {
+		queue.push(
+			{ 'node': topLevelCategories[i], 'path': [] }
+		);
+	}
+
+	// BFS starts here
+	while (queue.length > 0) {
+		var currentNode = queue.shift(); // dequeue
+		var category = currentNode['node'];
+		var pathToNode = currentNode['path'];
+
+		// API calls
+		var categoryID = category.getID();
+		var categoryName = category.getDisplayName();
+		var categoryURL = category.getPageURL();
+		var childrenNodes = category.getSubCategories();
+
+		// Add the combination to the namesMap
+		namesMap[categoryID] = categoryName;
+		
+		result[categoryID] = {
+			fullName: getFullName(pathToNode, namesMap, categoryName),
+			url: categoryURL,
+			parentIDs: pathToNode.slice() // JS way of copying an array by value not reference
+		}
+		
+		// For all the children of this node, add the current category to the path
+		pathToNode.push(categoryID);
+		Logger.warn('Adding ' + childrenNodes.length + ' nodes');
+		for (var i = 0; i < childrenNodes.length; i++) {
+			queue.push({ 'node': childrenNodes[i], 'path': pathToNode.slice() });
+		}
+	}
+
+	// Helper function. Consumes the namesMap and gives back the full name
+	function getFullName(pathStack, namesMap, categoryName) {
+		var fullName = '';
+		for (var i = 0; i < pathStack.length; i++) {
+			var parentID = pathStack[i];
+			fullName += namesMap[parentID] + " > ";
+		}
+		fullName += categoryName;
+		return fullName;
+	};
+
+	return result;
+};
 
 // Given an object, generate the signature
 function generateSignature(dataObj : Object) {
