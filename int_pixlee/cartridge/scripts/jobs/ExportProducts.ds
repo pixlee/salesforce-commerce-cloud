@@ -203,12 +203,10 @@ function exportProduct(product : Product, categoriesMap: Object) {
 		for (var i = 0; i < categoryAssignments.length; i++) {
 			var category = categoryAssignments[i].getCategory();
 			var categoryId = category.getID();
-			Logger.warn('Visiting CategoryID: ' + categoryId);
 			if (idsSeen.indexOf(categoryId) === -1) {
 				categoriesFormatted.push({
 					'category_name': categoriesMap[categoryId]['fullName'],
-					'category_id': categoryId,
-					'category_url': category.getPageURL()
+					'category_id': categoryId
 				});
 				idsSeen.push(categoryId);
 			};
@@ -217,12 +215,10 @@ function exportProduct(product : Product, categoriesMap: Object) {
 			var parentCategoriesIds = categoriesMap[categoryId]['parentIDs'];
 			for (var j = 0; j < parentCategoriesIds.length; j++) {
 				var categoryId = parentCategoriesIds[j];
-				Logger.warn('Visiting CategoryID: ' + categoryId);
 				if (idsSeen.indexOf(categoryId) === -1) {
 					categoriesFormatted.push({
 						'category_id': categoryId,
-						'category_name': categoriesMap[categoryId]['fullName'],
-						'category_url': categoriesMap[categoryId]['url']
+						'category_name': categoriesMap[categoryId]['fullName']
 					});
 					idsSeen.push(categoryId);
 				}
