@@ -196,36 +196,39 @@ function exportProduct(product : Product, categoriesMap: Object) {
 		}
 		
 		// Categories
-		var categoryAssignments = product.getCategoryAssignments();
-		var idsSeen = [];
-		
 		var categoriesFormatted = [];
-		for (var i = 0; i < categoryAssignments.length; i++) {
-			var category = categoryAssignments[i].getCategory();
-			var categoryId = category.getID();
-			if (typeof categoriesMap[categoryId] === 'undefined') continue; // Skip if this is a category that does not belong to site's catalog
+		try {
+			var categoryAssignments = product.getCategoryAssignments();
+			var idsSeen = [];
+			for (var i = 0; i < categoryAssignments.length; i++) {
+				var category = categoryAssignments[i].getCategory();
+				var categoryId = category.getID();
+				if (typeof categoriesMap[categoryId] === 'undefined') continue; // Skip if this is a category that does not belong to site's catalog
 
-			if (idsSeen.indexOf(categoryId) === -1) {
-				categoriesFormatted.push({
-					'category_name': categoriesMap[categoryId]['fullName'],
-					'category_id': categoryId
-				});
-				idsSeen.push(categoryId);
-			};
-			
-			// We also want to get the parent categories in here
-			var parentCategoriesIds = categoriesMap[categoryId]['parentIDs'];
-			for (var j = 0; j < parentCategoriesIds.length; j++) {
-				var categoryId = parentCategoriesIds[j];
 				if (idsSeen.indexOf(categoryId) === -1) {
 					categoriesFormatted.push({
-						'category_id': categoryId,
-						'category_name': categoriesMap[categoryId]['fullName']
+						'category_name': categoriesMap[categoryId]['fullName'],
+						'category_id': categoryId
 					});
 					idsSeen.push(categoryId);
+				};
+
+				// We also want to get the parent categories in here
+				var parentCategoriesIds = categoriesMap[categoryId]['parentIDs'];
+				for (var j = 0; j < parentCategoriesIds.length; j++) {
+					var categoryId = parentCategoriesIds[j];
+					if (idsSeen.indexOf(categoryId) === -1) {
+						categoriesFormatted.push({
+							'category_id': categoryId,
+							'category_name': categoriesMap[categoryId]['fullName']
+						});
+						idsSeen.push(categoryId);
+					}
 				}
 			}
-			
+		} catch (err) {
+			Logger.warn("Could not get the categories for product id: " + product.ID);
+			Logger.warn(err.message);
 		}
 
 		// Currency
