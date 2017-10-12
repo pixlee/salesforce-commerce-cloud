@@ -203,6 +203,8 @@ function exportProduct(product : Product, categoriesMap: Object) {
 		for (var i = 0; i < categoryAssignments.length; i++) {
 			var category = categoryAssignments[i].getCategory();
 			var categoryId = category.getID();
+			if (typeof categoriesMap[categoryId] === 'undefined') continue; // Skip if this is a category that does not belong to site's catalog
+
 			if (idsSeen.indexOf(categoryId) === -1) {
 				categoriesFormatted.push({
 					'category_name': categoriesMap[categoryId]['fullName'],
@@ -336,7 +338,6 @@ function getCategoriesMap() {
 		// API calls
 		var categoryID = category.getID();
 		var categoryName = category.getDisplayName();
-		var categoryURL = category.getPageURL();
 		var childrenNodes = category.getSubCategories();
 
 		// Add the combination to the namesMap
@@ -344,7 +345,6 @@ function getCategoriesMap() {
 		
 		result[categoryID] = {
 			fullName: getFullName(pathToNode, namesMap, categoryName),
-			url: categoryURL,
 			parentIDs: pathToNode.slice() // JS way of copying an array by value not reference
 		}
 		
