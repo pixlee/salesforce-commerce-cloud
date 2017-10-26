@@ -245,7 +245,7 @@ function exportProduct(product : Product, categoriesMap: Object) {
 			if (inventoryRecord) {
 				variantObj["variant_stock"] = inventoryRecord.getStockLevel().getValue();
 			} else {
-				variantObj["variant_stock"] = 0;
+				variantObj["variant_stock"] = null;
 			}
 
 			variantObj["variant_sku"] = variantID;
