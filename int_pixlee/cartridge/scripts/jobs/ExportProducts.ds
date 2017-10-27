@@ -241,7 +241,7 @@ function exportProduct(product : Product, categoriesMap: Object) {
 			var variantID = variant.getID();
 			var variantObj : Object = new Object();
 
-			var inventoryRecord = variant.getAvailabilityModel();
+			var inventoryRecord = variant.getAvailabilityModel().getInventoryRecord();
 			if (inventoryRecord) {
 				variantObj["variant_stock"] = inventoryRecord.getStockLevel().getValue();
 			} else {
