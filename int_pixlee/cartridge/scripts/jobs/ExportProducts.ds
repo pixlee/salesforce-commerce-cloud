@@ -68,7 +68,6 @@ function exportProducts() {
 		if (exported) counter += 1;
 		
 		while (productIterator.hasNext()) {
-			counter += 1;
 			product = productIterator.next();
 			exported = exportProduct(product, categoriesMap);
 			if (exported) counter += 1;
