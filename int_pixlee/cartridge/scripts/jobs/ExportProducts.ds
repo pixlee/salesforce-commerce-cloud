@@ -58,19 +58,19 @@ function exportProducts() {
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
 	
 	var jobId = generateUniqueId();
-	notifyExportStatus("started", jobId, productIterator.getCount());
+	notifyExportStatus("started", jobId, getTotalProductCount());
 
 	var product : Product = productIterator.next();
 	var counter = 0;
 
 	if(product){
-		exportProduct(product, categoriesMap);
-		counter += 1;
+		var exported : Boolean = exportProduct(product, categoriesMap);
+		if (exported) counter += 1;
 		
 		while (productIterator.hasNext()) {
-			counter += 1;
 			product = productIterator.next();
-			exportProduct(product, categoriesMap);
+			exported = exportProduct(product, categoriesMap);
+			if (exported) counter += 1;
 		}
 	}
 
@@ -267,11 +267,15 @@ function exportProduct(product : Product, categoriesMap: Object) {
 		if(productName && productSKU && productUrl){
 			// Create album through Pixlee API
 			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, JSON.stringify(variantsDict));
+			return true;
+		} else {
+			return false;
 		}
 	}
     } catch (ex) {
-               Logger.warn("The following exception occured for the product id: " +  product.ID);
-               Logger.warn(ex.message);
+       Logger.warn("The following exception occured for the product id: " +  product.ID);
+       Logger.warn(ex.message);
+       return false;
     }
 }
 
@@ -434,6 +438,20 @@ function notifyExportStatus(status, jobId, numProducts) {
 	} else {
 		Logger.warn("REQUEST FAILED");
 	}
+}
+
+function getTotalProductCount() {
+	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
+	var count : Number = 0;
+
+	while (productIterator.hasNext()) {
+		var product : Product = productIterator.next();
+		if (product.online && product.searchable && !product.variant) {
+			count += 1;
+		}
+	}
+
+	return count;
 }
 
 function generateUniqueId() {
