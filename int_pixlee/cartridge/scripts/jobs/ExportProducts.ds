@@ -93,12 +93,8 @@ function exportProduct(product : Product, categoriesMap: Object) {
 			productSKU = product.getManufacturerSKU();
 		}
 
-		// Now that we have a proper place to store the native ID,
-		// we'll get the same value, but put it in a more reasonable place
-		// This is more for in the case that we DO have manufacturer SKUs
-		// NOTE: THERE IS NO LONG TYPE IN JAVASCRIPT, WHICH .DS IS BASED ON
-		// I TRIED, OH LORD I TRIED
-		var productNativeId : Int = parseInt(product.getID());
+		// Native Product Id
+		var productNativeId : String = product.getID();
 
 		// Product URL
 		var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
@@ -280,13 +276,13 @@ function exportProduct(product : Product, categoriesMap: Object) {
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency : String, variantsJson: String) {
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency : String, variantsJson: String) {
 	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, variantsJson);
 	postToAPI( dataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : Int, productExtraFields : Object, currency: String, variantsJson: String) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency: String, variantsJson: String) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
