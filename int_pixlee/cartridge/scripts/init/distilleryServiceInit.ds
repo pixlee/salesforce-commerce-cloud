@@ -11,6 +11,7 @@ ServiceRegistry.configure("int_pixlee.http.distillery.post", {
 		if(payload) {
 			svc.addHeader("Content-Type", "text/json");
 			svc.addHeader("Signature", signature);
+			svc.addHeader("X-Alt-Referer", "demandware.pixlee.com");
 			return JSON.stringify(payload);
 		} else {
 			return null;
