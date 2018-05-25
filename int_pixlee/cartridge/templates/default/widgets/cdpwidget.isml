@@ -1,24 +1,27 @@
 <!--- TEMPLATENAME: cdpwidget.isml --->
 
-<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
-<isset name="nativeCategoryId" value="${pdict.ProductSearchResult.category.ID}" scope="page">
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
+	<isset name="nativeCategoryId" value="${pdict.ProductSearchResult.category.ID}" scope="page">
 
-<!-- To include CDP widgets, publish one from the Pixlee Control Panel and: -->
-<!-- 1) Uncomment the following code block -->
-<!-- 2) Fill in accountId and WidgetId below -->
+	<!-- To include CDP widgets, publish one from the Pixlee Control Panel and: -->
+	<!-- 1) Uncomment the following code block -->
+	<!-- 2) Fill in accountId and WidgetId below -->
 
 
-<!-- <iscontent type="text/html" charset="UTF-8" compact="true"/>
-<div id="pixlee_container"></div>
-<script type="text/javascript">
-	window.PixleeAsyncInit = function() {
-		Pixlee.init({apiKey:"${pixleeApiKey}"});
-		Pixlee.addCategoryWidget({
-			widgetId:<YOUR WIDGET ID HERE>,
-			nativeCategoryId:"${nativeCategoryId}",
-			ecomm_platform:'demandware'
-		});
-	};
-</script>
-<script src="//assets.pixlee.com/assets/pixlee_widget_1_0_0.js"></script>
- -->
+	<!-- <iscontent type="text/html" charset="UTF-8" compact="true"/>
+	<div id="pixlee_container"></div>
+	<script type="text/javascript">
+		window.PixleeAsyncInit = function() {
+			Pixlee.init({apiKey:"${pixleeApiKey}"});
+			Pixlee.addCategoryWidget({
+				widgetId:<YOUR WIDGET ID HERE>,
+				nativeCategoryId:"${nativeCategoryId}",
+				ecomm_platform:'demandware'
+			});
+		};
+	</script>
+	<script src="//assets.pixlee.com/assets/pixlee_widget_1_0_0.js"></script>
+	 -->
+ </isif>
+ 
