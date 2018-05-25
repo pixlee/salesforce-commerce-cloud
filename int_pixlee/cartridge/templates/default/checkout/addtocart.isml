@@ -1,46 +1,48 @@
 <!--- TEMPLATENAME: addtocart.isml --->
 
-<isinclude template="utils/launchevents"/>
-
-<script data="pixlee-addtocart">
-	var cartItem = {};
-</script>
-
-<isloop items="${pdict.Basket.productLineItems}" var="CartItem" status="loopstate">
-	<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(CartItem.productID)}" scope="page" />
-	<isset name="Session" value="${dw.system.Session}" scope="page" />
-	<isset name="skuReference" value="${dw.system.Site.current.preferences.custom.SkuReference}" scope="page" />
-	
-	<isif condition="${productObj.isMaster()}">
-		<isset name="masterProductObj" value="${productObj}" scope="page" />			
-	<iselse/>
-		<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
-	</isif>
-	
-	<isif condition="${masterProductObj !== null}">
-		<isset name="productId" value="${masterProductObj.getID()}" scope="page" />
-		<isset name="productSku" value="${masterProductObj.getManufacturerSKU()}" scope="page" />
-	<iselse/>
-		<isset name="productId" value="0" scope="page" />
-		<isset name="productSku" value="${productObj.getID()}" scope="page" /> 
-	</isif>
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isinclude template="utils/launchevents"/>
 
 	<script data="pixlee-addtocart">
-		function createATCCartItem() {
-			cartItem = {
-				product_id: parseInt("${productId}"),
-				product_sku: "${productSku}",
-				quantity: parseInt("${CartItem.getQuantityValue()}"),
-				price: "${CartItem.getPrice()}".replace(/[^0-9\.]+/g,""),
-				currency: "${productObj.getPriceModel().getPrice().getCurrencyCode()}"
-			};
-		};
-		// Guard the creation of cartItem so that if something breaks, we'll get the log
-		guard(createATCCartItem, []);
+		var cartItem = {};
 	</script>
-</isloop>
 
-<script data="pixlee-addtocart">
-	// The listener on the other side of this function has its own guard
-	launchEvent('add:to:cart', cartItem);
-</script>
+	<isloop items="${pdict.Basket.productLineItems}" var="CartItem" status="loopstate">
+		<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(CartItem.productID)}" scope="page" />
+		<isset name="Session" value="${dw.system.Session}" scope="page" />
+		<isset name="skuReference" value="${dw.system.Site.current.preferences.custom.SkuReference}" scope="page" />
+
+		<isif condition="${productObj.isMaster()}">
+			<isset name="masterProductObj" value="${productObj}" scope="page" />
+		<iselse/>
+			<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
+		</isif>
+
+		<isif condition="${masterProductObj !== null}">
+			<isset name="productId" value="${masterProductObj.getID()}" scope="page" />
+			<isset name="productSku" value="${masterProductObj.getManufacturerSKU()}" scope="page" />
+		<iselse/>
+			<isset name="productId" value="0" scope="page" />
+			<isset name="productSku" value="${productObj.getID()}" scope="page" /> 
+		</isif>
+	
+		<script data="pixlee-addtocart">
+			function createATCCartItem() {
+				cartItem = {
+					product_id: parseInt("${productId}"),
+					product_sku: "${productSku}",
+					quantity: parseInt("${CartItem.getQuantityValue()}"),
+					price: "${CartItem.getPrice()}".replace(/[^0-9\.]+/g,""),
+					currency: "${productObj.getPriceModel().getPrice().getCurrencyCode()}"
+				};
+			};
+			// Guard the creation of cartItem so that if something breaks, we'll get the log
+			guard(createATCCartItem, []);
+		</script>
+	</isloop>
+	
+	<script data="pixlee-addtocart">
+		// The listener on the other side of this function has its own guard
+		launchEvent('add:to:cart', cartItem);
+	</script>
+</isif>
