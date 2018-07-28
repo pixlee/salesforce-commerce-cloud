@@ -33,15 +33,15 @@ var DISTILLERY_BASE_URL = "https://distillery.pixlee.com/api/v2/albums";
 function execute()
 {
 	try {
-		// if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
-			// Logger.error("Pixlee Secret Key is not defined.");
-			// return PIPELET_ERROR;  
-		// }
+		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
+			Logger.error("Pixlee Secret Key is not defined.");
+			return PIPELET_ERROR;  
+		}
 
-		// if(Site.current.preferences.custom.PixleeEnabled == false){
-			// Logger.error("Cartridge not enabled.");
-			// return PIPELET_ERROR;  
-		// }
+		if(Site.current.preferences.custom.PixleeEnabled == false){
+			Logger.error("Cartridge not enabled.");
+			return PIPELET_ERROR;  
+		}
 		
 		 exportProducts();
 	} catch(ex) {
@@ -86,11 +86,11 @@ function exportProducts() {
 		var exported : Boolean = exportProduct(product, categoriesMap, regions);
 		if (exported) counter += 1;
 		
-//		while (productIterator.hasNext()) {
-//			product = productIterator.next();
-//			exported = exportProduct(product, categoriesMap, regions);
-//			if (exported) counter += 1;
-//		}
+		while (productIterator.hasNext()) {
+			product = productIterator.next();
+			exported = exportProduct(product, categoriesMap, regions);
+			if (exported) counter += 1;
+		}
 	}
 
 	productIterator.close();
@@ -100,6 +100,7 @@ function exportProducts() {
 // Extract Demandware data and create product data
 function exportProduct(product : Product, categoriesMap: Object, regions: List) {
 	try {
+		Logger.warn("************************");
 	if(product.online && product.searchable && !product.variant) {
 
 
@@ -189,25 +190,56 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			Logger.warn(err.message);
 		}		
 		
-		var regional : List = {};
+		// Album Name
+		var productName : String = product.getName();
 		
-		for (var i = 0; i < regions.length; i++) {
-			request.setLocale(regions[i]['locale']);
-			session.setCurrency(Currency.getCurrency(regions[i]['currency']));
+		var variantIterator = product.getVariants().iterator();
+		var variantsDict : Object = new Object();
+		
+		while (variantIterator.hasNext()) {
+			var variant = variantIterator.next();
+			var variantID = variant.getID();
+			var variantObj : Object = new Object();
+
+			var inventoryRecord = variant.getAvailabilityModel().getInventoryRecord();
+			if (inventoryRecord) {
+				variantObj["variant_stock"] = inventoryRecord.getStockLevel().getValue();
+			} else {
+				variantObj["variant_stock"] = null;
+			}
+
+			variantObj["variant_sku"] = variantID;
+			variantsDict[variantID] = variantObj;
+			
+			var variantPhotos = variant.getImages('large');
+			for (var i = 0; i < variantPhotos.length; i++) {
+				var photoURL = variantPhotos[i].absURL.toString();
+				if (allProductPhotos.indexOf(photoURL) === -1) allProductPhotos.push(photoURL);
+			}
+		}		
+		
+		var regional : List = [];
+		Logger.warn("Processing Product: " + product.getName());
+		
+		for (var j = 0; j < regions.length; j++) {
+			request.setLocale(regions[j]['locale']);
+			session.setCurrency(Currency.getCurrency(regions[j]['currency']));
+			
+			Logger.warn("Processing Locale: " + regions[j]['locale']);
 			var productRegion : Map = {};
 
 			// Product URL
-			var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
+			var regionalUrl : String = URLUtils.http('Product-Show', 'pid', product.getID()).toString();
 			// URLUtils.http generates URLs based on the Demandware hostname: dev.web.XXX.demandware.net, etc.
 			// If the 'ProductHost' custom preference is provided, replace the hostname with that.
 			if (Site.current.preferences.custom.ProductHost != null) {
-				productUrl = productUrl.host(Site.current.preferences.custom.ProductHost);
+				regionalUrl = regionalUrl.host(Site.current.preferences.custom.ProductHost);
 			}
 			
 			// Name
-			var productName : String = product.getName();
+			var regionalName : String = product.getName();
 	        // Product Price
-	        var productPrice : Decimal = null;
+	        var regionalPrice : Decimal = null;
 			var currency : String = null;
 	        if (product.getPriceModel()){
 	            
@@ -219,11 +251,11 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 	            	var productVariant = product.getVariationModel().getDefaultVariant();
 
 	            	if (productVariant == null) {
-	            		productPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
+	            		regionalPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
 	            		currency = product.getPriceModel().getPrice().getCurrencyCode();
 	            	// But some products don't have variants, and have a PriceModel object on the Product
 	            	} else {
-	            		productPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
+	            		regionalPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
 	            		currency = productVariant.getPriceModel().getPrice().getCurrencyCode();
 	            	}
 	            	
@@ -234,7 +266,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 	        }
 
 			// Product Stock
-			var productStock : Int = null;
+			var regionalStock : Int = null;
 			if (product.getAvailabilityModel()){
 				// 2016-03-23: product.getAvailabilityModel().availability uses some fancy algorithm,
 				// described by the documentation as the following:
@@ -250,44 +282,18 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 				// Check CR-534
 				productInventoryRecord = product.getAvailabilityModel().getInventoryRecord();
 				if (product.getAvailabilityModel().isInStock()) {
-					productStock = 1;
+					regionalStock = 1;
 				} else {
-					productStock = 0;
-				}
-			}
-			
-			var variantIterator = product.getVariants().iterator();
-			var variantsDict : Object = new Object();
-			
-			while (variantIterator.hasNext()) {
-				var variant = variantIterator.next();
-				var variantID = variant.getID();
-				var variantObj : Object = new Object();
-
-				var inventoryRecord = variant.getAvailabilityModel().getInventoryRecord();
-				if (inventoryRecord) {
-					variantObj["variant_stock"] = inventoryRecord.getStockLevel().getValue();
-				} else {
-					variantObj["variant_stock"] = null;
-				}
-
-				variantObj["variant_sku"] = variantID;
-				variantsDict[variantID] = variantObj;
-				
-				var variantPhotos = variant.getImages('large');
-				for (var i = 0; i < variantPhotos.length; i++) {
-					var photoURL = variantPhotos[i].absURL.toString();
-					if (allProductPhotos.indexOf(photoURL) === -1) allProductPhotos.push(photoURL);
+					regionalStock = 0;
 				}
 			}	
 			
-			productRegion['buy_now_link_url'] = productUrl;
-			productRegion['name'] = productName;
-			productRegion['price'] = productPrice;
+			productRegion['buy_now_link_url'] = regionalUrl;
+			productRegion['name'] = regionalName;
+			productRegion['price'] = regionalPrice;
 			productRegion['currency'] = currency;
-			productRegion['variants_json'] = variantsDict;
-			productRegion['stock'] = productStock;
-			productRegion['description'] = product.getLongDescription();
+			productRegion['stock'] = regionalStock;
+			productRegion['description'] = product.getLongDescription().getMarkup();
 			
 			regional.push(productRegion);
 		}
@@ -300,7 +306,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 		
 		if(productName && productSKU){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, regional);
+			createProduct(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, JSON.stringify(variantsDict), regional);
 			return true;
 		} else {
 			return false;
@@ -314,13 +320,13 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, regional: List) {
-	var dataObj = createDataObj(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, regional);
+function createProduct(productName : String, productSKU : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, variantsJson: String, regional: List) {
+	var dataObj = createDataObj(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, variantsJson, regional);
 	postToAPI( dataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, regional: List) {
+function createDataObj(productName : String, productSku : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, variantsJson: String, regional: List) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.sku = productSku;
@@ -328,6 +334,7 @@ function createDataObj(productName : String, productSku : String, productPhoto :
 	productObj.upc = productUPC;
 	productObj.native_product_id = productNativeId;
 	productObj.extra_fields = productExtraFields;
+	productObj.variants_json = variantsJson;
 	productObj.regionalInfo = regional;
 
     // Data
