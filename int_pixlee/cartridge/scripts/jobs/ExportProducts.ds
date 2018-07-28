@@ -25,6 +25,7 @@ importPackage( dw.io );
 importPackage( dw.net );
 importPackage( dw.content );
 importPackage( dw.svc );
+var countries = require('./countries.js');
 
 var DISTILLERY_BASE_URL = "https://distillery.pixlee.com/api/v2/albums";
 
@@ -32,20 +33,20 @@ var DISTILLERY_BASE_URL = "https://distillery.pixlee.com/api/v2/albums";
 function execute()
 {
 	try {
-		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
-			Logger.error("Pixlee Secret Key is not defined.");
-			return PIPELET_ERROR;  
-		}
+		// if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
+			// Logger.error("Pixlee Secret Key is not defined.");
+			// return PIPELET_ERROR;  
+		// }
 
-		if(Site.current.preferences.custom.PixleeEnabled == false){
-			Logger.error("Cartridge not enabled.");
-			return PIPELET_ERROR;  
-		}
-
-		exportProducts();
+		// if(Site.current.preferences.custom.PixleeEnabled == false){
+			// Logger.error("Cartridge not enabled.");
+			// return PIPELET_ERROR;  
+		// }
+		
+		 exportProducts();
 	} catch(ex) {
 		var error = ex.message;
-		Logger.error("Exception caught" + ex.message);
+		Logger.warn("Exception caught" + ex.message);
 		return PIPELET_ERROR;    
 	}
 
@@ -57,6 +58,24 @@ function exportProducts() {
 	var categoriesMap = getCategoriesMap();
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
 	
+	var availableCurrencies : List = [];
+	var priceBooks = PriceBookMgr.getAllPriceBooks();
+	for (var i = 0; i < priceBooks.length; i++) {
+		availableCurrencies.push(priceBooks[i].getCurrencyCode());
+	}
+
+	var locales : List = Site.current.allowedLocales;
+	var regions : List = [];
+	for (var i = 0; i < locales.length; i++) {
+		var countryCode : String = Locale.getLocale(locales[i]).getCountry();
+		if (countryCode != "") {
+			var currency : String = countries[Locale.getLocale(locales[i]).getCountry()]["CurrencyCode"];
+			if (availableCurrencies.indexOf(currency) !== -1) {
+				regions.push({ 'locale': locales[i], 'currency': currency });
+			}
+		}
+	}	
+	
 	var jobId = generateUniqueId();
 	notifyExportStatus("started", jobId, getTotalProductCount());
 
@@ -64,14 +83,14 @@ function exportProducts() {
 	var counter = 0;
 
 	if(product){
-		var exported : Boolean = exportProduct(product, categoriesMap);
+		var exported : Boolean = exportProduct(product, categoriesMap, regions);
 		if (exported) counter += 1;
 		
-		while (productIterator.hasNext()) {
-			product = productIterator.next();
-			exported = exportProduct(product, categoriesMap);
-			if (exported) counter += 1;
-		}
+//		while (productIterator.hasNext()) {
+//			product = productIterator.next();
+//			exported = exportProduct(product, categoriesMap, regions);
+//			if (exported) counter += 1;
+//		}
 	}
 
 	productIterator.close();
@@ -79,11 +98,10 @@ function exportProducts() {
 }
 
 // Extract Demandware data and create product data
-function exportProduct(product : Product, categoriesMap: Object) {
+function exportProduct(product : Product, categoriesMap: Object, regions: List) {
 	try {
 	if(product.online && product.searchable && !product.variant) {
-		// Name
-		var productName : String = product.getName();
+
 
 		// SKU (SKU is unique to company, UPC is universal product code)
 		var productSKU : String = product.getID();
@@ -96,17 +114,8 @@ function exportProduct(product : Product, categoriesMap: Object) {
 		// Native Product Id
 		var productNativeId : String = product.getID();
 
-		// Product URL
-		var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
-		// URLUtils.http generates URLs based on the Demandware hostname: dev.web.XXX.demandware.net, etc.
-		// If the 'ProductHost' custom preference is provided, replace the hostname with that.
-		if (Site.current.preferences.custom.ProductHost != null) {
-			productUrl = productUrl.host(Site.current.preferences.custom.ProductHost);
-		}
-
 		// Product Photo
 		var productPhoto : String = "";
-
 		var image = product.getImage('large',0);
 		// This was our original case, where we look for the 'large' version of
 		// the master product, and use that image if it exists
@@ -143,53 +152,6 @@ function exportProduct(product : Product, categoriesMap: Object) {
 		if (product.getUPC()){
 			productUPC = product.getUPC();
 		}
-
-        // Product Price
-        var productPrice : Decimal = null;
-        if (product.getPriceModel()){
-            
-            try {
-        	
-            	// For the most part, master products don't have price, we need to get from a variant
-	            // getDefaultVariant() will give us either the default variant or an arbitrary one
-	            // I'm okay with getting an arbitrary one
-            	var productVariant = product.getVariationModel().getDefaultVariant();
-
-            	if (productVariant == null) {
-            		productPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
-            	// But some products don't have variants, and have a PriceModel object on the Product
-            	} else {
-            		productPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
-            	}
-            	
-            } catch(err) {
-            	Logger.warn("Could not get the price for product id: " + product.ID);
-            	Logger.warn(err.message);
-            }
-        }
-
-		// Product Stock
-		var productStock : Int = null;
-		if (product.getAvailabilityModel()){
-			// 2016-03-23: product.getAvailabilityModel().availability uses some fancy algorithm,
-			// described by the documentation as the following:
-			// If inventory lists are in use:
-			// 	If no inventory record exists and the inventory list default-in-stock flag is true this method returns 1.
-			//	If no inventory record exists the inventory list default-in-stock flag is false this method returns 0.
-			//	If the product is not available this method returns 0.
-			//	If the product is perpetually available this method returns 1.
-			//	Otherwise this method returns the ATS / allocation.
-			// What I really want is the sum of all variants
-			// BUT I DON'T HAVE IT BECAUSE I NEVER FIGURED OUT HOW TO LOOP THROUGH VARIANTS
-			// IN DEMANDWARE - Instead, I'll settle for a 0/1, which I've tested
-			// Check CR-534
-			productInventoryRecord = product.getAvailabilityModel().getInventoryRecord();
-			if (product.getAvailabilityModel().isInStock()) {
-				productStock = 1;
-			} else {
-				productStock = 0;
-			}
-		}
 		
 		// Categories
 		var categoriesFormatted = [];
@@ -225,44 +187,120 @@ function exportProduct(product : Product, categoriesMap: Object) {
 		} catch (err) {
 			Logger.warn("Could not get the categories for product id: " + product.ID);
 			Logger.warn(err.message);
-		}
-
-		// Currency
-		var currency : String = Site.getCurrent().getDefaultCurrency();
-		var variantIterator = product.getVariants().iterator();
-		var variantsDict : Object = new Object();
+		}		
 		
-		while (variantIterator.hasNext()) {
-			var variant = variantIterator.next();
-			var variantID = variant.getID();
-			var variantObj : Object = new Object();
+		var regional : List = {};
+		
+		for (var i = 0; i < regions.length; i++) {
+			request.setLocale(regions[i]['locale']);
+			session.setCurrency(Currency.getCurrency(regions[i]['currency']));
+			var productRegion : Map = {};
 
-			var inventoryRecord = variant.getAvailabilityModel().getInventoryRecord();
-			if (inventoryRecord) {
-				variantObj["variant_stock"] = inventoryRecord.getStockLevel().getValue();
-			} else {
-				variantObj["variant_stock"] = null;
+			// Product URL
+			var productUrl : String = URLUtils.http('Product-Show', 'pid', product.getID());
+			// URLUtils.http generates URLs based on the Demandware hostname: dev.web.XXX.demandware.net, etc.
+			// If the 'ProductHost' custom preference is provided, replace the hostname with that.
+			if (Site.current.preferences.custom.ProductHost != null) {
+				productUrl = productUrl.host(Site.current.preferences.custom.ProductHost);
 			}
-
-			variantObj["variant_sku"] = variantID;
-			variantsDict[variantID] = variantObj;
 			
-			var variantPhotos = variant.getImages('large');
-			for (var i = 0; i < variantPhotos.length; i++) {
-				var photoURL = variantPhotos[i].absURL.toString();
-				if (allProductPhotos.indexOf(photoURL) === -1) allProductPhotos.push(photoURL);
-			}
-		}
+			// Name
+			var productName : String = product.getName();
+	        // Product Price
+	        var productPrice : Decimal = null;
+			var currency : String = null;
+	        if (product.getPriceModel()){
+	            
+	            try {
+	        	
+	            	// For the most part, master products don't have price, we need to get from a variant
+		            // getDefaultVariant() will give us either the default variant or an arbitrary one
+		            // I'm okay with getting an arbitrary one
+	            	var productVariant = product.getVariationModel().getDefaultVariant();
 
+	            	if (productVariant == null) {
+	            		productPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
+	            		currency = product.getPriceModel().getPrice().getCurrencyCode();
+	            	// But some products don't have variants, and have a PriceModel object on the Product
+	            	} else {
+	            		productPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
+	            		currency = productVariant.getPriceModel().getPrice().getCurrencyCode();
+	            	}
+	            	
+	            } catch(err) {
+	            	Logger.warn("Could not get the price for product id: " + product.ID);
+	            	Logger.warn(err.message);
+	            }
+	        }
+
+			// Product Stock
+			var productStock : Int = null;
+			if (product.getAvailabilityModel()){
+				// 2016-03-23: product.getAvailabilityModel().availability uses some fancy algorithm,
+				// described by the documentation as the following:
+				// If inventory lists are in use:
+				// 	If no inventory record exists and the inventory list default-in-stock flag is true this method returns 1.
+				//	If no inventory record exists the inventory list default-in-stock flag is false this method returns 0.
+				//	If the product is not available this method returns 0.
+				//	If the product is perpetually available this method returns 1.
+				//	Otherwise this method returns the ATS / allocation.
+				// What I really want is the sum of all variants
+				// BUT I DON'T HAVE IT BECAUSE I NEVER FIGURED OUT HOW TO LOOP THROUGH VARIANTS
+				// IN DEMANDWARE - Instead, I'll settle for a 0/1, which I've tested
+				// Check CR-534
+				productInventoryRecord = product.getAvailabilityModel().getInventoryRecord();
+				if (product.getAvailabilityModel().isInStock()) {
+					productStock = 1;
+				} else {
+					productStock = 0;
+				}
+			}
+			
+			var variantIterator = product.getVariants().iterator();
+			var variantsDict : Object = new Object();
+			
+			while (variantIterator.hasNext()) {
+				var variant = variantIterator.next();
+				var variantID = variant.getID();
+				var variantObj : Object = new Object();
+
+				var inventoryRecord = variant.getAvailabilityModel().getInventoryRecord();
+				if (inventoryRecord) {
+					variantObj["variant_stock"] = inventoryRecord.getStockLevel().getValue();
+				} else {
+					variantObj["variant_stock"] = null;
+				}
+
+				variantObj["variant_sku"] = variantID;
+				variantsDict[variantID] = variantObj;
+				
+				var variantPhotos = variant.getImages('large');
+				for (var i = 0; i < variantPhotos.length; i++) {
+					var photoURL = variantPhotos[i].absURL.toString();
+					if (allProductPhotos.indexOf(photoURL) === -1) allProductPhotos.push(photoURL);
+				}
+			}	
+			
+			productRegion['buy_now_link_url'] = productUrl;
+			productRegion['name'] = productName;
+			productRegion['price'] = productPrice;
+			productRegion['currency'] = currency;
+			productRegion['variants_json'] = variantsDict;
+			productRegion['stock'] = productStock;
+			productRegion['description'] = product.getLongDescription();
+			
+			regional.push(productRegion);
+		}
+		
 		// Extra Fields
 		var productExtraFields = JSON.stringify({
 			"product_photos": allProductPhotos,
 			"categories": categoriesFormatted
 		});
 		
-		if(productName && productSKU && productUrl){
+		if(productName && productSKU){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, JSON.stringify(variantsDict));
+			createProduct(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, regional);
 			return true;
 		} else {
 			return false;
@@ -276,26 +314,21 @@ function exportProduct(product : Product, categoriesMap: Object) {
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency : String, variantsJson: String) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, variantsJson);
+function createProduct(productName : String, productSKU : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, regional: List) {
+	var dataObj = createDataObj(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, regional);
 	postToAPI( dataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency: String, variantsJson: String) {
+function createDataObj(productName : String, productSku : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, regional: List) {
 	// Product
 	var productObj : Object = new Object();
-	productObj.name = productName;
 	productObj.sku = productSku;
-	productObj.buy_now_link_url = productUrl.toString();
 	productObj.product_photo = productPhoto;
 	productObj.upc = productUPC;
-	productObj.price = productPrice;
-	productObj.stock = productStock;
 	productObj.native_product_id = productNativeId;
 	productObj.extra_fields = productExtraFields;
-	productObj.currency = currency;
-	productObj.variants_json = variantsJson;
+	productObj.regionalInfo = regional;
 
     // Data
     var dataObj : Object = new Object();
