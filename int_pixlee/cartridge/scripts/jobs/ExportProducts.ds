@@ -100,7 +100,6 @@ function exportProducts() {
 // Extract Demandware data and create product data
 function exportProduct(product : Product, categoriesMap: Object, regions: List) {
 	try {
-		Logger.warn("************************");
 	if(product.online && product.searchable && !product.variant) {
 
 
@@ -293,6 +292,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			productRegion['price'] = regionalPrice;
 			productRegion['currency'] = currency;
 			productRegion['stock'] = regionalStock;
+			productRegion['variants_json'] = JSON.stringify(variantsDict);
 			productRegion['description'] = product.getLongDescription().getMarkup();
 			
 			regional.push(productRegion);
@@ -306,7 +306,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 		
 		if(productName && productSKU){
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, JSON.stringify(variantsDict), regional);
+			createProduct(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, regional);
 			return true;
 		} else {
 			return false;
@@ -320,13 +320,13 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, variantsJson: String, regional: List) {
-	var dataObj = createDataObj(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, variantsJson, regional);
+function createProduct(productName : String, productSKU : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, regional: List) {
+	var dataObj = createDataObj(productName, productSKU, productPhoto, productUPC, productNativeId, productExtraFields, regional);
 	postToAPI( dataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, variantsJson: String, regional: List) {
+function createDataObj(productName : String, productSku : String, productPhoto : String, productUPC : String, productNativeId : String, productExtraFields : Object, regional: List) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.sku = productSku;
@@ -334,7 +334,6 @@ function createDataObj(productName : String, productSku : String, productPhoto :
 	productObj.upc = productUPC;
 	productObj.native_product_id = productNativeId;
 	productObj.extra_fields = productExtraFields;
-	productObj.variants_json = variantsJson;
 	productObj.regionalInfo = regional;
 
     // Data

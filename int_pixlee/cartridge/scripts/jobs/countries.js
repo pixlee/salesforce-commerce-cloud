@@ -1,3 +1,12 @@
+// Please don't cringe (Message from Satnam)
+// Demandware has an entity called Locale, which effectively means region in the Pixlee lingo
+// Each of these Locales can be associated with a Country and a Language
+// These countries and languages has ISO codes and everything but a Locale doesn't have a currency
+// Nor can you get a Currency object using the country code of a locale
+// Maybe Demandware doesn't allow it, maybe I just wasnt' able to find a way how to.
+// I've spent hours trying to figure this out and pretty confidant that its the former i.e. Demandware doesn't allow
+// But I'll be glad to be proved wrong. Until then, using this hardcoded file is our best bet to get the regional currency
+
 module.exports = {  
   "CountryCode":{  
     "CurrencyCode":"Code",
