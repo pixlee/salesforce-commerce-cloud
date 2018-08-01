@@ -46,7 +46,7 @@ function execute()
 		 exportProducts();
 	} catch(ex) {
 		var error = ex.message;
-		Logger.warn("Exception caught" + ex.message);
+		Logger.error("Exception caught" + ex.message);
 		return PIPELET_ERROR;    
 	}
 
