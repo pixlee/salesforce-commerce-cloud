@@ -401,7 +401,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 	productObj.extra_fields = productExtraFields;
 	productObj.currency = currency;
 	productObj.variants_json = variantsJson;
-	productObj.regionalInfo = regional;
+	productObj.regional_info = regional;
 
     // Data
     var dataObj : Object = new Object();
