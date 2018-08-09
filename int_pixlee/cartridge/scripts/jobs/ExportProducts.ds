@@ -121,7 +121,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 		// If the 'ProductHost' custom preference is provided, replace the hostname with that.
 		if (Site.current.preferences.custom.ProductHost != null) {
 			productUrl = productUrl.host(Site.current.preferences.custom.ProductHost);
-		}		
+		}
 
 		// Product Photo
 		var productPhoto : String = "";
@@ -167,7 +167,6 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
         var productPrice : Decimal = null;
         if (product.getPriceModel()){
             try {
-        	
             	// For the most part, master products don't have price, we need to get from a variant
 	            // getDefaultVariant() will give us either the default variant or an arbitrary one
 	            // I'm okay with getting an arbitrary one
@@ -243,10 +242,10 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 		} catch (err) {
 			Logger.warn("Could not get the categories for product id: " + product.ID);
 			Logger.warn(err.message);
-		}		
-		
+		}
+
 		// Currency
-		var currency : String = Site.getCurrent().getDefaultCurrency();		
+		var currency : String = Site.getCurrent().getDefaultCurrency();
 		var variantIterator = product.getVariants().iterator();
 		var variantsDict : Object = new Object();
 		
@@ -353,7 +352,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			
 			regional.push(productRegion);
 		}
-		
+
 		// Extra Fields
 		var productExtraFields = JSON.stringify({
 			"product_photos": allProductPhotos,
