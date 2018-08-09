@@ -74,7 +74,7 @@ function exportProducts() {
 				regions.push({ 'locale': locales[i], 'currency': currency });
 			}
 		}
-	}	
+	}
 	
 	var jobId = generateUniqueId();
 	notifyExportStatus("started", jobId, getTotalProductCount());
@@ -293,7 +293,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			var regionalName : String = product.getName();
 	        // Product Price
 	        var regionalPrice : Decimal = null;
-			var currency : String = null;
+			var regionalCurrency : String = null;
 	        if (product.getPriceModel()){
 	            
 	            try {
@@ -305,11 +305,11 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 
 	            	if (productVariant == null) {
 	            		regionalPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
-	            		currency = product.getPriceModel().getPrice().getCurrencyCode();
+	            		regionalCurrency = product.getPriceModel().getPrice().getCurrencyCode();
 	            	// But some products don't have variants, and have a PriceModel object on the Product
 	            	} else {
 	            		regionalPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
-	            		currency = productVariant.getPriceModel().getPrice().getCurrencyCode();
+	            		regionalCurrency = productVariant.getPriceModel().getPrice().getCurrencyCode();
 	            	}
 	            	
 	            } catch(err) {
@@ -344,7 +344,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			productRegion['buy_now_link_url'] = regionalUrl;
 			productRegion['name'] = regionalName;
 			productRegion['price'] = regionalPrice;
-			productRegion['currency'] = currency;
+			productRegion['currency'] = regionalCurrency;
 			productRegion['stock'] = regionalStock;
 			productRegion['variants_json'] = JSON.stringify(variantsDict);
 			productRegion['description'] = product.getLongDescription().getMarkup();
@@ -352,6 +352,12 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			
 			regional.push(productRegion);
 		}
+
+		// It made sense to add these lines at the top of the function, but dsScript is weird
+		// But when I did that the behavior was the the default values were not default values, and instead values of the last locale iterated
+		// Add these lines at the end helped
+		request.setLocale(Site.current.getDefaultLocale());
+		session.setCurrency(Currency.getCurrency(Site.current.getDefaultCurrency()));
 
 		// Extra Fields
 		var productExtraFields = JSON.stringify({
@@ -376,7 +382,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 
 // Create JSON object, sign data and post to API
 function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency : String, variantsJson: String, regional: List) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, variantsJson, regional: List);
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, variantsJson, regional);
 	postToAPI( dataObj );
 }
 
