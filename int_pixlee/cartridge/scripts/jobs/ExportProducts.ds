@@ -25,9 +25,9 @@ importPackage( dw.io );
 importPackage( dw.net );
 importPackage( dw.content );
 importPackage( dw.svc );
-var countries = require('./countries.js');
 
 var DISTILLERY_BASE_URL = "https://distillery.pixlee.com/api/v2/albums";
+var DISTILLERY_COUNTRIES_URL = "https://distillery.pixlee.com/api/v2/something";
 
 // Main method for export product execution
 function execute()
@@ -57,6 +57,7 @@ function execute()
 function exportProducts() {
 	var categoriesMap = getCategoriesMap();
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
+    var countries = getCurrencyMap();
 	
 	var availableCurrencies : List = [];
 	var priceBooks = PriceBookMgr.getAllPriceBooks();
@@ -72,7 +73,10 @@ function exportProducts() {
 			var currency : String = countries[Locale.getLocale(locales[i]).getCountry()]["CurrencyCode"];
 			if (availableCurrencies.indexOf(currency) !== -1) {
 				regions.push({ 'locale': locales[i], 'currency': currency });
-			}
+			} else {
+                Logger.error("Could not find currency for one of the locales");
+                return PIPELET_ERROR;
+            }
 		}
 	}
 	
@@ -504,11 +508,25 @@ function postToAPI(payload : Object) {
 	return result;
 }
 
+// Get the CurrencyMap from Distillery to get the regional prices
+// Hopefully, one day someone finds out how to do this natively i.e. without distillery
+function getCurrencyMap() {
+    var service: Service = ServiceRegistry.get("int_pixlee.http.distillery.get_currency");
+    service.URL = getDistilleryCountriesURL() + "?api_key="+Site.current.preferences.custom.PixleeApiKey;
+    var result: Result = service.call();
+    return result;
+}
+
+
 // Determine endpoint based on the environment
 // 2016-05-10: Anything customer-facing is "production" as far as WE are concerned
 // Don't point someone to OUR staging DB, which is volatile
 function getDistilleryBaseUrl() {
     return DISTILLERY_BASE_URL;
+}
+
+function getDistilleryCountriesURL() {
+    return DISTILLERY_COUNTRIES_URL;    
 }
 
 // Check if input is a number
