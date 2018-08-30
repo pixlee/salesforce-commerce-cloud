@@ -27,7 +27,6 @@ importPackage( dw.content );
 importPackage( dw.svc );
 
 var DISTILLERY_BASE_URL = "https://distillery.pixlee.com/api/v2/albums";
-var DISTILLERY_COUNTRIES_URL = "https://distillery.pixlee.com/api/v2/something";
 
 // Main method for export product execution
 function execute()
@@ -46,7 +45,7 @@ function execute()
 		 exportProducts();
 	} catch(ex) {
 		var error = ex.message;
-		Logger.error("Exception caught" + ex.message);
+		Logger.error("Exception caught: " + ex.message);
 		return PIPELET_ERROR;    
 	}
 
@@ -70,13 +69,18 @@ function exportProducts() {
 	for (var i = 0; i < locales.length; i++) {
 		var countryCode : String = Locale.getLocale(locales[i]).getCountry();
 		if (countryCode != "") {
-			var currency : String = countries[Locale.getLocale(locales[i]).getCountry()]["CurrencyCode"];
-			if (availableCurrencies.indexOf(currency) !== -1) {
-				regions.push({ 'locale': locales[i], 'currency': currency });
+			if (typeof country === 'undefined') {
+				throw new PixleeException("Could not find country for the locale: " + locales[i]);
+				return;
 			} else {
-                Logger.error("Could not find currency for one of the locales");
-                return PIPELET_ERROR;
-            }
+				var currency : String = country["CurrencyCode"];
+				if (availableCurrencies.indexOf(currency) !== -1) {
+					regions.push({ 'locale': locales[i], 'currency': currency });
+				}
+			}
+		} else {
+			throw new PixleeException("Not CountryCode provided for locale: " + locales[i]);
+			return;
 		}
 	}
 	
@@ -508,13 +512,24 @@ function postToAPI(payload : Object) {
 	return result;
 }
 
-// Get the CurrencyMap from Distillery to get the regional prices
-// Hopefully, one day someone finds out how to do this natively i.e. without distillery
+//Get the CurrencyMap from Distillery to get the regional prices
+//Hopefully, one day someone finds out how to do this natively i.e. without distillery
 function getCurrencyMap() {
-    var service: Service = ServiceRegistry.get("int_pixlee.http.distillery.get_currency");
-    service.URL = getDistilleryCountriesURL() + "?api_key="+Site.current.preferences.custom.PixleeApiKey;
-    var result: Result = service.call();
-    return result;
+	var apiKey = Site.current.preferences.custom.PixleeApiKey;
+	var httpClient : HTTPClient = new HTTPClient();
+	httpClient.open('GET', 'https://distillery.pixlee.com/api/v1/getSFCountryMap?api_key=' + apiKey);
+	httpClient.setRequestHeader('Content-Type', 'application/json');
+	httpClient.send();
+	if (httpClient.statusCode == 200) {
+		return JSON.parse(httpClient.text);
+	} else {
+		return {};
+	}
+}
+
+function PixleeException(message) {
+   this.message = message;
+   this.name = 'PixleeException';
 }
 
 
