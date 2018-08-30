@@ -41,11 +41,11 @@ function execute()
 			Logger.error("Cartridge not enabled.");
 			return PIPELET_ERROR;  
 		}
-
-		exportProducts();
+		
+		 exportProducts();
 	} catch(ex) {
 		var error = ex.message;
-		Logger.error("Exception caught" + ex.message);
+		Logger.error("Exception caught: " + ex.message);
 		return PIPELET_ERROR;    
 	}
 
@@ -56,6 +56,33 @@ function execute()
 function exportProducts() {
 	var categoriesMap = getCategoriesMap();
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
+    var countries = getCurrencyMap();
+	
+	var availableCurrencies : List = [];
+	var priceBooks = PriceBookMgr.getAllPriceBooks();
+	for (var i = 0; i < priceBooks.length; i++) {
+		availableCurrencies.push(priceBooks[i].getCurrencyCode());
+	}
+
+	var locales : List = Site.current.allowedLocales;
+	var regions : List = [];
+	for (var i = 0; i < locales.length; i++) {
+		var countryCode : String = Locale.getLocale(locales[i]).getCountry();
+		if (countryCode != "") {
+			if (typeof country === 'undefined') {
+				throw new PixleeException("Could not find country for the locale: " + locales[i]);
+				return;
+			} else {
+				var currency : String = country["CurrencyCode"];
+				if (availableCurrencies.indexOf(currency) !== -1) {
+					regions.push({ 'locale': locales[i], 'currency': currency });
+				}
+			}
+		} else {
+			throw new PixleeException("Not CountryCode provided for locale: " + locales[i]);
+			return;
+		}
+	}
 	
 	var jobId = generateUniqueId();
 	notifyExportStatus("started", jobId, getTotalProductCount());
@@ -64,12 +91,12 @@ function exportProducts() {
 	var counter = 0;
 
 	if(product){
-		var exported : Boolean = exportProduct(product, categoriesMap);
+		var exported : Boolean = exportProduct(product, categoriesMap, regions);
 		if (exported) counter += 1;
 		
 		while (productIterator.hasNext()) {
 			product = productIterator.next();
-			exported = exportProduct(product, categoriesMap);
+			exported = exportProduct(product, categoriesMap, regions);
 			if (exported) counter += 1;
 		}
 	}
@@ -79,7 +106,7 @@ function exportProducts() {
 }
 
 // Extract Demandware data and create product data
-function exportProduct(product : Product, categoriesMap: Object) {
+function exportProduct(product : Product, categoriesMap: Object, regions: List) {
 	try {
 	if(product.online && product.searchable && !product.variant) {
 		// Name
@@ -147,9 +174,7 @@ function exportProduct(product : Product, categoriesMap: Object) {
         // Product Price
         var productPrice : Decimal = null;
         if (product.getPriceModel()){
-            
             try {
-        	
             	// For the most part, master products don't have price, we need to get from a variant
 	            // getDefaultVariant() will give us either the default variant or an arbitrary one
 	            // I'm okay with getting an arbitrary one
@@ -252,7 +277,95 @@ function exportProduct(product : Product, categoriesMap: Object) {
 				var photoURL = variantPhotos[i].absURL.toString();
 				if (allProductPhotos.indexOf(photoURL) === -1) allProductPhotos.push(photoURL);
 			}
+		}		
+		
+		var regional : List = [];
+		Logger.warn("Processing Product: " + product.getName());
+		
+		for (var j = 0; j < regions.length; j++) {
+			request.setLocale(regions[j]['locale']);
+			session.setCurrency(Currency.getCurrency(regions[j]['currency']));
+			
+			Logger.warn("Processing Locale: " + regions[j]['locale']);
+			var productRegion : Map = {};
+
+			// Product URL
+			var regionalUrl : String = URLUtils.http('Product-Show', 'pid', product.getID()).toString();
+			// URLUtils.http generates URLs based on the Demandware hostname: dev.web.XXX.demandware.net, etc.
+			// If the 'ProductHost' custom preference is provided, replace the hostname with that.
+			if (Site.current.preferences.custom.ProductHost != null) {
+				regionalUrl = regionalUrl.host(Site.current.preferences.custom.ProductHost);
+			}
+			
+			// Name
+			var regionalName : String = product.getName();
+	        // Product Price
+	        var regionalPrice : Decimal = null;
+			var regionalCurrency : String = null;
+	        if (product.getPriceModel()){
+	            
+	            try {
+	        	
+	            	// For the most part, master products don't have price, we need to get from a variant
+		            // getDefaultVariant() will give us either the default variant or an arbitrary one
+		            // I'm okay with getting an arbitrary one
+	            	var productVariant = product.getVariationModel().getDefaultVariant();
+
+	            	if (productVariant == null) {
+	            		regionalPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
+	            		regionalCurrency = product.getPriceModel().getPrice().getCurrencyCode();
+	            	// But some products don't have variants, and have a PriceModel object on the Product
+	            	} else {
+	            		regionalPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
+	            		regionalCurrency = productVariant.getPriceModel().getPrice().getCurrencyCode();
+	            	}
+	            	
+	            } catch(err) {
+	            	Logger.warn("Could not get the price for product id: " + product.ID);
+	            	Logger.warn(err.message);
+	            }
+	        }
+
+			// Product Stock
+			var regionalStock : Int = null;
+			if (product.getAvailabilityModel()){
+				// 2016-03-23: product.getAvailabilityModel().availability uses some fancy algorithm,
+				// described by the documentation as the following:
+				// If inventory lists are in use:
+				// 	If no inventory record exists and the inventory list default-in-stock flag is true this method returns 1.
+				//	If no inventory record exists the inventory list default-in-stock flag is false this method returns 0.
+				//	If the product is not available this method returns 0.
+				//	If the product is perpetually available this method returns 1.
+				//	Otherwise this method returns the ATS / allocation.
+				// What I really want is the sum of all variants
+				// BUT I DON'T HAVE IT BECAUSE I NEVER FIGURED OUT HOW TO LOOP THROUGH VARIANTS
+				// IN DEMANDWARE - Instead, I'll settle for a 0/1, which I've tested
+				// Check CR-534
+				productInventoryRecord = product.getAvailabilityModel().getInventoryRecord();
+				if (product.getAvailabilityModel().isInStock()) {
+					regionalStock = 1;
+				} else {
+					regionalStock = 0;
+				}
+			}	
+			
+			productRegion['buy_now_link_url'] = regionalUrl;
+			productRegion['name'] = regionalName;
+			productRegion['price'] = regionalPrice;
+			productRegion['currency'] = regionalCurrency;
+			productRegion['stock'] = regionalStock;
+			productRegion['variants_json'] = JSON.stringify(variantsDict);
+			productRegion['description'] = product.getLongDescription().getMarkup();
+			productRegion['region_code'] = regions[j]['locale'];
+			
+			regional.push(productRegion);
 		}
+
+		// It made sense to add these lines at the top of the function, but dsScript is weird
+		// But when I did that the behavior was the the default values were not default values, and instead values of the last locale iterated
+		// Add these lines at the end helped
+		request.setLocale(Site.current.getDefaultLocale());
+		session.setCurrency(Currency.getCurrency(Site.current.getDefaultCurrency()));
 
 		// Extra Fields
 		var productExtraFields = JSON.stringify({
@@ -260,9 +373,9 @@ function exportProduct(product : Product, categoriesMap: Object) {
 			"categories": categoriesFormatted
 		});
 		
-		if(productName && productSKU && productUrl){
+		if(productName && productSKU && productUrl) {
 			// Create album through Pixlee API
-			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, JSON.stringify(variantsDict));
+			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, JSON.stringify(variantsDict), regional);
 			return true;
 		} else {
 			return false;
@@ -276,13 +389,13 @@ function exportProduct(product : Product, categoriesMap: Object) {
 }
 
 // Create JSON object, sign data and post to API
-function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency : String, variantsJson: String) {
-	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, variantsJson);
+function createProduct(productName : String, productSKU : String, productUrl : String, productPhoto : String, productUPC : String, productPrice: Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency : String, variantsJson: String, regional: List) {
+	var dataObj = createDataObj(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, variantsJson, regional);
 	postToAPI( dataObj );
 }
 
 // Create JSON object
-function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency: String, variantsJson: String) {
+function createDataObj(productName : String, productSku : String, productUrl : String, productPhoto : String, productUPC : String, productPrice : Double, productStock : Int, productNativeId : String, productExtraFields : Object, currency: String, variantsJson: String, regional: List) {
 	// Product
 	var productObj : Object = new Object();
 	productObj.name = productName;
@@ -296,6 +409,7 @@ function createDataObj(productName : String, productSku : String, productUrl : S
 	productObj.extra_fields = productExtraFields;
 	productObj.currency = currency;
 	productObj.variants_json = variantsJson;
+	productObj.regional_info = regional;
 
     // Data
     var dataObj : Object = new Object();
@@ -398,11 +512,36 @@ function postToAPI(payload : Object) {
 	return result;
 }
 
+//Get the CurrencyMap from Distillery to get the regional prices
+//Hopefully, one day someone finds out how to do this natively i.e. without distillery
+function getCurrencyMap() {
+	var apiKey = Site.current.preferences.custom.PixleeApiKey;
+	var httpClient : HTTPClient = new HTTPClient();
+	httpClient.open('GET', 'https://distillery.pixlee.com/api/v1/getSFCountryMap?api_key=' + apiKey);
+	httpClient.setRequestHeader('Content-Type', 'application/json');
+	httpClient.send();
+	if (httpClient.statusCode == 200) {
+		return JSON.parse(httpClient.text);
+	} else {
+		return {};
+	}
+}
+
+function PixleeException(message) {
+   this.message = message;
+   this.name = 'PixleeException';
+}
+
+
 // Determine endpoint based on the environment
 // 2016-05-10: Anything customer-facing is "production" as far as WE are concerned
 // Don't point someone to OUR staging DB, which is volatile
 function getDistilleryBaseUrl() {
     return DISTILLERY_BASE_URL;
+}
+
+function getDistilleryCountriesURL() {
+    return DISTILLERY_COUNTRIES_URL;    
 }
 
 // Check if input is a number
