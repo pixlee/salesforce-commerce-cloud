@@ -23,9 +23,6 @@ ServiceRegistry.configure("int_pixlee.http.distillery.post", {
 });
 
 ServiceRegistry.configure("int_pixlee.http.distillery.get_currency", {
-	createRequest: function(svc: HTTPService) {
-		
-	},
 	parseResponse: function(svc: HTTPService, client: HTTPClient) {
 		return client.text;
 	}
