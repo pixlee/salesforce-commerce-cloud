@@ -15,6 +15,7 @@
 
 			<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(ProductLineItem.productID)}" scope="page" />
 			<isset name="skuReference" value="${dw.system.Site.current.preferences.custom.SkuReference}" scope="page" />
+			<isset name="productId" value="${ProductLineItem.productID}" scope="page" />
 
 			<isif condition="${productObj.isMaster()}">
 				<isset name="masterProductObj" value="${productObj}" scope="page" />
@@ -22,12 +23,8 @@
 				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
 			</isif>
 			
-			<isif condition="${masterProductObj !== null && masterProductObj.getManufacturerSKU() !== null && skuReference == 'Manufacturer SKU'}">
-				<isset name="productId" value="${masterProductObj.getID()}" scope="page" />
+			<isif condition="${masterProductObj !== null && skuReference == 'Manufacturer SKU'}">
 				<isset name="productSku" value="${masterProductObj.getManufacturerSKU()}" scope="page" />
-			<iselse/>
-				<isset name="productId" value="${productObj.getID()}" scope="page" />
-				<isset name="productSku" value="${productObj.getID()}" scope="page" /> 
 			</isif>
 			
 			<script data="pixlee-end-checkout">
