@@ -14,33 +14,34 @@
 		<isloop items="${Shipment.productLineItems}" alias="ProductLineItem" status="loopstate">
 
 			<isset name="productObj" value="${dw.catalog.ProductMgr.getProduct(ProductLineItem.productID)}" scope="page" />
-			<isset name="skuReference" value="${dw.system.Site.current.preferences.custom.SkuReference}" scope="page" />
+			<isset name="productId" value="${ProductLineItem.productID}" scope="page" />
 
 			<isif condition="${productObj.isMaster()}">
 				<isset name="masterProductObj" value="${productObj}" scope="page" />
 			<iselse/>
 				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
 			</isif>
-
+			
+			<isif condition="${masterProductObj !== null}">
+				<isset name="productSku" value="${masterProductObj.getManufacturerSKU()}" scope="page" />
+			</isif>
+			
 			<script data="pixlee-end-checkout">
 				function createEndCheckoutCartItem() {
-
-					var productSku = "${masterProductObj.getID()}";
 					
-					if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
-						productSku = "${masterProductObj.getManufacturerSKU()}";
-					}
-
+					var price = "${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,"");
+					var quantity = parseInt("${ProductLineItem.quantityValue}");
+					
 					cartItem = {
-						quantity: parseInt("${ProductLineItem.quantityValue}"),
-						product_id: parseInt("${ProductLineItem.productID}"),
-						product_sku: productSku,
-						price:"${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,""),
+						quantity: quantity,
+						product_id: parseInt("${productId}"),
+						product_sku: "${productSku}",
+						price: price,
 						currency: "${productObj.getPriceModel().getPrice().getCurrencyCode()}"
 					};
 
 					cartArray.push(cartItem);
-					cartTotal += parseFloat("${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,""));
+					cartTotal += price * quantity;
 					cartTotalQuantity += parseInt("${ProductLineItem.quantityValue}");
 				};
 				// Guard the creation of cartItem so that if something breaks, we'll get the log
