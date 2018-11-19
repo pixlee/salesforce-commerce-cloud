@@ -69,9 +69,8 @@ function exportProducts() {
 	for (var i = 0; i < locales.length; i++) {
 		var countryCode : String = Locale.getLocale(locales[i]).getCountry();
 		if (countryCode != "") {
-			var country = countries[countryCode];
 			if (typeof country === 'undefined') {
-				throw new PixleeException("Could not find country for the locale: " + locales[i] + " CountryCode: " + countryCode);
+				throw new PixleeException("Could not find country for the locale: " + locales[i]);
 				return;
 			} else {
 				var currency : String = country["CurrencyCode"];
