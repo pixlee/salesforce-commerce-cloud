@@ -67,6 +67,11 @@ function exportProducts() {
 	var locales : List = Site.current.allowedLocales;
 	var regions : List = [];
 	for (var i = 0; i < locales.length; i++) {
+	    
+	    // skip default locale if it's active
+	    if (locales[i] === 'default') {
+	        continue;
+	    }	
 		var countryCode : String = Locale.getLocale(locales[i]).getCountry();
 		if (countryCode != "") {
 			var country = countries[countryCode];
