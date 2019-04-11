@@ -1,3 +1,5 @@
+node_modules/
+dw.json
 .idea/*
 demandware.iml
 .tern*
