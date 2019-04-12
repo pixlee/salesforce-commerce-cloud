@@ -1,0 +1,10 @@
+<ismodule template="/pixlee/components/widgets/pdpWidgetModule"
+	name="pixleepdpwidget"
+	attribute="p_productid"
+/>
+
+<ismodule template="/pixlee/components/widgets/clpWidgetModule"
+	name="pixleeclpwidget"
+	attribute="p_categoryid"
+/>
+

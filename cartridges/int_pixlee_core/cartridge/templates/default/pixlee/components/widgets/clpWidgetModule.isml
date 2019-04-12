@@ -1,0 +1,20 @@
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
+	<isset name="pixleeWidgetId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeCLPWidgetId')}" scope="page" />
+
+	<isif condition="${pixleeApiKey && pixleeWidgetId && pdict.p_categoryid}">
+		<div id="pixlee_container"></div>
+		<script type="text/javascript">
+			window.PixleeAsyncInit = function() {
+				Pixlee.init({apiKey: '<isprint encoding="jsonvalue" value="${pixleeApiKey}"/>'});
+				Pixlee.addCategoryWidget({
+					widgetId: <isprint encoding="jsonvalue" value="${pixleeWidgetId}"/>,
+					nativeCategoryId: '<isprint encoding="jsonvalue" value="${pdict.p_categoryid}"/>',
+					ecomm_platform:'demandware'
+				});
+			};
+		</script>
+		<script src="//assets.pixlee.com/assets/pixlee_widget_1_0_0.js"></script>
+	</isif>
+</isif>
+<h1>${pdict.p_categoryid}</h1>
