@@ -1,14 +1,15 @@
 {
   "name": "int_pixlee_sfra",
   "version": "0.0.1",
-  "description": "New overlay cartridge",
+  "description": "Pixlee overlay cartridge",
   "main": "index.js",
   "scripts": {
-    "lint": "sgmf-scripts --lint js && sgmf-scripts --lint css",
+    "lint": "sgmf-scripts --lint js",
     "upload": "sgmf-scripts --upload -- ",
-    "uploadCartridge": "sgmf-scripts --uploadCartridge int_pixlee_sfra",
+    "uploadCartridge": "sgmf-scripts --uploadCartridge int_pixlee_core && sgmf-scripts --uploadCartridge int_pixlee_sfra",
     "compile:js": "sgmf-scripts --compile js",
-    "compile:scss": "sgmf-scripts --compile css"
+    "watch": "sgmf-scripts --watch",
+    "watch:static": "sgmf-scripts --watch static"
   },
   "devDependencies": {
     "eslint": "^3.2.2",
@@ -31,5 +32,8 @@
   "browserslist": [
     "last 2 versions",
     "ie >= 10"
-  ]
+  ],
+  "paths": {
+    "base": "../storefront-reference-architecture/cartridges/app_storefront_base/"
+  }
 }

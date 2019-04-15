@@ -2,6 +2,7 @@
 
     <isscript>
         var assets = require('*/cartridge/scripts/assets');
+        assets.addJs('/js/categoryLanding.js');
         assets.addCss('/css/search.css');
     </isscript>
 

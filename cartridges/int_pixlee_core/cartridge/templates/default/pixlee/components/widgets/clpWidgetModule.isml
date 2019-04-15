@@ -17,4 +17,3 @@
 		<script src="//assets.pixlee.com/assets/pixlee_widget_1_0_0.js"></script>
 	</isif>
 </isif>
-<h1>${pdict.p_categoryid}</h1>

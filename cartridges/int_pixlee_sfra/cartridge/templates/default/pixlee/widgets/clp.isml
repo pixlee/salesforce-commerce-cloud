@@ -1,2 +1,12 @@
-<isinclude template="pixlee/components/modules" />
-<ispixleeclpwidget p_categoryid="${pdict.category.ID}"/>
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
+	<isset name="pixleeWidgetId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeCLPWidgetId')}" scope="page" />
+
+	<isif condition="${pixleeApiKey && pixleeWidgetId && pdict.category && pdict.category.ID}">
+		<div id="pixlee_container"
+			data-apikey="${pixleeApiKey}"
+			data-widgetid="${pixleeWidgetId}"
+			data-categoryid="${pdict.category.ID}">
+		</div>
+	</isif>
+</isif>
