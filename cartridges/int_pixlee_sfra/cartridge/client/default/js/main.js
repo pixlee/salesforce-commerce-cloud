@@ -1,7 +1,7 @@
-'use strict';
-
 var processInclude = require('base/util');
 
+require('base/main');
+
 $(document).ready(function () {
-    processInclude(require('./pixlee/widgets/clp'));
+    processInclude(require('./pixlee/events'));
 });

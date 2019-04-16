@@ -1,0 +1,9 @@
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isif condition="${pdict.tracking_consent !== false}">
+		<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
+
+		<span id="pixlee-events-init"
+			data-apikey="${pixleeApiKey}"
+		/>
+	</isif>
+</isif>

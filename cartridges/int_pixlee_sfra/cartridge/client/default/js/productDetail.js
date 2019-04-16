@@ -4,5 +4,5 @@ var processInclude = require('base/util');
 
 $(document).ready(function () {
     processInclude(require('base/product/detail'));
-    processInclude(require('./pixlee/productDetail'));
+    processInclude(require('./pixlee/widgets/pdp'));
 });

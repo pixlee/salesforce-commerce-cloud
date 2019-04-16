@@ -15,7 +15,7 @@ module.exports = function () {
             Pixlee.addCategoryWidget({
                 widgetId: widgetId,
                 nativeCategoryId: categoryId,
-                ecomm_platform:'demandware'
+                ecomm_platform: 'demandware'
             });
         };
 
