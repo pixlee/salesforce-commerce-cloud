@@ -1,0 +1,40 @@
+'use strict';
+
+var server = require('server');
+var consentTracking = require('*/cartridge/scripts/middleware/consentTracking');
+
+server.extend(module.superModule);
+
+server.append('AddProduct', consentTracking.consent, function (req, res, next) {
+    var Site = require('dw/system/Site');
+
+    if (Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')) {
+        var trackingHelper = require('*/cartridge/scripts/pixlee/helpers/trackingHelper');
+
+        var viewData = res.getViewData();
+        var trackingAllowed = trackingHelper.isTrackingAllowed(viewData.tracking_consent);
+
+        if (trackingAllowed && !viewData.error) {
+            var addedProducts;
+            if (req.form.pidsObj) {
+                addedProducts = JSON.parse(req.form.pidsObj);
+            } else {
+                addedProducts = [{
+                    pid: req.form.pid,
+                    qty: req.form.quantity
+                }];
+            }
+
+            if (addedProducts && addedProducts.length) {
+                var addToCartEvents = trackingHelper.getAddToCartEvents(addedProducts);
+                res.json({
+                    pixleeEventData: addToCartEvents
+                });
+            }
+        }
+    }
+
+    next();
+});
+
+module.exports = server.exports();

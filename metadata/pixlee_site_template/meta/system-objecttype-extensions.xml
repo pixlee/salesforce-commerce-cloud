@@ -1,132 +1,157 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metadata xmlns="http://www.demandware.com/xml/impex/metadata/2006-10-31">
-	<type-extension type-id="SitePreferences">
-		<custom-attribute-definitions>
-			<attribute-definition attribute-id="PixleeEnabled">
-				<display-name xml:lang="x-default">Enable Pixlee Plugin</display-name>
-				<type>boolean</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
-			<attribute-definition attribute-id="PixleeApiKey">
-				<display-name xml:lang="x-default">Pixlee API Key</display-name>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
-			<attribute-definition attribute-id="PixleeSecretKey">
-				<display-name xml:lang="x-default">Pixlee Secret Key</display-name>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
-			<attribute-definition attribute-id="HttpTimeout">
-				<display-name xml:lang="x-default">HTTP Timeout</display-name>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-				<default-value>900000</default-value>
-			</attribute-definition>
-			<attribute-definition attribute-id="SkuReference">
-				<display-name xml:lang="x-default">SKU Reference</display-name>
-				<type>enum-of-string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<value-definitions>
-					<value-definition default="true">
-						<value>Product ID</value>
-					</value-definition>
-					<value-definition>
-						<value>Manufacturer SKU</value>
-					</value-definition>
-	       		</value-definitions>
-			</attribute-definition>
-			<attribute-definition attribute-id="PixleePDPWidgetId">
-				<display-name xml:lang="x-default">PDP Widget ID</display-name>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
-			<attribute-definition attribute-id="PixleePDPWidgetAccountId">
-				<display-name xml:lang="x-default">PDP Widget Account ID</display-name>
-				<description>ID of Pixlee widget to display on product details pages.</description>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
-			<attribute-definition attribute-id="PixleeCLPWidgetId">
-				<display-name xml:lang="x-default">CLP Widget ID</display-name>
-				<description>ID of Pixlee widget to display on category landing pages.</description>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
-			<attribute-definition attribute-id="PixleeHomepageWidgetId">
-				<display-name xml:lang="x-default">Homepage Widget ID</display-name>
-				<description>ID of Pixlee widget to display on home page.</description>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
-			<attribute-definition attribute-id="ProductHost">
-				<display-name xml:lang="x-default">Custom Product Host (product export; no http)</display-name>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>false</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-			</attribute-definition>
-		</custom-attribute-definitions>
-		<group-definitions>
-			<attribute-group group-id="Pixlee">
-				<display-name xml:lang="x-default">Pixlee</display-name>
-				<attribute attribute-id="PixleeEnabled"/>
-				<attribute attribute-id="PixleeApiKey"/>
-				<attribute attribute-id="PixleeSecretKey"/>
-				<attribute attribute-id="HttpTimeout"/>
-				<attribute attribute-id="SkuReference"/>
-				<attribute attribute-id="ProductHost"/>
-				<attribute attribute-id="PixleePDPWidgetId"/>
-				<attribute attribute-id="PixleePDPWidgetAccountId"/>
-				<attribute attribute-id="PixleeCLPWidgetId"/>
-				<attribute attribute-id="PixleeHomepageWidgetId"/>
-			</attribute-group>
-		</group-definitions>
-	</type-extension>
+    <type-extension type-id="SitePreferences">
+        <custom-attribute-definitions>
+            <attribute-definition attribute-id="PixleeEnabled">
+                <display-name xml:lang="x-default">Enable Pixlee Plugin</display-name>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="PixleeApiKey">
+                <display-name xml:lang="x-default">Pixlee API Key</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="PixleeSecretKey">
+                <display-name xml:lang="x-default">Pixlee Secret Key</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="HttpTimeout">
+                <display-name xml:lang="x-default">HTTP Timeout</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+                <default-value>900000</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="SkuReference">
+                <display-name xml:lang="x-default">SKU Reference</display-name>
+                <type>enum-of-string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <value-definitions>
+                    <value-definition default="true">
+                        <value>Product ID</value>
+                    </value-definition>
+                    <value-definition>
+                        <value>Manufacturer SKU</value>
+                    </value-definition>
+                </value-definitions>
+            </attribute-definition>
+            <attribute-definition attribute-id="PixleePDPWidgetId">
+                <display-name xml:lang="x-default">PDP Widget ID</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="PixleePDPWidgetAccountId">
+                <display-name xml:lang="x-default">PDP Widget Account ID</display-name>
+                <description>ID of Pixlee widget to display on product details pages.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="PixleeCLPWidgetId">
+                <display-name xml:lang="x-default">CLP Widget ID</display-name>
+                <description>ID of Pixlee widget to display on category landing pages.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="PixleeHomepageWidgetId">
+                <display-name xml:lang="x-default">Homepage Widget ID</display-name>
+                <description>ID of Pixlee widget to display on home page.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="ProductHost">
+                <display-name xml:lang="x-default">Custom Product Host (product export; no http)</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="PixleeTracking">
+                <display-name xml:lang="x-default">Tracking option</display-name>
+                <type>enum-of-string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <value-definitions>
+                    <value-definition default="true">
+                        <display xml:lang="x-default">Always track</display>
+                        <value>TRACK_ALWAYS</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">Track except if customer explicitly opted out</display>
+                        <value>TRACK_IF_NOT_OPTED_OUT</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">Track only if customer explicitly opted in</display>
+                        <value>TRACK_IF_OPTED_IN</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">Disable tracking</display>
+                        <value>TRACK_NEVER</value>
+                    </value-definition>
+                </value-definitions>
+            </attribute-definition>
+        </custom-attribute-definitions>
+        <group-definitions>
+            <attribute-group group-id="Pixlee">
+                <display-name xml:lang="x-default">Pixlee</display-name>
+                <attribute attribute-id="PixleeEnabled"/>
+                <attribute attribute-id="PixleeApiKey"/>
+                <attribute attribute-id="PixleeSecretKey"/>
+                <attribute attribute-id="HttpTimeout"/>
+                <attribute attribute-id="SkuReference"/>
+                <attribute attribute-id="ProductHost"/>
+                <attribute attribute-id="PixleePDPWidgetId"/>
+                <attribute attribute-id="PixleePDPWidgetAccountId"/>
+                <attribute attribute-id="PixleeCLPWidgetId"/>
+                <attribute attribute-id="PixleeHomepageWidgetId"/>
+                <attribute attribute-id="PixleeTracking"/>
+            </attribute-group>
+        </group-definitions>
+    </type-extension>
 
-	<type-extension type-id="OrganizationPreferences">
-		<custom-attribute-definitions>
-			<attribute-definition attribute-id="PixleeVersion">
-				<display-name xml:lang="x-default">Version Number</display-name>
-				<type>string</type>
-				<mandatory-flag>false</mandatory-flag>
-				<externally-managed-flag>true</externally-managed-flag>
-				<min-length>0</min-length>
-				<field-length>0</field-length>
-				<default-value>1.0</default-value>
-			</attribute-definition>
-		</custom-attribute-definitions>
-		<group-definitions>
-			<attribute-group group-id="Pixlee">
-				<display-name xml:lang="x-default">Pixlee</display-name>
-				<attribute attribute-id="PixleeVersion"/>
-			</attribute-group>
-		</group-definitions>
-	</type-extension>
+    <type-extension type-id="OrganizationPreferences">
+        <custom-attribute-definitions>
+            <attribute-definition attribute-id="PixleeVersion">
+                <display-name xml:lang="x-default">Version Number</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>true</externally-managed-flag>
+                <min-length>0</min-length>
+                <field-length>0</field-length>
+                <default-value>1.0</default-value>
+            </attribute-definition>
+        </custom-attribute-definitions>
+        <group-definitions>
+            <attribute-group group-id="Pixlee">
+                <display-name xml:lang="x-default">Pixlee</display-name>
+                <attribute attribute-id="PixleeVersion"/>
+            </attribute-group>
+        </group-definitions>
+    </type-extension>
 </metadata>

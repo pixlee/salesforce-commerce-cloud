@@ -1,0 +1,33 @@
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isset name="trackingAllowed" value="${require('*/cartridge/scripts/pixlee/helpers/trackingHelper').isTrackingAllowed(pdict.CurrentSession.trackingAllowed)}" scope="page" />
+	<isif condition="${trackingAllowed}">
+		<isscript>
+			var pid = pdict.CurrentHttpParameterMap.pid.stringValue;
+			var qty = pdict.CurrentHttpParameterMap.Quantity.stringValue;
+			var eventsHelper = require('~/cartridge/scripts/pixlee/helpers/eventsHelper');
+
+			if (pid && qty) {
+				eventsHelper.addAddToCartEventToSession(pid, qty);
+			} else {
+				eventsHelper.deleteEventsFromSession();
+			}
+		</isscript>
+
+		<isif condition="${pid && qty}">
+		<script>
+		if (pixlee_analytics) {
+			var getAddToCartEventsURL = '${URLUtils.url("PixleeEvents-GetAddToCartEvents")}';
+
+			jQuery.get(getAddToCartEventsURL, function (data) {
+				if (data && data.length) {
+					for (var i = 0; i < data.length; i++) {
+						var pixleeEvent = data[i];
+						pixlee_analytics.events.trigger(pixleeEvent.type, pixleeEvent.payload);
+					}
+				}
+			});
+		}
+		</script>
+		</isif>
+	</isif>
+</isif>

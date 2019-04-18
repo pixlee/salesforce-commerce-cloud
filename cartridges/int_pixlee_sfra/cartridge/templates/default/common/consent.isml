@@ -8,4 +8,18 @@
     data-heading="${Resource.msg('heading.consentTracking.track.consent', 'common', null)}"
     ></span>
 
+<iscomment>
+	pixlee/events/include template is included here for two reasons:
+	1. Performance - to avoid another remote include on every page. Remote include
+	   is required to allow Pixlee tracking to be enabled/disabled on session
+	   basis for cached pages, depending on customer's consent.
+	2. Convenience - to avoid overriding common/layout/page and
+	   common/layout/checkout templates in this cartridge.
+
+	In case ConsentTracking-Check remote include is removed from the above
+	templates or this template is discarded for any other reason, both those
+	templates should be overridden in client cartridge and the following
+	remote include should be added to them:
+	<isinclude url="${URLUtils.url('PixleeEvents-Include')}"/>
+</iscomment>
 <isinclude template="pixlee/events/include">
