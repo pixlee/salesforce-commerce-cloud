@@ -1,6 +1,6 @@
 <isinclude template="pixlee/components/modules" />
 <isscript>
 	var productHelper = require("*/cartridge/scripts/pixlee/helpers/productHelper");
-	var pixleeProductId = productHelper.getPixleeProductId(pdict.Product);
+	var pixleeProductId = productHelper.getPixleeProductSKU(pdict.Product);
 </isscript>
 <ispixleepdpwidget p_productid="${pixleeProductId}"/>

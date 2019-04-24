@@ -1,5 +1,5 @@
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
-	<isset name="trackingAllowed" value="${require('*/cartridge/scripts/pixlee/helpers/trackingHelper').isTrackingAllowed(pdict.tracking_consent)}" scope="page" />
+	<isset name="trackingAllowed" value="${require('*/cartridge/scripts/pixlee/helpers/pixleeHelper').isTrackingAllowed(pdict.tracking_consent)}" scope="page" />
 	<isif condition="${trackingAllowed}">
 		<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
 

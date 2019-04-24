@@ -7,7 +7,7 @@
  * @param {dw.catalog.Product} product Product to retrive ID for
  * @return {string} Product ID to pass to Pixlee
  */
-function getPixleeProductId(product) {
+function getPixleeProductSKU(product) {
     var Site = require('dw/system/Site');
     var pixleeSkuReference = Site.current.getCustomPreferenceValue('SkuReference');
 
@@ -18,4 +18,4 @@ function getPixleeProductId(product) {
     return product.ID;
 }
 
-exports.getPixleeProductId = getPixleeProductId;
+exports.getPixleeProductSKU = getPixleeProductSKU;

@@ -6,13 +6,11 @@ var consentTracking = require('*/cartridge/scripts/middleware/consentTracking');
 server.extend(module.superModule);
 
 server.append('AddProduct', consentTracking.consent, function (req, res, next) {
-    var Site = require('dw/system/Site');
+    var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
 
-    if (Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')) {
-        var trackingHelper = require('*/cartridge/scripts/pixlee/helpers/trackingHelper');
-
+    if (pixleeHelper.isPixleeEnabled()) {
         var viewData = res.getViewData();
-        var trackingAllowed = trackingHelper.isTrackingAllowed(viewData.tracking_consent);
+        var trackingAllowed = pixleeHelper.isTrackingAllowed(viewData.tracking_consent);
 
         if (trackingAllowed && !viewData.error) {
             var addedProducts;
@@ -26,14 +24,37 @@ server.append('AddProduct', consentTracking.consent, function (req, res, next) {
             }
 
             if (addedProducts && addedProducts.length) {
+                var trackingHelper = require('*/cartridge/scripts/pixlee/helpers/trackingHelper');
                 var addToCartEvents = trackingHelper.getAddToCartEvents(addedProducts);
                 res.json({
                     pixleeEventData: addToCartEvents
                 });
+
+                pixleeHelper.clearCheckoutStartedFlag();
             }
         }
     }
 
+    next();
+});
+
+/**
+ * Clears checkout started flag
+ */
+function clearCheckoutStartedFlag() {
+    var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
+    if (pixleeHelper.isPixleeEnabled()) {
+        pixleeHelper.clearCheckoutStartedFlag();
+    }
+}
+
+server.append('Show', function (req, res, next) {
+    clearCheckoutStartedFlag();
+    next();
+});
+
+server.append('MiniCartShow', function (req, res, next) {
+    clearCheckoutStartedFlag();
     next();
 });
 

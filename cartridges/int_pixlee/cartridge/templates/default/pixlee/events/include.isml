@@ -1,5 +1,5 @@
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
-	<isset name="trackingAllowed" value="${require('*/cartridge/scripts/pixlee/helpers/trackingHelper').isTrackingAllowed(pdict.CurrentSession.trackingAllowed)}" scope="page" />
+	<isset name="trackingAllowed" value="${require('*/cartridge/scripts/pixlee/helpers/pixleeHelper').isTrackingAllowed(pdict.CurrentSession.trackingAllowed)}" scope="page" />
 	<isif condition="${trackingAllowed}">
 		<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
 
@@ -9,6 +9,25 @@
 
 		<script>
 			var pixlee_analytics = new Pixlee_Analytics("${pixleeApiKey}");
+			
+			(function() {
+				function triggerEvents() {
+					if (window.jQuery) {
+					    $('script[type="text/x-pixlee-event-data"]').each(function () {
+					        var $eventNode = $(this);
+
+					        var eventType = $eventNode.data('type');
+					        var eventPayload = JSON.parse($eventNode.text());
+
+					        pixlee_analytics.events.trigger(eventType, eventPayload);
+					    });
+					} else {
+						window.setTimeout(triggerEvents, 50);
+					}
+				}
+				
+				triggerEvents();
+			}())
 		</script>
 	</isif>
 </isif>

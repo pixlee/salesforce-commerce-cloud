@@ -6,7 +6,7 @@ module.exports = function (object, apiProduct) {
         get: function () {
             var pixleeProductHelper = require('*/cartridge/scripts/pixlee/helpers/productHelper');
 
-            return pixleeProductHelper.getPixleeProductId(apiProduct);
+            return pixleeProductHelper.getPixleeProductSKU(apiProduct);
         }
     });
 };

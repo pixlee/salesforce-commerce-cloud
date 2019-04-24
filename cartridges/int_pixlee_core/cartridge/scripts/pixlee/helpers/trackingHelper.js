@@ -3,39 +3,11 @@
 /* global session */
 
 /**
- * Calculates whether tracking is allowed for a customer session based on the
- *   Tracking Option site preference and the consent given by the customer, if any.
- *
- * @param {boolean} trackingConsent - Consent given by the customer, can be null.
- * @return {boolean} - True if tracking is allowed for the current session
- */
-exports.isTrackingAllowed = function (trackingConsent) {
-    var Site = require('dw/system/Site');
-    var pixleeTrackingPreference = Site.current.getCustomPreferenceValue('PixleeTracking');
-
-    if (!arguments.length) { // trackingConsent not passed, fall back to session, fine to reassing
-        trackingConsent = session.trackingAllowed; // eslint-disable-line
-    }
-
-    switch (pixleeTrackingPreference.value) {
-        default:
-        case 'TRACK_ALWAYS':
-            return true;
-        case 'TRACK_IF_NOT_OPTED_OUT':
-            return trackingConsent !== false; // tracking allowed if trackingConsent is null
-        case 'TRACK_IF_OPTED_IN':
-            return trackingConsent === true; // tracking NOT allowed if trackingConsent is null
-        case 'TRACK_NEVER':
-            return false;
-    }
-};
-
-/**
  * Looks up a line item by product ID.
  *
  * NOTE: this function may not give the correct results in case basket is
  *   configured to have multiple lines of the same product, like if
- *   'Add Product to Basket Behavior' site preference is set to
+ *   'Add Product to Basket Behaviour' site preference is set to
  *   'Allow Repeats'. This appears to be very uncommon configuration though.
  *
  * @param {dw.order.Basket} basket - Basket which line items to search
@@ -81,7 +53,7 @@ exports.getAddToCartEvents = function (productsAdded) {
             var pli = getMatchingLineItem(currentBasket, product.ID);
 
             var productId = masterProduct ? masterProduct.ID : product.ID;
-            var productSKU = productHelper.getPixleeProductId(product);
+            var productSKU = productHelper.getPixleeProductSKU(product);
             var quantity = parseInt(productAdded.qty, 10);
             var price = ((pli.priceValue / pli.quantityValue) * quantity).toFixed(2);
             var currency = currentBasket.currencyCode;

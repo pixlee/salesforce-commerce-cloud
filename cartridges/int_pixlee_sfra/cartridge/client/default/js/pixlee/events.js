@@ -29,6 +29,20 @@ function initAddToCart() {
     });
 }
 
+/**
+ * Triggers all events included in the DOM as x-pixlee-event-data script blocks.
+ */
+function processIncludedEvents() {
+    $('script[type="text/x-pixlee-event-data"]').each(function () {
+        var $eventNode = $(this);
+
+        var eventType = $eventNode.data('type');
+        var eventPayload = JSON.parse($eventNode.text());
+
+        pixleeAnalytics.events.trigger(eventType, eventPayload);
+    });
+}
+
 module.exports = function () {
     if (pixleeAnalytics) return;
 
@@ -42,6 +56,8 @@ module.exports = function () {
                 pixleeAnalytics = new Pixlee_Analytics(apiKey);
 
                 initAddToCart();
+
+                processIncludedEvents();
             });
     }
 };
