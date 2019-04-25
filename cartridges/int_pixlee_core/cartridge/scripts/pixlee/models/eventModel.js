@@ -48,7 +48,8 @@ function getLineItemsPayload(lineItemCtnr) {
             quantity: pli.quantityValue,
             product_id: productId,
             product_sku: productSku,
-            price: pli.priceValue
+            price: pli.priceValue,
+            currency: lineItemCtnr.currencyCode
         });
     }
 
@@ -70,7 +71,8 @@ function PixleeCheckoutStartedEvent(locale) {
     var payload = {
         cart_contents: getLineItemsPayload(basket),
         cart_total: basket.adjustedMerchandizeTotalPrice.value,
-        cart_total_quantity: basket.productQuantityTotal
+        cart_total_quantity: basket.productQuantityTotal,
+        currency: basket.currencyCode
     };
 
     PixleeEvent.call(this, 'checkout:start', payload, locale);
@@ -83,11 +85,45 @@ function PixleeCheckoutStartedEvent(locale) {
  * @param {string} locale - Locale to report to Pixlee
  */
 function PixleeEndCheckoutEvent(order, locale) {
+    if (!order) {
+        return null;
+    }
+
+
     var payload = {
         cart_contents: getLineItemsPayload(order),
         cart_total: order.adjustedMerchandizeTotalPrice.value,
-        cart_total_quantity: order.productQuantityTotal
+        cart_total_quantity: order.productQuantityTotal,
+        email: order.customerEmail,
+        cart_type: 'demandware',
+        order_id: order.orderNo
     };
+
+    var billingAddress = order.billingAddress ? {
+        street1: order.billingAddress.address1,
+        street2: order.billingAddress.address2,
+        city: order.billingAddress.city,
+        state: order.billingAddress.stateCode,
+        zip: order.billingAddress.postalCode,
+        country: order.billingAddress.countryCode ? order.billingAddress.countryCode.value : null
+    } : null;
+
+    if (billingAddress) {
+        payload.billing_address = JSON.stringify(billingAddress);
+    }
+
+    var shippingAddress = order.defaultShipment && order.defaultShipment.shippingAddress ? {
+        street1: order.defaultShipment.shippingAddress.address1,
+        street2: order.defaultShipment.shippingAddress.address2,
+        city: order.defaultShipment.shippingAddress.city,
+        state: order.defaultShipment.shippingAddress.stateCode,
+        zip: order.defaultShipment.shippingAddress.postalCode,
+        country: order.defaultShipment.shippingAddress.countryCode ? order.defaultShipment.shippingAddress.countryCode.value : null
+    } : null;
+
+    if (shippingAddress) {
+        payload.shipping_address = JSON.stringify(shippingAddress);
+    }
 
     PixleeEvent.call(this, 'converted:photo', payload, locale);
 }

@@ -100,3 +100,20 @@ exports.getCheckoutStartedEvents = function () {
 
     return null;
 };
+
+exports.getEndCheckoutEvents = function (order) {
+    var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
+
+    if (order && pixleeHelper.isPixleeEnabled() && pixleeHelper.isTrackingAllowed()) {
+        var PixleeEndCheckoutEvent = require('*/cartridge/scripts/pixlee/models/eventModel').PixleeEndCheckoutEvent;
+        var endCheckoutEvent = new PixleeEndCheckoutEvent(order);
+
+        if (endCheckoutEvent) {
+            pixleeHelper.clearCheckoutStartedFlag();
+
+            return [endCheckoutEvent];
+        }
+    }
+
+    return null;
+};
