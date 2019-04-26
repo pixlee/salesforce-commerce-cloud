@@ -37,11 +37,11 @@ function PixleeEvent(type, payload, locale) {
  */
 function getLineItemsPayload(lineItemCtnr) {
     var cartItems = [];
-    var productHelper = require('~/cartridge/scripts/pixlee/helpers/productHelper');
+    var pixleeHelper = require('~/cartridge/scripts/pixlee/helpers/pixleeHelper');
 
     for (var i = 0; i < lineItemCtnr.productLineItems.length; i++) {
         var pli = lineItemCtnr.productLineItems[i];
-        var productSku = productHelper.getPixleeProductSKU(pli.product);
+        var productSku = pixleeHelper.getPixleeProductSKU(pli.product);
         var productId = pli.product.variant ? pli.product.masterProduct.ID : pli.productID;
 
         cartItems.push({

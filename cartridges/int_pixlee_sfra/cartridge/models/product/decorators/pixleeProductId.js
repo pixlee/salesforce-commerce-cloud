@@ -4,9 +4,9 @@ module.exports = function (object, apiProduct) {
     Object.defineProperty(object, 'pixleeProductId', {
         enumerable: true,
         get: function () {
-            var pixleeProductHelper = require('*/cartridge/scripts/pixlee/helpers/productHelper');
+            var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
 
-            return pixleeProductHelper.getPixleeProductSKU(apiProduct);
+            return pixleeHelper.getPixleeProductSKU(apiProduct);
         }
     });
 };

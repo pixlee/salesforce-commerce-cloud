@@ -34,19 +34,19 @@ function execute()
 	try {
 		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
 			Logger.error("Pixlee Secret Key is not defined.");
-			return PIPELET_ERROR;  
+			return PIPELET_ERROR;
 		}
 
 		if(Site.current.preferences.custom.PixleeEnabled == false){
 			Logger.error("Cartridge not enabled.");
-			return PIPELET_ERROR;  
+			return PIPELET_ERROR;
 		}
-		
+
 		 exportProducts();
 	} catch(ex) {
 		var error = ex.message;
 		Logger.error("Exception caught: " + ex.message);
-		return PIPELET_ERROR;    
+		return PIPELET_ERROR;
 	}
 
 	return PIPELET_NEXT;
@@ -57,7 +57,7 @@ function exportProducts() {
 	var categoriesMap = getCategoriesMap();
 	var productIterator : SeekableIterator = ProductMgr.queryAllSiteProducts();
     var countries = getCurrencyMap();
-	
+
 	var availableCurrencies : List = [];
 	var priceBooks = PriceBookMgr.getAllPriceBooks();
 	for (var i = 0; i < priceBooks.length; i++) {
@@ -67,11 +67,11 @@ function exportProducts() {
 	var locales : List = Site.current.allowedLocales;
 	var regions : List = [];
 	for (var i = 0; i < locales.length; i++) {
-	    
+
 	    // skip default locale if it's active
 	    if (locales[i] === 'default') {
 	        continue;
-	    }	
+	    }
 		var countryCode : String = Locale.getLocale(locales[i]).getCountry();
 		if (countryCode != "") {
 			var country = countries[countryCode];
@@ -89,7 +89,7 @@ function exportProducts() {
 			return;
 		}
 	}
-	
+
 	var jobId = generateUniqueId();
 	notifyExportStatus("started", jobId, getTotalProductCount());
 
@@ -99,7 +99,7 @@ function exportProducts() {
 	if(product){
 		var exported : Boolean = exportProduct(product, categoriesMap, regions);
 		if (exported) counter += 1;
-		
+
 		while (productIterator.hasNext()) {
 			product = productIterator.next();
 			exported = exportProduct(product, categoriesMap, regions);
@@ -163,7 +163,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 		if (empty(productPhoto)) {
 			productPhoto = URLUtils.absStatic('/images/noimagesmall.png');
 		}
-		
+
 		// As of 2016-12, we also want the rest of the images
 		var allImages = product.getImages('large');
 		var allProductPhotos = [];
@@ -192,7 +192,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
             	} else {
             		productPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
             	}
-            	
+
             } catch(err) {
             	Logger.warn("Could not get the price for product id: " + product.ID);
             	Logger.warn(err.message);
@@ -221,7 +221,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 				productStock = 0;
 			}
 		}
-		
+
 		// Categories
 		var categoriesFormatted = [];
 		try {
@@ -262,7 +262,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 		var currency : String = Site.getCurrent().getDefaultCurrency();
 		var variantIterator = product.getVariants().iterator();
 		var variantsDict : Object = new Object();
-		
+
 		while (variantIterator.hasNext()) {
 			var variant = variantIterator.next();
 			var variantID = variant.getID();
@@ -277,21 +277,21 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 
 			variantObj["variant_sku"] = variantID;
 			variantsDict[variantID] = variantObj;
-			
+
 			var variantPhotos = variant.getImages('large');
 			for (var i = 0; i < variantPhotos.length; i++) {
 				var photoURL = variantPhotos[i].absURL.toString();
 				if (allProductPhotos.indexOf(photoURL) === -1) allProductPhotos.push(photoURL);
 			}
-		}		
-		
+		}
+
 		var regional : List = [];
 		Logger.warn("Processing Product: " + product.getName());
-		
+
 		for (var j = 0; j < regions.length; j++) {
 			request.setLocale(regions[j]['locale']);
 			session.setCurrency(Currency.getCurrency(regions[j]['currency']));
-			
+
 			Logger.warn("Processing Locale: " + regions[j]['locale']);
 			var productRegion : Map = {};
 
@@ -302,16 +302,16 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			if (Site.current.preferences.custom.ProductHost != null) {
 				regionalUrl = regionalUrl.host(Site.current.preferences.custom.ProductHost);
 			}
-			
+
 			// Name
 			var regionalName : String = product.getName();
 	        // Product Price
 	        var regionalPrice : Decimal = null;
 			var regionalCurrency : String = null;
 	        if (product.getPriceModel()){
-	            
+
 	            try {
-	        	
+
 	            	// For the most part, master products don't have price, we need to get from a variant
 		            // getDefaultVariant() will give us either the default variant or an arbitrary one
 		            // I'm okay with getting an arbitrary one
@@ -325,7 +325,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 	            		regionalPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
 	            		regionalCurrency = productVariant.getPriceModel().getPrice().getCurrencyCode();
 	            	}
-	            	
+
 	            } catch(err) {
 	            	Logger.warn("Could not get the price for product id: " + product.ID);
 	            	Logger.warn(err.message);
@@ -353,8 +353,8 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 				} else {
 					regionalStock = 0;
 				}
-			}	
-			
+			}
+
 			productRegion['buy_now_link_url'] = regionalUrl;
 			productRegion['name'] = regionalName;
 			productRegion['price'] = regionalPrice;
@@ -363,7 +363,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			productRegion['variants_json'] = JSON.stringify(variantsDict);
 			productRegion['description'] = product.getLongDescription().getMarkup();
 			productRegion['region_code'] = regions[j]['locale'];
-			
+
 			regional.push(productRegion);
 		}
 
@@ -378,7 +378,7 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			"product_photos": allProductPhotos,
 			"categories": categoriesFormatted
 		});
-		
+
 		if(productName && productSKU && productUrl) {
 			// Create album through Pixlee API
 			createProduct(productName, productSKU, productUrl, productPhoto, productUPC, productPrice, productStock, productNativeId, productExtraFields, currency, JSON.stringify(variantsDict), regional);
@@ -441,16 +441,16 @@ function getCategoriesMap() {
 
 	// One more thing, sorry
 	// We need to keep track of the path in such a way that getting both full names and paths is cheap i.e. without additional API calls.
-	// We can do this in many ways, but I'm use more space and keep track of all category_ids and names (not full names) in a seperate hash. 
+	// We can do this in many ways, but I'm use more space and keep track of all category_ids and names (not full names) in a seperate hash.
 	// We'll call it namesMap.
 
 	var catalog = CatalogMgr.getSiteCatalog();
 	var root = catalog.getRoot();
-	
+
 	var queue = [];
 	var namesMap = {};
 	var result = {};
-	
+
 	// We want to skip the root node in front of all categories
 	var topLevelCategories = root.getSubCategories();
 	for (var i = 0; i < topLevelCategories.length; i++) {
@@ -472,12 +472,12 @@ function getCategoriesMap() {
 
 		// Add the combination to the namesMap
 		namesMap[categoryID] = categoryName;
-		
+
 		result[categoryID] = {
 			fullName: getFullName(pathToNode, namesMap, categoryName),
 			parentIDs: pathToNode.slice() // JS way of copying an array by value not reference
 		}
-		
+
 		// For all the children of this node, add the current category to the path
 		pathToNode.push(categoryID);
 		for (var i = 0; i < childrenNodes.length; i++) {
@@ -547,7 +547,7 @@ function getDistilleryBaseUrl() {
 }
 
 function getDistilleryCountriesURL() {
-    return DISTILLERY_COUNTRIES_URL;    
+    return DISTILLERY_COUNTRIES_URL;
 }
 
 // Check if input is a number
@@ -564,7 +564,7 @@ function notifyExportStatus(status, jobId, numProducts) {
 	var httpClient : HTTPClient = new HTTPClient();
 	httpClient.open('POST', 'https://distillery.pixlee.com/api/v1/notifyExportStatus?api_key=' + apiKey);
 	httpClient.setRequestHeader('Content-Type', 'application/json');
-	
+
 	var post_body = {
 		api_key: apiKey,
 		status: status,
@@ -572,7 +572,7 @@ function notifyExportStatus(status, jobId, numProducts) {
 		num_products: numProducts,
 		platform: "demandware"
 	};
-	
+
 	httpClient.send(JSON.stringify(post_body));
 	if (httpClient.statusCode == 200) {
 		Logger.warn("REQUEST MADE");

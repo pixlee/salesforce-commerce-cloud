@@ -39,7 +39,7 @@ function getMatchingLineItem(basket, productId) {
  */
 exports.getAddToCartEvents = function (productsAdded) {
     var ProductMgr = require('dw/catalog/ProductMgr');
-    var productHelper = require('./productHelper');
+    var pixleeHelper = require('./pixleeHelper');
     var pixleeEvents = [];
 
     if (Array.isArray(productsAdded) && productsAdded.length) {
@@ -53,7 +53,7 @@ exports.getAddToCartEvents = function (productsAdded) {
             var pli = getMatchingLineItem(currentBasket, product.ID);
 
             var productId = masterProduct ? masterProduct.ID : product.ID;
-            var productSKU = productHelper.getPixleeProductSKU(product);
+            var productSKU = pixleeHelper.getPixleeProductSKU(product);
             var quantity = parseInt(productAdded.qty, 10);
             var price = ((pli.priceValue / pli.quantityValue) * quantity).toFixed(2);
             var currency = currentBasket.currencyCode;

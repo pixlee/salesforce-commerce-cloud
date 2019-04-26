@@ -137,6 +137,13 @@
 
     <type-extension type-id="OrganizationPreferences">
         <custom-attribute-definitions>
+            <attribute-definition attribute-id="PixleeCountriesMap">
+                <display-name xml:lang="x-default">Currency to country map</display-name>
+                <description xml:lang="x-default">A JSON object containing mapping of country codes to currency codes.</description>
+                <type>text</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
             <attribute-definition attribute-id="PixleeVersion">
                 <display-name xml:lang="x-default">Version Number</display-name>
                 <type>string</type>
@@ -151,6 +158,7 @@
             <attribute-group group-id="Pixlee">
                 <display-name xml:lang="x-default">Pixlee</display-name>
                 <attribute attribute-id="PixleeVersion"/>
+                <attribute attribute-id="PixleeCountriesMap"/>
             </attribute-group>
         </group-definitions>
     </type-extension>
