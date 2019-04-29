@@ -235,7 +235,8 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 				if (idsSeen.indexOf(categoryId) === -1) {
 					categoriesFormatted.push({
 						'category_name': categoriesMap[categoryId]['fullName'],
-						'category_id': categoryId
+						'category_id': categoryId,
+						'category_updated_at': Math.floor(Date.now() / 1000)
 					});
 					idsSeen.push(categoryId);
 				};
@@ -247,7 +248,8 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 					if (idsSeen.indexOf(categoryId) === -1) {
 						categoriesFormatted.push({
 							'category_id': categoryId,
-							'category_name': categoriesMap[categoryId]['fullName']
+							'category_name': categoriesMap[categoryId]['fullName'],
+							'category_updated_at': Math.floor(Date.now() / 1000)
 						});
 						idsSeen.push(categoryId);
 					}
@@ -376,7 +378,8 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 		// Extra Fields
 		var productExtraFields = JSON.stringify({
 			"product_photos": allProductPhotos,
-			"categories": categoriesFormatted
+			"categories": categoriesFormatted,
+			"ecommerce_platform": "demandware"
 		});
 		
 		if(productName && productSKU && productUrl) {
