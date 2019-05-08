@@ -49,10 +49,9 @@ exports.getAddToCartEvents = function (productsAdded) {
 
         productsAdded.forEach(function (productAdded) {
             var product = ProductMgr.getProduct(productAdded.pid);
-            var masterProduct = product.variant ? product.masterProduct : null;
             var pli = getMatchingLineItem(currentBasket, product.ID);
 
-            var productId = masterProduct ? masterProduct.ID : product.ID;
+            var productId = pixleeHelper.getPixleeProductId(product);
             var productSKU = pixleeHelper.getPixleeProductSKU(product);
             var quantity = parseInt(productAdded.qty, 10);
             var price = ((pli.priceValue / pli.quantityValue) * quantity).toFixed(2);

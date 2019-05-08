@@ -14,10 +14,10 @@ exports.isPixleeEnabled = function () {
 };
 
 /**
- * Retrieves the product ID to pass to Pixlee from a different product attribute
+ * Retrieves the product SKU to pass to Pixlee from a different product attribute
  * depending on SkuReference site preference.
  *
- * @param {dw.catalog.Product} product Product to retrive ID for
+ * @param {dw.catalog.Product} product Product to retrieve SKU for
  * @return {string} Product ID to pass to Pixlee
  */
 exports.getPixleeProductSKU = function (product) {
@@ -25,10 +25,23 @@ exports.getPixleeProductSKU = function (product) {
     var pixleeSkuReference = Site.current.getCustomPreferenceValue('SkuReference');
 
     if ('Manufacturer SKU'.equalsIgnoreCase(pixleeSkuReference)) {
-        return product.manufacturerSKU;
+        return product.manufacturerSKU || product.ID;
     }
 
     return product.ID;
+};
+
+/**
+ * Retrieves the product ID to pass to Pixlee. If the product is a variant then its
+ * master is considered.
+ *
+ * @param {dw.catalog.Product} product Product to retrieve ID for
+ * @return {string} Product ID to pass to Pixlee
+ */
+exports.getPixleeProductId = function (product) {
+    return product.variant
+        ? this.getPixleeProductSKU(product.masterProduct)
+        : this.getPixleeProductSKU(product);
 };
 
 /**

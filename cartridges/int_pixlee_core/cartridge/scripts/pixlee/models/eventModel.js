@@ -42,7 +42,7 @@ function getLineItemsPayload(lineItemCtnr) {
     for (var i = 0; i < lineItemCtnr.productLineItems.length; i++) {
         var pli = lineItemCtnr.productLineItems[i];
         var productSku = pixleeHelper.getPixleeProductSKU(pli.product);
-        var productId = pli.product.variant ? pli.product.masterProduct.ID : pli.productID;
+        var productId = pixleeHelper.getPixleeProductId(pli.product);
 
         cartItems.push({
             quantity: pli.quantityValue,
@@ -88,7 +88,6 @@ function PixleeEndCheckoutEvent(order, locale) {
     if (!order) {
         return null;
     }
-
 
     var payload = {
         cart_contents: getLineItemsPayload(order),
