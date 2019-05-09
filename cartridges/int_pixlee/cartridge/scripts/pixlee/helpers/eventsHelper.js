@@ -61,9 +61,6 @@ exports.getAddToCartEventsFromSession = function () {
 
     delete session.privacy[SESSION_KEY];
 
-    var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
-    pixleeHelper.clearCheckoutStartedFlag();
-
     return eventsData;
 };
 
@@ -74,33 +71,6 @@ exports.deleteEventsFromSession = function () {
     delete session.privacy[SESSION_KEY];
 };
 
-exports.getCartEvents = function () {
-    var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
-
-    if (pixleeHelper.isPixleeEnabled()) {
-        pixleeHelper.clearCheckoutStartedFlag();
-    }
-
-    return null;
-};
-
-exports.getCheckoutStartedEvents = function () {
-    var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
-
-    if (pixleeHelper.isPixleeEnabled() && pixleeHelper.isTrackingAllowed() && !pixleeHelper.hasCheckoutStartedBeenReported()) {
-        var PixleeCheckoutStartedEvent = require('*/cartridge/scripts/pixlee/models/eventModel').PixleeCheckoutStartedEvent;
-        var checkoutStartedEvent = new PixleeCheckoutStartedEvent();
-
-        if (checkoutStartedEvent) {
-            pixleeHelper.saveCheckoutStartedReportedFlag();
-
-            return [checkoutStartedEvent];
-        }
-    }
-
-    return null;
-};
-
 exports.getEndCheckoutEvents = function (order) {
     var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
 
@@ -109,8 +79,6 @@ exports.getEndCheckoutEvents = function (order) {
         var endCheckoutEvent = new PixleeEndCheckoutEvent(order);
 
         if (endCheckoutEvent) {
-            pixleeHelper.clearCheckoutStartedFlag();
-
             return [endCheckoutEvent];
         }
     }

@@ -29,32 +29,10 @@ server.append('AddProduct', consentTracking.consent, function (req, res, next) {
                 res.json({
                     pixleeEventData: addToCartEvents
                 });
-
-                pixleeHelper.clearCheckoutStartedFlag();
             }
         }
     }
 
-    next();
-});
-
-/**
- * Clears checkout started flag
- */
-function clearCheckoutStartedFlag() {
-    var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
-    if (pixleeHelper.isPixleeEnabled()) {
-        pixleeHelper.clearCheckoutStartedFlag();
-    }
-}
-
-server.append('Show', function (req, res, next) {
-    clearCheckoutStartedFlag();
-    next();
-});
-
-server.append('MiniCartShow', function (req, res, next) {
-    clearCheckoutStartedFlag();
     next();
 });
 

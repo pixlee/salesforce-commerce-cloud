@@ -45,30 +45,6 @@ exports.getPixleeProductId = function (product) {
 };
 
 /**
- * Sets a flag with the current customer session indicating that checkout:start
- * event has been reported.
- */
-exports.saveCheckoutStartedReportedFlag = function () {
-    session.privacy.pixleeCheckoutStartedFlag = true;
-};
-
-/**
- * Checkis if checkout:start event is reported for the current checkout session.
- *
- * @return {boolean} - Returns true if checkout:start event has been reported
- */
-exports.hasCheckoutStartedBeenReported = function () {
-    return session.privacy.pixleeCheckoutStartedFlag || false;
-};
-
-/**
- * Clears the session flag indicating that checkout:start event was reported.
- */
-exports.clearCheckoutStartedFlag = function () {
-    delete session.privacy.pixleeCheckoutStartedFlag;
-};
-
-/**
  * Calculates whether tracking is allowed for a customer session based on the
  *   Tracking Option site preference and the consent given by the customer, if any.
  *

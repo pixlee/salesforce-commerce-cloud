@@ -4,12 +4,10 @@
 		<isscript>
 			var pid = pdict.CurrentHttpParameterMap.pid.stringValue;
 			var qty = pdict.CurrentHttpParameterMap.Quantity.stringValue;
-			var eventsHelper = require('~/cartridge/scripts/pixlee/helpers/eventsHelper');
 
 			if (pid && qty) {
+				var eventsHelper = require('~/cartridge/scripts/pixlee/helpers/eventsHelper');
 				eventsHelper.addAddToCartEventToSession(pid, qty);
-			} else {
-				eventsHelper.deleteEventsFromSession();
 			}
 		</isscript>
 

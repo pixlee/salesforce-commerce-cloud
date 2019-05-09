@@ -58,29 +58,6 @@ function getLineItemsPayload(lineItemCtnr) {
 
 /**
  * @constructor
- * @param {string} locale - Locale to report to Pixlee
- */
-function PixleeCheckoutStartedEvent(locale) {
-    var BasketMgr = require('dw/order/BasketMgr');
-    var basket = BasketMgr.currentBasket;
-
-    if (!basket) {
-        return null;
-    }
-
-    var payload = {
-        cart_contents: getLineItemsPayload(basket),
-        cart_total: basket.adjustedMerchandizeTotalPrice.value,
-        cart_total_quantity: basket.productQuantityTotal,
-        currency: basket.currencyCode
-    };
-
-    PixleeEvent.call(this, 'checkout:start', payload, locale);
-}
-
-
-/**
- * @constructor
  * @param {dw.order.Order} order - Order to report end checkout event for.
  * @param {string} locale - Locale to report to Pixlee
  */
@@ -129,6 +106,5 @@ function PixleeEndCheckoutEvent(order, locale) {
 
 module.exports = {
     PixleeEvent: PixleeEvent,
-    PixleeCheckoutStartedEvent: PixleeCheckoutStartedEvent,
     PixleeEndCheckoutEvent: PixleeEndCheckoutEvent
 };

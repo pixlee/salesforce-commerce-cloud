@@ -19,8 +19,6 @@ server.append('Confirm', function (req, res, next) {
             var endCheckoutEvent = new PixleeEndCheckoutEvent(order);
 
             if (endCheckoutEvent) {
-                pixleeHelper.clearCheckoutStartedFlag();
-
                 res.setViewData({
                     pixleeEventData: [endCheckoutEvent]
                 });
