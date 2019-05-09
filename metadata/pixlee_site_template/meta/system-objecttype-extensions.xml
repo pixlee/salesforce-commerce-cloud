@@ -26,15 +26,6 @@
                 <min-length>0</min-length>
                 <field-length>0</field-length>
             </attribute-definition>
-            <attribute-definition attribute-id="HttpTimeout">
-                <display-name xml:lang="x-default">HTTP Timeout</display-name>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-                <field-length>0</field-length>
-                <default-value>900000</default-value>
-            </attribute-definition>
             <attribute-definition attribute-id="SkuReference">
                 <display-name xml:lang="x-default">SKU Reference</display-name>
                 <type>enum-of-string</type>
@@ -69,15 +60,6 @@
             <attribute-definition attribute-id="PixleeCLPWidgetId">
                 <display-name xml:lang="x-default">CLP Widget ID</display-name>
                 <description>ID of Pixlee widget to display on category landing pages.</description>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-                <field-length>0</field-length>
-            </attribute-definition>
-            <attribute-definition attribute-id="PixleeHomepageWidgetId">
-                <display-name xml:lang="x-default">Homepage Widget ID</display-name>
-                <description>ID of Pixlee widget to display on home page.</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -123,13 +105,11 @@
                 <attribute attribute-id="PixleeEnabled"/>
                 <attribute attribute-id="PixleeApiKey"/>
                 <attribute attribute-id="PixleeSecretKey"/>
-                <attribute attribute-id="HttpTimeout"/>
                 <attribute attribute-id="SkuReference"/>
                 <attribute attribute-id="ProductHost"/>
                 <attribute attribute-id="PixleePDPWidgetId"/>
                 <attribute attribute-id="PixleePDPWidgetAccountId"/>
                 <attribute attribute-id="PixleeCLPWidgetId"/>
-                <attribute attribute-id="PixleeHomepageWidgetId"/>
                 <attribute attribute-id="PixleeTracking"/>
             </attribute-group>
         </group-definitions>
