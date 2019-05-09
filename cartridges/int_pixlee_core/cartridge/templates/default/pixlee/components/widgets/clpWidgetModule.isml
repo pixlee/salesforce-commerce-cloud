@@ -10,8 +10,13 @@
 				Pixlee.addCategoryWidget({
 					widgetId: <isprint encoding="jsonvalue" value="${pixleeWidgetId}"/>,
 					nativeCategoryId: '<isprint encoding="jsonvalue" value="${pdict.p_categoryid}"/>',
-					ecomm_platform:'demandware'
+					ecomm_platform:'demandware',
+					getCookieConsent: true
 				});
+
+				if (document.getElementById('pixlee-events-init')) { // presence of this element in the DOM means tracking is allowed
+					Pixlee.changedCookiePolicy();
+				}
 			};
 		</script>
 		<script src="//assets.pixlee.com/assets/pixlee_widget_1_0_0.js"></script>

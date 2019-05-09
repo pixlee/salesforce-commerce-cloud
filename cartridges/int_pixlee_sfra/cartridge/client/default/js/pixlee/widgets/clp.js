@@ -15,8 +15,13 @@ module.exports = function () {
             Pixlee.addCategoryWidget({
                 widgetId: widgetId,
                 nativeCategoryId: categoryId,
-                ecomm_platform: 'demandware'
+                ecomm_platform: 'demandware',
+                getCookieConsent: true
             });
+
+            if ($('#pixlee-events-init').length) { // presence of this element in the DOM means tracking is allowed
+                Pixlee.changedCookiePolicy();
+            }
         };
 
         $.getScript('//assets.pixlee.com/assets/pixlee_widget_1_0_0.js');

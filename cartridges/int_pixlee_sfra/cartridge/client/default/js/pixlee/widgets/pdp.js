@@ -16,8 +16,13 @@ module.exports = function () {
             Pixlee.addProductWidget({
                 accountId: accountId,
                 widgetId: widgetId,
-                skuId: productId
+                skuId: productId,
+                getCookieConsent: true
             });
+
+            if ($('#pixlee-events-init').length) { // presence of this element in the DOM means tracking is allowed
+                Pixlee.changedCookiePolicy();
+            }
         };
 
         $.getScript('//assets.pixlee.com/assets/pixlee_widget_1_0_0.js');
