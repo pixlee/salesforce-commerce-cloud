@@ -75,32 +75,6 @@ function PixleeEndCheckoutEvent(order, locale) {
         order_id: order.orderNo
     };
 
-    var billingAddress = order.billingAddress ? {
-        street1: order.billingAddress.address1,
-        street2: order.billingAddress.address2,
-        city: order.billingAddress.city,
-        state: order.billingAddress.stateCode,
-        zip: order.billingAddress.postalCode,
-        country: order.billingAddress.countryCode ? order.billingAddress.countryCode.value : null
-    } : null;
-
-    if (billingAddress) {
-        payload.billing_address = JSON.stringify(billingAddress);
-    }
-
-    var shippingAddress = order.defaultShipment && order.defaultShipment.shippingAddress ? {
-        street1: order.defaultShipment.shippingAddress.address1,
-        street2: order.defaultShipment.shippingAddress.address2,
-        city: order.defaultShipment.shippingAddress.city,
-        state: order.defaultShipment.shippingAddress.stateCode,
-        zip: order.defaultShipment.shippingAddress.postalCode,
-        country: order.defaultShipment.shippingAddress.countryCode ? order.defaultShipment.shippingAddress.countryCode.value : null
-    } : null;
-
-    if (shippingAddress) {
-        payload.shipping_address = JSON.stringify(shippingAddress);
-    }
-
     PixleeEvent.call(this, 'converted:photo', payload, locale);
 }
 
