@@ -148,6 +148,21 @@ function getAllProductImages(product, exportOptions) {
         allImages.push(image.absURL.toString());
     }
 
+    if (product.master) {
+        var variantIterator = product.getVariants().iterator();
+
+        while (variantIterator.hasNext()) {
+            var variant = variantIterator.next();
+            var variantPhotos = variant.getImages(imageViewType);
+            for (var j = 0; j < variantPhotos.length; j++) {
+                var photoURL = variantPhotos[j].absURL.toString();
+                if (allImages.indexOf(photoURL) < 0) {
+                    allImages.push(photoURL);
+                }
+            }
+        }
+    }
+
     return allImages;
 }
 
@@ -155,17 +170,13 @@ function getAllProductImages(product, exportOptions) {
  * Retrieves details of product variants.
  *
  * @param {dw.catalog.Product} product - Product for which to retrieve variants.
- * @param {Object} exportOptions - Export configuration options
- * @param {Array} allImages - A list of all product images. New images will be
- *   added to it as variants are iterated.
  * @returns {Object} - An object (map) having details of all product variants.
  */
-function getProductVariants(product, exportOptions, allImages) {
+function getProductVariants(product) {
     var variantsDict = {};
 
     if (product.master) {
         var variantIterator = product.getVariants().iterator();
-        var imageViewType = exportOptions.imageViewType || DEFAULT_IMAGE_VEIW_TYPE;
 
         while (variantIterator.hasNext()) {
             var variant = variantIterator.next();
@@ -182,14 +193,6 @@ function getProductVariants(product, exportOptions, allImages) {
             };
 
             variantsDict[variantID] = variantObj;
-
-            var variantPhotos = variant.getImages(imageViewType);
-            for (var i = 0; i < variantPhotos.length; i++) {
-                var photoURL = variantPhotos[i].absURL.toString();
-                if (allImages.indexOf(photoURL) < 0) {
-                    allImages.push(photoURL);
-                }
-            }
         }
     }
 
@@ -288,6 +291,9 @@ function getCategoriesMap() {
  * @return {Array} - Array of categories for the product.
  */
 function getProductCategories(product) {
+    // Lazy init the categories map
+    categoriesMap = categoriesMap || getCategoriesMap();
+
     var productCategories = {};
     var categoryAssignments = product.getCategoryAssignments();
 
@@ -403,7 +409,7 @@ function getRegionalInfo(product, variantsJSON) {
             price: regionalPrice,
             currency: regionalCurrency,
             stock: regionalStock,
-            description: product.getLongDescription().getMarkup(),
+            description: product.longDescription ? product.longDescription.getMarkup() : null,
             region_code: currentLocale,
             variants_json: variantsJSON
         };
@@ -429,36 +435,37 @@ function getRegionalInfo(product, variantsJSON) {
  * @param {Object} options - Export configuration parameters.
  */
 function ProductExportPayload(product, options) {
-    // Lazy init the categories map
-    categoriesMap = categoriesMap || getCategoriesMap();
-
     var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
     var exportOptions = options || {};
-    var allImages = getAllProductImages(product, exportOptions);
-    var variants = getProductVariants(product, exportOptions, allImages);
+    var variants = getProductVariants(product);
     var variantsJSON = JSON.stringify(variants);
-    var productExtraFields = {
-        product_photos: allImages,
-        categories: getProductCategories(product),
-        ecommerce_platform: 'demandware'
-    };
     var regionalInfo = getRegionalInfo(product, variantsJSON);
 
     this.title = product.name;
     this.product = {
-        name: product.name,
         sku: pixleeHelper.getPixleeProductSKU(product),
-        buy_now_link_url: getProductPageUrl(product),
-        product_photo: getProductImageURL(product, exportOptions),
         upc: product.UPC || null,
-        price: getProductPrice(product),
-        stock: getProductStock(product),
         native_product_id: product.ID,
-        extra_fields: JSON.stringify(productExtraFields),
-        currency: Site.getCurrent().getDefaultCurrency(),
-        variants_json: variantsJSON,
         regional_info: regionalInfo
     };
+
+    if (!exportOptions.onlyRegionalDetails) {
+        var productExtraFields = {
+            product_photos: getAllProductImages(product, exportOptions),
+            categories: getProductCategories(product),
+            ecommerce_platform: 'demandware'
+        };
+
+        this.product.name = product.name;
+        this.product.buy_now_link_url = getProductPageUrl(product);
+        this.product.product_photo = getProductImageURL(product, exportOptions);
+        this.product.price = getProductPrice(product);
+        this.product.stock = getProductStock(product);
+        this.product.extra_fields = JSON.stringify(productExtraFields);
+        this.product.currency = Site.getCurrent().getDefaultCurrency();
+        this.product.variants_json = variantsJSON;
+    }
+
     this.album_type = 'product';
     this.live_update = false;
     this.num_photos = 0;

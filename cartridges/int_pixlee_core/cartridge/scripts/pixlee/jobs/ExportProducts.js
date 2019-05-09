@@ -159,7 +159,8 @@ exports.execute = function (jobParameters) {
     var breakAfter = parseInt(jobParameters['Break After'], 10);
     breakAfter = isNaN(breakAfter) ? 0 : breakAfter;
     var exportOptions = {
-        imageViewType: jobParameters['Images View Type'] || null
+        imageViewType: jobParameters['Images View Type'] || null,
+        onlyRegionalDetails: jobParameters['Main site ID'] && (require('dw/system/Site').current.ID !== jobParameters['Main site ID'])
     };
     var testProductId = jobParameters['Test Product ID'] || null;
 

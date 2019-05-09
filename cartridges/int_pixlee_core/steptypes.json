@@ -51,6 +51,14 @@
                             "default-value": "NEVER"
                         },
                         {
+                            "@name": "Main site ID",
+                            "@type": "string",
+                            "@required": "false",
+                            "@trim": "true",
+                            "description": "ID of main site, for which all product details will be exported. For all other sites only regional details will be exported. If not set, all details will be exported for all sites.",
+                            "default-value": ""
+                        },
+                        {
                             "@name": "Test Product ID",
                             "@type": "string",
                             "@required": "false",
