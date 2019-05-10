@@ -5,7 +5,7 @@ var base = module.superModule;
 var decorators = require('*/cartridge/models/product/decorators/index');
 
 /**
- * Decorate product with product line item information from within an order
+ * Decorate product with product Pixlee product ID.
  * @param {Object} product - Product Model to be decorated
  * @param {dw.catalog.Product} apiProduct - Product information returned by the script API
  * @param {Object} options - Options passed in from the factory

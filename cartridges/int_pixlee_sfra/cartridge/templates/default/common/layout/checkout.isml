@@ -14,13 +14,15 @@
     <body>
         <div class="page">
             <isinclude template="/components/header/pageHeaderNomenu" />
-            <isreplace/>
+            <div role="main" id="maincontent">
+				<isreplace/>
+            </div>
             <isinclude template="/components/footer/pageFooter" />
         </div>
         <!--[if lt IE 10]>
             <isinclude sf-toolkit="off" template="/common/scripts" />
         <![endif]-->
         <isinclude url="${URLUtils.url('ConsentTracking-Check')}"/>
-        <isinclude template="pixlee/events/checkout">
+        <isinclude template="pixlee/events/include" />
     </body>
 </html>

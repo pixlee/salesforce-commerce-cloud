@@ -9,12 +9,18 @@
             <isinclude sf-toolkit="off" template="/common/scripts" />
         <!--<![endif]-->
         <isinclude template="/common/htmlHead" />
+        <isif condition="${pdict.canonicalUrl}" >
+            <link rel="canonical" href="${pdict.canonicalUrl}"/>
+        </isif>
         <isactivedatahead/>
+        <isinclude template="/components/schema" />
     </head>
     <body>
         <div class="page" data-action="${pdict.action}" data-querystring="${pdict.queryString}" >
             <isinclude template="/components/header/pageHeader" />
-            <isreplace/>
+            <div role="main" id="maincontent">
+	            <isreplace/>
+            </div>
             <isinclude template="/components/footer/pageFooter" />
         </div>
         <div class="error-messaging"></div>
@@ -31,6 +37,6 @@
         </iscomment>
         ${dw.system.HookMgr.callHook('app.template.afterFooter', 'afterFooter') || ''}
         <isinclude url="${URLUtils.url('ConsentTracking-Check')}"/>
-        <isinclude template="pixlee/events/checkout">
+        <isinclude template="pixlee/events/include" />
     </body>
 </html>

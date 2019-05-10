@@ -24,8 +24,7 @@ server.append('AddProduct', consentTracking.consent, function (req, res, next) {
             }
 
             if (addedProducts && addedProducts.length) {
-                var trackingHelper = require('*/cartridge/scripts/pixlee/helpers/trackingHelper');
-                var addToCartEvents = trackingHelper.getAddToCartEvents(addedProducts);
+                var addToCartEvents = pixleeHelper.getAddToCartEvents(addedProducts);
                 res.json({
                     pixleeEventData: addToCartEvents
                 });
