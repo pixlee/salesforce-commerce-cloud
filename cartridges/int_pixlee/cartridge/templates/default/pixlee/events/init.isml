@@ -21,6 +21,19 @@
 
 					        pixlee_analytics.events.trigger(eventType, eventPayload);
 					    });
+
+						if (window.pixlee_report_deferred_events) {
+							var getAddToCartEventsURL = '${URLUtils.url("PixleeEvents-GetAddToCartEvents")}';
+
+							jQuery.get(getAddToCartEventsURL, function (data) {
+								if (data && data.length) {
+									for (var i = 0; i < data.length; i++) {
+										var pixleeEvent = data[i];
+										window.pixlee_analytics.events.trigger(pixleeEvent.type, pixleeEvent.payload);
+									}
+								}
+							});
+						}
 					} else {
 						window.setTimeout(triggerEvents, 50);
 					}

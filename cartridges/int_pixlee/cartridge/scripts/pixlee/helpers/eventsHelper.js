@@ -1,6 +1,6 @@
 'use strict';
 
-/* global session */
+/* global session, empty */
 
 /*
  * The only reason for this module and the complexity it adds to exist is to
@@ -31,7 +31,7 @@ var SESSION_KEY = 'pixleeATCEventsData';
  * @param {string} pid - ID of the product added to cart.
  * @param {string} qty - Quantity of the product added to cart
  */
-exports.addAddToCartEventToSession = function (pid, qty) {
+function addAddToCartEventToSession(pid, qty) {
     var eventsDataStr = session.privacy[SESSION_KEY];
     var eventsData = eventsDataStr ? JSON.parse(eventsDataStr) : [];
 
@@ -41,6 +41,42 @@ exports.addAddToCartEventToSession = function (pid, qty) {
     });
 
     session.privacy[SESSION_KEY] = JSON.stringify(eventsData);
+}
+
+/**
+ * Handles added to cart.
+ *
+ * @param {Object} httpParameterMap - HTTP parameter map
+ * @returns {boolean} - True if any products were added, fale otherwise
+ */
+exports.processAddToCart = function (httpParameterMap) {
+    var pid = httpParameterMap.pid.stringValue;
+    var qty = httpParameterMap.Quantity.stringValue;
+
+    if (pid && !qty) { // handle product bundles
+        var product = require('dw/catalog/ProductMgr').getProduct(pid);
+        if (product && product.bundle) {
+            qty = '1';
+        }
+    }
+
+    if (pid && qty) {
+        addAddToCartEventToSession(pid, qty);
+    }
+
+    return !empty(session.privacy[SESSION_KEY]);
+};
+
+/**
+ * Process adding a product list item (like from gift registry or with list)
+ *
+ * @param {dw.customer.ProductListItem} productListItem - Product list item being added.
+ * @param {string} qty - Quantity added to cart
+ */
+exports.processAddProductListItem = function (productListItem, qty) {
+    if (productListItem && qty) {
+        addAddToCartEventToSession(productListItem.productID, qty);
+    }
 };
 
 /**

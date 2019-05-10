@@ -3,18 +3,18 @@
 var ISML = require('dw/template/ISML');
 
 /**
- * An entry point to remote-include Pixlee tracking intializer
+ * An entry point to remote-include Pixlee tracking initializer
  * Remote-include is needed to allow tracking consent from session to be
  *   correctly detected on cached pages.
  */
-exports.Include = function () {
-    ISML.renderTemplate('pixlee/events/include');
+exports.Init = function () {
+    ISML.renderTemplate('pixlee/events/init');
 };
-exports.Include.public = true;
+exports.Init.public = true;
 
 /**
  * An entry point to retrieve add to cart events stored in session via AJAX call.
- * More detaisl could be found in eventsHelper module description.
+ * More details could be found in eventsHelper module description.
  */
 exports.GetAddToCartEvents = function () {
     var eventsHelper = require('~/cartridge/scripts/pixlee/helpers/eventsHelper');
@@ -22,8 +22,8 @@ exports.GetAddToCartEvents = function () {
     var addToCartEvents;
 
     if (eventsData && eventsData.length) {
-        var trackingHelper = require('*/cartridge/scripts/pixlee/helpers/trackingHelper');
-        addToCartEvents = trackingHelper.getAddToCartEvents(eventsData);
+        var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
+        addToCartEvents = pixleeHelper.getAddToCartEvents(eventsData);
     }
 
     ISML.renderTemplate('pixlee/events/json', {
