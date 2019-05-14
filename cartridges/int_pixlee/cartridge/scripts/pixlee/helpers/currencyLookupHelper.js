@@ -54,8 +54,7 @@ exports.getCurrencyForLocale = function (locale) {
             : require('dw/system/Site').getCurrent().getDefaultCurrency();
     } else {
         // fallback to core cartridge logic
-        var coreCurrencyLookupHelper = require('int_pixlee_core/cartridge/scripts/pixlee/helpers/currencyLookupHelper');
-        currencyCode = coreCurrencyLookupHelper.getCurrencyForLocale(locale);
+        currencyCode = module.superModule.getCurrencyForLocale(locale);
     }
 
     return currencyCode;
