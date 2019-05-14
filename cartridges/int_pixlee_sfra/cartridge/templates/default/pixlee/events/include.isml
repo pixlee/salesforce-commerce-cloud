@@ -1,5 +1,3 @@
-<isinclude url="${URLUtils.url('PixleeEvents-Init')}"/>
-
 <isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
 	<isset name="eventsList" value="${pdict.pixleeEventData}" scope="page" />
 	<isif condition="${eventsList && eventsList.length}">
