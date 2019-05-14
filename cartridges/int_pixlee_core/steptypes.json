@@ -39,7 +39,7 @@
                             "@type": "string",
                             "@required": "true",
                             "@trim": "true",
-                            "description": "Stop exporting products after",
+                            "description": "Allows job execution to be stopped after a number of consecutive failures is reached. To be used for test purposes.",
                             "enum-values": {
                                 "value": [
                                     "NEVER",
@@ -53,9 +53,9 @@
                         {
                             "@name": "Main site ID",
                             "@type": "string",
-                            "@required": "false",
+                            "@required": "true",
                             "@trim": "true",
-                            "description": "ID of main site, for which all product details will be exported. For all other sites only regional details will be exported. If not set, all details will be exported for all sites.",
+                            "description": "ID of main site, for which all product details will be exported. For all other sites only regional details will be exported.",
                             "default-value": ""
                         },
                         {
