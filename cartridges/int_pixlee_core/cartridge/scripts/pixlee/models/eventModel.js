@@ -46,8 +46,8 @@ function getLineItemsPayload(lineItemCtnr) {
 
         cartItems.push({
             quantity: pli.quantityValue,
-            product_id: productId,
-            product_sku: productSku,
+            product_sku: productId,
+            variant_sku: productSku,
             price: pli.priceValue,
             currency: lineItemCtnr.currencyCode
         });

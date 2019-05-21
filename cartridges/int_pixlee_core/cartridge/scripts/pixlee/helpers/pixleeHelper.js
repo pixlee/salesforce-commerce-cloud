@@ -128,8 +128,8 @@ exports.getAddToCartEvents = function (productsAdded) {
             var currency = currentBasket.currencyCode;
 
             var eventPayload = {
-                product_id: productId,
-                product_sku: productSKU,
+                product_sku: productId,
+                variant_sku: productSKU,
                 quantity: quantity,
                 price: price,
                 currency: currency
