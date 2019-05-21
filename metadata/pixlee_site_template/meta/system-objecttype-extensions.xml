@@ -48,9 +48,9 @@
                 <min-length>0</min-length>
                 <field-length>0</field-length>
             </attribute-definition>
-            <attribute-definition attribute-id="PixleePDPWidgetAccountId">
-                <display-name xml:lang="x-default">PDP Widget Account ID</display-name>
-                <description>ID of Pixlee widget to display on product details pages.</description>
+            <attribute-definition attribute-id="PixleeAccountId">
+                <display-name xml:lang="x-default">Account ID</display-name>
+                <description>Pixlee account ID.</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -103,12 +103,12 @@
             <attribute-group group-id="Pixlee">
                 <display-name xml:lang="x-default">Pixlee</display-name>
                 <attribute attribute-id="PixleeEnabled"/>
+                <attribute attribute-id="PixleeAccountId"/>
                 <attribute attribute-id="PixleeApiKey"/>
                 <attribute attribute-id="PixleeSecretKey"/>
                 <attribute attribute-id="SkuReference"/>
                 <attribute attribute-id="ProductHost"/>
                 <attribute attribute-id="PixleePDPWidgetId"/>
-                <attribute attribute-id="PixleePDPWidgetAccountId"/>
                 <attribute attribute-id="PixleeCLPWidgetId"/>
                 <attribute attribute-id="PixleeTracking"/>
             </attribute-group>

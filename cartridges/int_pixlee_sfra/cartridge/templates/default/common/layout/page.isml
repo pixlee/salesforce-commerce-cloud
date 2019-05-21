@@ -37,6 +37,8 @@
         </iscomment>
         ${dw.system.HookMgr.callHook('app.template.afterFooter', 'afterFooter') || ''}
         <isinclude url="${URLUtils.url('ConsentTracking-Check')}"/>
+        <iscomment>Pixlee changes BEGIN</iscomment>
         <isinclude template="pixlee/events/include" />
+        <iscomment>Pixlee changes END</iscomment>
     </body>
 </html>

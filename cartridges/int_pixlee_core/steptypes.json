@@ -35,6 +35,14 @@
                             "default-value": "large"
                         },
                         {
+                            "@name": "Main site ID",
+                            "@type": "string",
+                            "@required": "true",
+                            "@trim": "true",
+                            "description": "ID of main site, for which all product details will be exported. For all other sites only regional details will be exported.",
+                            "default-value": ""
+                        },
+                        {
                             "@name": "Break After",
                             "@type": "string",
                             "@required": "true",
@@ -49,14 +57,6 @@
                                 ]
                             },
                             "default-value": "NEVER"
-                        },
-                        {
-                            "@name": "Main site ID",
-                            "@type": "string",
-                            "@required": "true",
-                            "@trim": "true",
-                            "description": "ID of main site, for which all product details will be exported. For all other sites only regional details will be exported.",
-                            "default-value": ""
                         },
                         {
                             "@name": "Test Product ID",

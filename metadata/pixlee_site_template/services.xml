@@ -18,7 +18,7 @@
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
         <log-prefix>pixlee</log-prefix>
-        <comm-log-enabled>true</comm-log-enabled>
+        <comm-log-enabled>false</comm-log-enabled>
         <force-prd-enabled>true</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>pixlee.http.service.profile</profile-id>

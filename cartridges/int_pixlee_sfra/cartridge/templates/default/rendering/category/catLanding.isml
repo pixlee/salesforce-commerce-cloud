@@ -19,7 +19,9 @@
             <isslot id="cat-landing-slotbottom2-m" context="category" description="Second slot below the Category Banner" context-object="${pdict.category}"/>
         </div>
 
+		<iscomment>Pixlee changes BEGIN</iscomment>
 		<isinclude template="pixlee/widgets/clp" />
+		<iscomment>Pixlee changes END</iscomment>
     </div>
 
 </isdecorate>
