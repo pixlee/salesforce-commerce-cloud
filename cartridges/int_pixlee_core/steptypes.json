@@ -1,0 +1,90 @@
+{
+    "step-types": {
+        "script-module-step": [
+            {
+                "@type-id": "custom.PixleeExportProducts",
+                "@supports-parallel-execution": "false",
+                "@supports-site-context": "true",
+                "@supports-organization-context": "false",
+                "description": "Exports products to Pixlee",
+                "module": "int_pixlee_core/cartridge/scripts/pixlee/jobs/ExportProducts.js",
+                "transactional": "false",
+                "timeout-in-seconds": "1800",
+                "parameters": {
+                    "parameter": [
+                        {
+                            "@name": "Products Source",
+                            "@type": "string",
+                            "@required": "true",
+                            "@trim": "true",
+                            "description": "Products source",
+                            "enum-values": {
+                                "value": [
+                                    "CATALOG_API",
+                                    "SEARCH_INDEX"
+                                ]
+                            },
+                            "default-value": "CATALOG_API"
+                        },
+                        {
+                            "@name": "Images View Type",
+                            "@type": "string",
+                            "@required": "true",
+                            "@trim": "true",
+                            "description": "Product images view type",
+                            "default-value": "large"
+                        },
+                        {
+                            "@name": "Main site ID",
+                            "@type": "string",
+                            "@required": "true",
+                            "@trim": "true",
+                            "description": "ID of main site, for which all product details will be exported. For all other sites only regional details will be exported.",
+                            "default-value": ""
+                        },
+                        {
+                            "@name": "Break After",
+                            "@type": "string",
+                            "@required": "true",
+                            "@trim": "true",
+                            "description": "Allows job execution to be stopped after a number of consecutive failures is reached. To be used for test purposes.",
+                            "enum-values": {
+                                "value": [
+                                    "NEVER",
+                                    "10 consecutive fails",
+                                    "100 consecutive fails",
+                                    "1000 consecutive fails"
+                                ]
+                            },
+                            "default-value": "NEVER"
+                        },
+                        {
+                            "@name": "Test Product ID",
+                            "@type": "string",
+                            "@required": "false",
+                            "@trim": "true",
+                            "description": "ID of a single product to export for test purposes. Should be left blank for production exports",
+                            "default-value": ""
+                        }
+                    ]
+                },
+                "status-codes": {
+                    "status": [
+                        {
+                            "@code": "ERROR",
+                            "description": "Used when the step failed with an error."
+                        },
+                        {
+                            "@code": "OK",
+                            "description": "Used when the step finished successfully."
+                        },
+                        {
+                            "@code": "FINISHED_WITH_WARNINGS",
+                            "description": "Used when the step finished with warnings."
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

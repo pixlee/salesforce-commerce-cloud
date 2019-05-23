@@ -1,0 +1,46 @@
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isset name="trackingAllowed" value="${require('*/cartridge/scripts/pixlee/helpers/pixleeHelper').isTrackingAllowed(pdict.CurrentSession.trackingAllowed)}" scope="page" />
+	<isif condition="${trackingAllowed}">
+		<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
+
+		<script src="https://assets.pixlee.com/assets/pixlee_events.js" type="text/javascript"></script>
+		<!-- Putting demandware.v1.stage.js should ensure that by the time it runs, we have access to all the stuff pixlee_events.js makes available -->
+		<script src="https://assets.pixlee.com/demandware/pixlee.demandware.v1.prod.js" type="text/javascript"></script>
+
+		<script>
+			var pixlee_analytics = new Pixlee_Analytics("${pixleeApiKey}");
+			
+			(function() {
+				function triggerEvents() {
+					if (window.jQuery) {
+					    $('script[type="text/x-pixlee-event-data"]').each(function () {
+					        var $eventNode = $(this);
+
+					        var eventType = $eventNode.data('type');
+					        var eventPayload = JSON.parse($eventNode.text());
+
+					        pixlee_analytics.events.trigger(eventType, eventPayload);
+					    });
+
+						if (window.pixlee_report_deferred_events) {
+							var getAddToCartEventsURL = '${URLUtils.url("PixleeEvents-GetAddToCartEvents")}';
+
+							jQuery.get(getAddToCartEventsURL, function (data) {
+								if (data && data.length) {
+									for (var i = 0; i < data.length; i++) {
+										var pixleeEvent = data[i];
+										window.pixlee_analytics.events.trigger(pixleeEvent.type, pixleeEvent.payload);
+									}
+								}
+							});
+						}
+					} else {
+						window.setTimeout(triggerEvents, 50);
+					}
+				}
+				
+				triggerEvents();
+			}())
+		</script>
+	</isif>
+</isif>

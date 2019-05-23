@@ -1,0 +1,25 @@
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isset name="pixleeApiKey" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeApiKey')}" scope="page" />
+	<isset name="pixleeWidgetId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleePDPWidgetId')}" scope="page" />
+	<isset name="pixleeWidgetAccountId" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleePDPWidgetAccountId')}" scope="page" />
+
+	<isif condition="${pixleeApiKey && pixleeWidgetId && pixleeWidgetAccountId && pdict.p_productid}">
+		<div id="pixlee_container"></div>
+		<script type="text/javascript">
+			window.PixleeAsyncInit = function() {
+				Pixlee.init({apiKey: '<isprint encoding="jsonvalue" value="${pixleeApiKey}"/>'});
+				Pixlee.addProductWidget({
+					accountId: <isprint encoding="jsonvalue" value="${pixleeWidgetAccountId}"/>,
+					widgetId: <isprint encoding="jsonvalue" value="${pixleeWidgetId}"/>,
+					skuId: '<isprint encoding="jsonvalue" value="${pdict.p_productid}"/>',
+					getCookieConsent: true
+				});
+
+				if (document.getElementById('pixlee-events-init')) { // presence of this element in the DOM means tracking is allowed
+					Pixlee.changedCookiePolicy();
+				}
+			};
+		</script>
+		<script src="//assets.pixlee.com/assets/pixlee_widget_1_0_0.js"></script>
+	</isif> 
+</isif>

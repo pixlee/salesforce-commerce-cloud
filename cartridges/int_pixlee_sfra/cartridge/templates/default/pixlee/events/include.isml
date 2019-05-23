@@ -1,0 +1,13 @@
+<isinclude url="${URLUtils.url('PixleeEvents-Init')}"/>
+
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isset name="eventsList" value="${pdict.pixleeEventData}" scope="page" />
+	<isif condition="${eventsList && eventsList.length}">
+		<isset name="trackingAllowed" value="${require('*/cartridge/scripts/pixlee/helpers/pixleeHelper').isTrackingAllowed(pdict.tracking_consent)}" scope="page" />
+		<isif condition="${trackingAllowed}">
+			<isloop items="${eventsList}" var="pixleeEventData">
+				<isinclude template="pixlee/events/eventdata">
+			</isloop>
+		</isif>
+	</isif>
+</isif>

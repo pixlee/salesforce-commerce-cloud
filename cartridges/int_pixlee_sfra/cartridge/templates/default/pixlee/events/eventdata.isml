@@ -1,0 +1,5 @@
+<isif condition="${pixleeEventData}">
+	<script type="text/x-pixlee-event-data" data-type="${pixleeEventData.type}">
+		<isprint value="${JSON.stringify(pixleeEventData.payload)}" encoding="off" />
+	</script>
+</isif>

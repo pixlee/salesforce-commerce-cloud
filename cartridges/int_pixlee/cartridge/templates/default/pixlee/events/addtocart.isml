@@ -1,0 +1,41 @@
+<isif condition="${dw.system.Site.getCurrent().getCustomPreferenceValue('PixleeEnabled')}">
+	<isset name="trackingAllowed" value="${require('*/cartridge/scripts/pixlee/helpers/pixleeHelper').isTrackingAllowed(pdict.CurrentSession.trackingAllowed)}" scope="page" />
+	<isif condition="${trackingAllowed}">
+		<isscript>
+			var eventsHelper = require('~/cartridge/scripts/pixlee/helpers/eventsHelper');
+			var eventsAvailable = eventsHelper.processAddToCart(pdict.CurrentHttpParameterMap);
+			var isAJAX = 'ajax'.equalsIgnoreCase(pdict.CurrentHttpParameterMap.format.stringValue);
+		</isscript>
+
+		<isif condition="${eventsAvailable}">
+			<isif condition="${isAJAX}">
+				<iscomment>
+					Report events immeditely for AJAX add to cart requests,
+					pixlee_analytics should have been already initialized.
+				</iscomment>
+				<script>
+				if (pixlee_analytics) {
+					var getAddToCartEventsURL = '${URLUtils.url("PixleeEvents-GetAddToCartEvents")}';
+
+					jQuery.get(getAddToCartEventsURL, function (data) {
+						if (data && data.length) {
+							for (var i = 0; i < data.length; i++) {
+								var pixleeEvent = data[i];
+								pixlee_analytics.events.trigger(pixleeEvent.type, pixleeEvent.payload);
+							}
+						}
+					});
+				}
+				</script>
+			<iselse>
+				<iscomment>
+					Defer reporting events to until pixlee_analytics gets initialized
+					for non-AJAX requests, just raise a flag here that there are some to report.
+				</iscomment>
+				<script>
+				window.pixlee_report_deferred_events = true;
+				</script>
+			</isif>
+		</isif>
+	</isif>
+</isif>

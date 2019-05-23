@@ -1,0 +1,11 @@
+<isscript>
+	var eventsHelper = require('~/cartridge/scripts/pixlee/helpers/eventsHelper');
+	var pixleeEvents = eventsHelper.getEndCheckoutEvents(pdict.Order);
+</isscript>
+<isif condition="${pixleeEvents && pixleeEvents.length}">
+	<isloop items="${pixleeEvents}" var="pixleeEvent">
+		<script type="text/x-pixlee-event-data" data-type="${pixleeEvent.type}">
+		<isprint value="${JSON.stringify(pixleeEvent.payload)}" encoding="off">
+		</script>
+	</isloop>
+</isif>

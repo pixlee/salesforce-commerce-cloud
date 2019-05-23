@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns="http://www.demandware.com/xml/impex/services/2014-09-26">
+    <service-credential service-credential-id="pixlee.http.service.credentials">
+        <url>https://distillery.pixlee.com/api/</url>
+    </service-credential>
 
-    <service service-id="int_pixlee.http.distillery.post">
+    <service-profile service-profile-id="pixlee.http.service.profile">
+        <timeout-millis>3000</timeout-millis>
+        <rate-limit-enabled>false</rate-limit-enabled>
+        <rate-limit-calls>0</rate-limit-calls>
+        <rate-limit-millis>0</rate-limit-millis>
+        <cb-enabled>true</cb-enabled>
+        <cb-calls>10</cb-calls>
+        <cb-millis>500</cb-millis>
+    </service-profile>
+
+    <service service-id="pixlee.http.service">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
+        <log-prefix>pixlee</log-prefix>
         <comm-log-enabled>false</comm-log-enabled>
+        <force-prd-enabled>true</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
+        <profile-id>pixlee.http.service.profile</profile-id>
+        <credential-id>pixlee.http.service.credentials</credential-id>
     </service>
-
 </services>

@@ -1,0 +1,2 @@
+<isinclude template="pixlee/components/modules" />
+<ispixleeclpwidget p_categoryid="${pdict.ProductSearchResult.category.ID}"/>
