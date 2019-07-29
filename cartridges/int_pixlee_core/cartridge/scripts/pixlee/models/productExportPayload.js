@@ -119,7 +119,7 @@ function getProductStock(product) {
         //    Otherwise this method returns the ATS / allocation.
         // What I really want is the sum of all variants
         // BUT I DON'T HAVE IT BECAUSE I NEVER FIGURED OUT HOW TO LOOP THROUGH VARIANTS
-        // IN DEMANDWARE - Instead, I'll settle for a 0/1, which I've tested
+        // IN B2C COMMERCE - Instead, I'll settle for a 0/1, which I've tested
         // Check CR-534
         if (product.getAvailabilityModel().isInStock()) {
             productStock = 1;
