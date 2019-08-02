@@ -4,6 +4,8 @@
   "description": "Pixlee overlay cartridge",
   "main": "index.js",
   "scripts": {
+    "test": "sgmf-scripts --test test/unit/**/*.js",
+    "test:integration": "sgmf-scripts --integration 'test/integration/**/*.js'",
     "lint": "sgmf-scripts --lint js",
     "upload": "sgmf-scripts --upload -- ",
     "uploadCartridge": "sgmf-scripts --uploadCartridge int_pixlee_core && sgmf-scripts --uploadCartridge int_pixlee_sfra",
@@ -22,6 +24,7 @@
     "mocha": "^5.2.0",
     "sinon": "^1.17.4",
     "chai": "^3.5.0",
+    "chai-subset": "^1.5.0",
     "proxyquire": "1.7.4",
     "sgmf-scripts": "^2.0.0",
     "css-loader": "^0.28.11",

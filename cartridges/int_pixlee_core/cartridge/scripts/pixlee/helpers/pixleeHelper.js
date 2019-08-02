@@ -24,7 +24,7 @@ exports.getPixleeProductSKU = function (product) {
     var Site = require('dw/system/Site');
     var pixleeSkuReference = Site.current.getCustomPreferenceValue('SkuReference');
 
-    if ('Manufacturer SKU'.equalsIgnoreCase(pixleeSkuReference)) {
+    if (pixleeSkuReference == 'Manufacturer SKU') {
         return product.manufacturerSKU || product.ID;
     }
 
