@@ -19,15 +19,15 @@ exports.Init.public = true;
 exports.GetAddToCartEvents = function () {
     var eventsHelper = require('~/cartridge/scripts/pixlee/helpers/eventsHelper');
     var eventsData = eventsHelper.getAddToCartEventsFromSession();
-    var addToCartEvents;
+    var addToCartEvents = [];
 
     if (eventsData && eventsData.length) {
         var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
         addToCartEvents = pixleeHelper.getAddToCartEvents(eventsData);
     }
-
-    ISML.renderTemplate('pixlee/events/json', {
-        JSONPayload: JSON.stringify(addToCartEvents || [])
-    });
+    
+    var jsonResponse = JSON.stringify(addToCartEvents);
+    response.setContentType('application/json');
+    response.writer.print(jsonResponse);
 };
 exports.GetAddToCartEvents.public = true;
