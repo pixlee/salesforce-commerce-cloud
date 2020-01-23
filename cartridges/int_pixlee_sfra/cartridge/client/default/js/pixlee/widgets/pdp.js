@@ -25,6 +25,6 @@ module.exports = function () {
             }
         };
 
-        $.getScript('//assets.pixlee.com/assets/pixlee_widget_1_0_0.js');
+        $.getScript('//assets.pxlecdn.com/assets/pixlee_widget_1_0_0.js');
     }
 };
