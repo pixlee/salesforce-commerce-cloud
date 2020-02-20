@@ -9,7 +9,6 @@ var Logger = require('dw/system/Logger');
 var Site = require('dw/system/Site');
 
 var categoriesMap;
-var categoriesMapUpdatedTimestamp;
 
 /**
  * Retrieves the PDP URL for a given product. In case ProductHost site preference
@@ -223,7 +222,6 @@ function getFullName(pathStack, namesMap, categoryName) {
  * @returns {Object} - Map og categories, having category ID as a key.
  */
 function getCategoriesMap() {
-    categoriesMapUpdatedTimestamp = categoriesMapUpdatedTimestamp || Math.floor(Date.now() / 1000);
 
     // Very Easy
     // The root node is available to us.
@@ -312,8 +310,7 @@ function getProductCategories(product) {
         if (!(categoryId in productCategories)) {
             productCategories[categoryId] = {
                 category_id: categoryId,
-                category_name: categoriesMap[categoryId].fullName,
-                category_updated_at: categoriesMapUpdatedTimestamp
+                category_name: categoriesMap[categoryId].fullName
             };
         }
 
@@ -323,8 +320,7 @@ function getProductCategories(product) {
             if (!(parentCategoryId in productCategories)) {
                 productCategories[parentCategoryId] = {
                     category_id: parentCategoryId,
-                    category_name: categoriesMap[parentCategoryId].fullName,
-                    category_updated_at: categoriesMapUpdatedTimestamp
+                    category_name: categoriesMap[parentCategoryId].fullName
                 };
             }
         }
@@ -453,7 +449,8 @@ function ProductExportPayload(product, options) {
         var productExtraFields = {
             product_photos: getAllProductImages(product, exportOptions),
             categories: getProductCategories(product),
-            ecommerce_platform: 'demandware'
+            ecommerce_platform: 'demandware',
+            categories_last_updated_at: Math.floor(Date.now() / 1000)
         };
 
         this.product.name = product.name;
