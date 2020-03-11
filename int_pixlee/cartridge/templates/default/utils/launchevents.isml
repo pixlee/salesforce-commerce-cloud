@@ -14,7 +14,9 @@
 		obj.region_code = "${pixee_locale}";
 
 		// pixlee_analytics.events.trigger has its own version of guard, so we won't define one
-		pixlee_analytics.events.trigger(event, obj);
+		if (typeof pixlee_analytics !== 'undefined') {
+			pixlee_analytics.events.trigger(event, obj);
+		}
     };
 
 </script>

@@ -8,6 +8,8 @@
 	<script src="https://assets.pixlee.com/demandware/pixlee.demandware.v1.prod.js" type="text/javascript"></script>
 
 	<script>
-		var pixlee_analytics = new Pixlee_Analytics("${pixleeApiKey}");
+		if (typeof Pixlee_Analytics !== 'undefined') {
+			var pixlee_analytics = new Pixlee_Analytics("${pixleeApiKey}");
+		}
 	</script>
 </isif>
