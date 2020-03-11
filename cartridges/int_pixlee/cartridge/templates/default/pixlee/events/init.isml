@@ -8,8 +8,9 @@
 		<script src="https://assets.pixlee.com/demandware/pixlee.demandware.v1.prod.js" type="text/javascript"></script>
 
 		<script>
-			var pixlee_analytics = new Pixlee_Analytics("${pixleeApiKey}");
-			
+            if (typeof Pixlee_Analytics !== 'undefined') {
+				var pixlee_analytics = new Pixlee_Analytics("${pixleeApiKey}");
+			}		
 			(function() {
 				function triggerEvents() {
 					if (window.jQuery) {
@@ -18,8 +19,9 @@
 
 					        var eventType = $eventNode.data('type');
 					        var eventPayload = JSON.parse($eventNode.text());
-
-					        pixlee_analytics.events.trigger(eventType, eventPayload);
+	                        if (typeof pixlee_analytics !== 'undefined') {
+					        	pixlee_analytics.events.trigger(eventType, eventPayload);
+					        }
 					    });
 
 						if (window.pixlee_report_deferred_events) {
@@ -29,7 +31,9 @@
 								if (data && data.length) {
 									for (var i = 0; i < data.length; i++) {
 										var pixleeEvent = data[i];
-										window.pixlee_analytics.events.trigger(pixleeEvent.type, pixleeEvent.payload);
+						                if (typeof window.pixlee_analytics !== 'undefined') {
+											window.pixlee_analytics.events.trigger(pixleeEvent.type, pixleeEvent.payload);
+										}
 									}
 								}
 							});

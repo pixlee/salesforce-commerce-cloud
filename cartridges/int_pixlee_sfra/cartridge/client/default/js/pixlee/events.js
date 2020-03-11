@@ -38,8 +38,9 @@ function processIncludedEvents() {
 
         var eventType = $eventNode.data('type');
         var eventPayload = JSON.parse($eventNode.text());
-
-        pixleeAnalytics.events.trigger(eventType, eventPayload);
+        if (typeof pixleeAnalytics !== 'undefined') {
+            pixleeAnalytics.events.trigger(eventType, eventPayload);
+        }
     });
 }
 
@@ -53,8 +54,9 @@ module.exports = function () {
 
         $.getScript('https://assets.pixlee.com/assets/pixlee_events.js')
             .done(function () {
-                pixleeAnalytics = new Pixlee_Analytics(apiKey);
-
+                if (typeof Pixlee_Analytics !== 'undefined') {
+                    pixleeAnalytics = new Pixlee_Analytics(apiKey);
+                }
                 initAddToCart();
 
                 processIncludedEvents();
