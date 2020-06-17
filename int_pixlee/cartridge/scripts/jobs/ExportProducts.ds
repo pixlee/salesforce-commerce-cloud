@@ -361,7 +361,6 @@ function exportProduct(product : Product, categoriesMap: Object, regions: List) 
 			productRegion['currency'] = regionalCurrency;
 			productRegion['stock'] = regionalStock;
 			productRegion['variants_json'] = JSON.stringify(variantsDict);
-			productRegion['description'] = product.getLongDescription().getMarkup();
 			productRegion['region_code'] = regions[j]['locale'];
 			
 			regional.push(productRegion);
