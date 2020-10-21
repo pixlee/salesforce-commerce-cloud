@@ -32,9 +32,11 @@ exports.getCurrencyForLocale = function (locale) {
             return entry.id === locale;
         });
 
-        currencyCode = matchingEntries.length
-            ? matchingEntries[0].currencyCode
-            : require('dw/system/Site').getCurrent().getDefaultCurrency();
+        if (matchingEntries.length && require('dw/system/Site').getCurrent().allowedCurrencies.contains(matchingEntries[0].currencyCode)) {
+            currencyCode = matchingEntries[0].currencyCode
+        } else {
+            currencyCode = require('dw/system/Site').getCurrent().getDefaultCurrency();
+        }
     } else {
         // fallback to core cartridge logic
         currencyCode = module.superModule.getCurrencyForLocale(locale);
