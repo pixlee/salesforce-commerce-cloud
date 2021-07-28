@@ -20,7 +20,7 @@ module.exports = function () {
             });
 
             if ($('#pixlee-events-init').length) { // presence of this element in the DOM means tracking is allowed
-                Pixlee.changedCookiePolicy();
+                Pixlee.acceptCookiePolicy();
             }
         };
 

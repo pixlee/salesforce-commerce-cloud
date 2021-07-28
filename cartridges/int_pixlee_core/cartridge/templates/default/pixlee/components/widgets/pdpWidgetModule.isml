@@ -16,7 +16,7 @@
 				});
 
 				if (document.getElementById('pixlee-events-init')) { // presence of this element in the DOM means tracking is allowed
-					Pixlee.changedCookiePolicy();
+					Pixlee.acceptCookiePolicy();
 				}
 			};
 		</script>
