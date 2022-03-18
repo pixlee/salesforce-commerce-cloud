@@ -18,7 +18,7 @@ function getPayloadSignature(payload) {
     var secterKey = Site.getCurrent().getCustomPreferenceValue('PixleeSecretKey');
     var payloadStr = JSON.stringify(payload);
 
-    var signature = Encoding.toBase64(new Mac(Mac.HMAC_SHA_1).digest(payloadStr, secterKey));
+    var signature = Encoding.toBase64(new Mac(Mac.HMAC_SHA_256).digest(payloadStr, secterKey));
 
     return signature;
 }
