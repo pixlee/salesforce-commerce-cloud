@@ -1,7 +1,7 @@
 {
   "name": "int_pixlee_sfra",
-  "version": "19.1.0",
-  "description": "Pixlee overlay cartridge",
+  "version": "23.1.0",
+  "description": "Pixlee TurnTo's official Social UGC cartridge for SFRA and SiteGenesis",
   "main": "index.js",
   "scripts": {
     "test": "sgmf-scripts --test test/unit/**/*.js",
