@@ -405,7 +405,6 @@ function getRegionalInfo(product, variantsJSON) {
             price: regionalPrice,
             currency: regionalCurrency,
             stock: regionalStock,
-            description: product.longDescription ? product.longDescription.getMarkup() : null,
             region_code: currentLocale,
             variants_json: variantsJSON
         };
