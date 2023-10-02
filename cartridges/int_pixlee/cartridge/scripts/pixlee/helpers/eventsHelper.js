@@ -6,7 +6,7 @@
  * The only reason for this module and the complexity it adds to exist is to
  * allow products from a set to be reported to Pixlee when customers choose
  * to 'Add All' at once from product set page or quick view. In that case
- * SiteGeneis front-end code makes a number of AJAX calls, one for each product
+ * SiteGenesis front-end code makes a number of AJAX calls, one for each product
  * to be added. The results of all those calls except the last one are discarded,
  * so it is not possible to get the details of the product added (and trigger
  * add:to:cart event for them to Pixlee) except of the last one.
