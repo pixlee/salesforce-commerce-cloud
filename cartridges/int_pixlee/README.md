@@ -1,6 +1,11 @@
-# int_pixlee: Pixlee Site Genesis LINK cartridge
+# int_pixlee: Pixlee SiteGenesis cartridge (Deprecated)
 
-This cartridge is intended to provide components required to integrate Pixlee services with Salesforce Commerce Cloud applications based on Site Genesis. 
+> [!WARNING]  
+> Salesforce stopped supporting SiteGenesis in 2020
+
+This cartridge is intended to provide components required to integrate Pixlee services with Salesforce Commerce Cloud applications based on SiteGenesis.
+
+***
 
 ## Dependencies
 This cartridge depends on `int_pixlee_core`.
