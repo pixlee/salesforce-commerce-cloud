@@ -2,6 +2,8 @@
 
 This cartridge is intended to provide components required to integrate Pixlee services with Salesforce Commerce Cloud applications based on SFRA. 
 
+***
+
 ## Dependencies
 This cartridge depends on `int_pixlee_core`.
 
@@ -16,7 +18,7 @@ In the root folder of Pixlee LINK repository, execute `npm install` to install t
 
 From the same folder, execute `npm run compile:js` to compile the client-side JavaScript code.
 
-The cartridge does not contain any stylesheets, so SCSS compilation is not requred.
+The cartridge does not contain any stylesheets, so SCSS compilation is not required.
 
 ## Deployment
 
@@ -30,4 +32,4 @@ The cartridge should be placed to the left of `int_pixlee_core`. Here is an exam
 	app_client:int_pixlee_sfra:int_pixlee_core:app_storefront_base:modules
 
 More details could be found here:
-https://developers.pixlee.com/docs/salesforce-commerce-cloud-demandware
+https://developers.pixlee.com/docs/salesforce-commerce-cloud-sfra-demandware

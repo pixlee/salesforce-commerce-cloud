@@ -1,4 +1,4 @@
-# int_pixlee_core: Pixlee core LINK cartridge
+# int_pixlee_core: Pixlee core cartridge
 
 Pixlee core cartridge contains common components to be shared by `int_pixlee` and `int_pixlee_sfra` cartridges, including:
 * Service defition
@@ -6,6 +6,8 @@ Pixlee core cartridge contains common components to be shared by `int_pixlee` an
 * Helper script modules
 * ISML templates and modules
 * Resources
+
+***
 
 ## Dependencies
 This cartridge does not dependend on any other cartridges.
@@ -25,4 +27,4 @@ The cartridge does not override any components and has its own components namesp
 * `int_pixlee:int_pixlee_core` for Site Genesis
 
 More details could be found here:
-https://developers.pixlee.com/docs/salesforce-commerce-cloud-demandware
+https://developers.pixlee.com/docs/salesforce-commerce-cloud-sfra-demandware

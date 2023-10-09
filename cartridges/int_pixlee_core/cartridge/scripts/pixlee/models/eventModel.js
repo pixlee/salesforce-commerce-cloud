@@ -4,9 +4,9 @@
 
 var Resource = require('dw/web/Resource');
 
-var VERSION_HASH = Resource.msg('pixlee.version.hash', 'pixleehash', null);
-var ECOMM_PATFORM = Resource.msg('ecomm.platform', 'pixlee', 'demandware');
-var ECOMM_PATFORM_VERSION = Resource.msg('ecomm.platform.version', 'pixlee', '19.3');
+var VERSION_HASH = Resource.msg('pixlee.version.hash', 'pixlee', 'unknown version') + Resource.msg('ecomm.platform.version', 'pixlee', 'unknown architecture');
+var ECOMM_PLATFORM = Resource.msg('ecomm.platform', 'pixlee', 'demandware');
+var ECOMM_PLATFORM_VERSION = Resource.msg('global.version.number', 'version', 'unknown version') + ' ' + Resource.msg('global.site.name', 'version', 'unknown architecture');
 
 
 /**
@@ -23,8 +23,8 @@ function PixleeEvent(type, payload, locale) {
 
     this.payload.region_code = locale || request.locale;
     this.payload.version_hash = VERSION_HASH;
-    this.payload.ecommerce_platform = ECOMM_PATFORM;
-    this.payload.ecommerce_platform_version = ECOMM_PATFORM_VERSION;
+    this.payload.ecommerce_platform = ECOMM_PLATFORM;
+    this.payload.ecommerce_platform_version = ECOMM_PLATFORM_VERSION;
 }
 
 /**
@@ -71,7 +71,7 @@ function PixleeEndCheckoutEvent(order, locale) {
         cart_total: order.adjustedMerchandizeTotalPrice.value,
         cart_total_quantity: order.productQuantityTotal,
         email: order.customerEmail,
-        cart_type: 'demandware',
+        cart_type: ECOMM_PLATFORM,
         order_id: order.orderNo
     };
 

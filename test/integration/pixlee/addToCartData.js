@@ -8,17 +8,19 @@ chai.use(chaiSubset);
 
 describe('Add To Cart', function () {
     this.timeout(15000);
-    
+    var versionHash = '23.2.1_SFRA';
+    var ecommPlatformVersion = '6.3.0 Salesforce Commerce Cloud';
+
     request = request.defaults({
-        baseUrl: config.baseUrl, 
+        baseUrl: config.baseUrl,
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
         },
         rejectUnauthorized: false,
-        jar: true,        
+        jar: true,
         json: true
     });
-    
+
     var consentRequest = {
         method: 'GET',
         uri: 'ConsentTracking-SetSession',
@@ -26,38 +28,38 @@ describe('Add To Cart', function () {
             consent: true
         }
     };
-    
+
     var addToCartRequest = {
         method: 'POST',
         uri: 'Cart-AddProduct',
         form: {
-            pid: "701642890126M",
+            pid: '701642890126M',
             quantity: 1
-        },
+        }
     };
-    
+
     var expectedData = {
-        "pixleeEventData": [{
-            "type": "add:to:cart",
-            "payload": {
-                "product_sku": "25502240M",
-                "variant_sku": "701642890126M",
-                "quantity": 1,
-                "price": "65.99",
-                "currency": "USD",
-                "region_code": "en_US",
-                "version_hash": "727f341dc8998be5cff57140636d81c9101184c3",
-                "ecommerce_platform": "demandware",
-                "ecommerce_platform_version": "19.3_SFRA"
+        'pixleeEventData': [{
+            'type': 'add:to:cart',
+            'payload': {
+                'product_sku': '25502240M',
+                'variant_sku': '701642890126M',
+                'quantity': 1,
+                'price': '65.99',
+                'currency': 'USD',
+                'region_code': 'en_US',
+                'version_hash': versionHash,
+                'ecommerce_platform': 'demandware',
+                'ecommerce_platform_version': ecommPlatformVersion
             }
         }]
     };
-    
-    
-    before(function(done) {
+
+
+    before(function (done) {
         request.get(consentRequest, function (error, response, jsonResponse) {
             if (error) done(error);
-            assert.equal(jsonResponse.success, true, "Could not set tracking consent (required).");
+            assert.equal(jsonResponse.success, true, 'Could not set tracking consent (required).');
             done();
         });
     });
@@ -66,11 +68,11 @@ describe('Add To Cart', function () {
     it('should contain expected Pixlee data', function (done) {
         request(addToCartRequest, function (error, response, jsonResponse) {
             if (error) done(error);
-            
+
             assert.equal(response.statusCode, 200, 'Unexpected statusCode');
-            
+
             assert.containSubset(jsonResponse.pixleeEventData, expectedData.pixleeEventData);
-            
+
             done();
         });
     });
