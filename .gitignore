@@ -1,8 +1,8 @@
-cartridges/int_pixlee_sfra/cartridge/static/default/js/
 node_modules/
 dw.json
-.idea/*
-demandware.iml
-.tern*
+
+cartridges/*/cartridge/static/default/js/
+
 .DS_STORE
-nbproject/
+.idea
+.vscode

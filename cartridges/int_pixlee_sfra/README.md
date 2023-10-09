@@ -18,7 +18,7 @@ In the root folder of Pixlee LINK repository, execute `npm install` to install t
 
 From the same folder, execute `npm run compile:js` to compile the client-side JavaScript code.
 
-The cartridge does not contain any stylesheets, so SCSS compilation is not requred.
+The cartridge does not contain any stylesheets, so SCSS compilation is not required.
 
 ## Deployment
 
