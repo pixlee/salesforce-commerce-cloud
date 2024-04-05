@@ -4,6 +4,6 @@
 var versionHash = 'c0efeb5d10fc82b86ba25295bebfe1bbd22e5021';
 
 function getVersionHash() {
-return versionHash;
+    return versionHash;
 }
 </script>

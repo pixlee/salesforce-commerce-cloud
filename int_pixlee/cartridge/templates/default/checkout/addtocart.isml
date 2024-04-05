@@ -23,9 +23,9 @@
 			<isset name="productSku" value="${masterProductObj.getManufacturerSKU()}" scope="page" />
 		<iselse/>
 			<isset name="productId" value="0" scope="page" />
-			<isset name="productSku" value="${productObj.getID()}" scope="page" /> 
+			<isset name="productSku" value="${productObj.getID()}" scope="page" />
 		</isif>
-	
+
 		<script data="pixlee-addtocart">
 			function createATCCartItem() {
 				cartItem = {
@@ -35,12 +35,12 @@
 					price: "${CartItem.getPrice()}".replace(/[^0-9\.]+/g,""),
 					currency: "${productObj.getPriceModel().getPrice().getCurrencyCode()}"
 				};
-			};
+			}
 			// Guard the creation of cartItem so that if something breaks, we'll get the log
 			guard(createATCCartItem, []);
 		</script>
 	</isloop>
-	
+
 	<script data="pixlee-addtocart">
 		// The listener on the other side of this function has its own guard
 		launchEvent('add:to:cart', cartItem);

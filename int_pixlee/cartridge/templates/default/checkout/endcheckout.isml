@@ -21,17 +21,17 @@
 			<iselse/>
 				<isset name="masterProductObj" value="${productObj.getVariationModel().getMaster()}" scope="page" />
 			</isif>
-			
+
 			<isif condition="${masterProductObj !== null}">
 				<isset name="productSku" value="${masterProductObj.getManufacturerSKU()}" scope="page" />
 			</isif>
-			
+
 			<script data="pixlee-end-checkout">
 				function createEndCheckoutCartItem() {
-					
+
 					var price = "${ProductLineItem.adjustedPrice}".replace(/[^0-9\.]+/g,"");
 					var quantity = parseInt("${ProductLineItem.quantityValue}");
-					
+
 					cartItem = {
 						quantity: quantity,
 						product_id: parseInt("${productId}"),
@@ -43,7 +43,7 @@
 					cartArray.push(cartItem);
 					cartTotal += price * quantity;
 					cartTotalQuantity += parseInt("${ProductLineItem.quantityValue}");
-				};
+				}
 				// Guard the creation of cartItem so that if something breaks, we'll get the log
 				guard(createEndCheckoutCartItem, []);
 			</script>

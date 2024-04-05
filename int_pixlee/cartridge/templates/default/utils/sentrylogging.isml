@@ -1,18 +1,14 @@
 <!--- TEMPLATENAME: sentrylogging.isml --->
 
 <!-- Expect that pixlee_events.js will instantiate a window.pixRaven object for us to use -->
-<!--  If it doesn't exist, our guard function will fail nicely and simply print to console -->
-
+<!-- If it doesn't exist, our guard function will fail nicely and simply print to console -->
 <!-- However, pixlee_analytics's guard function is not in the global scope, so we have to define our own here -->
 <script data="pixlee-sentry-logging">
-
     // Wrap any JS call in a try/except, where exceptions are passed to Raven/Sentry
     function guard(fn, params) {
-    	
         try {
             fn.apply(this, params);
         } catch (e) {
-
         	// Sentry apparently has problems with function bodies, if we pass in callbacks
         	// So I'll only ask to log params that aren't functions
         	var paramsNotFns = [];
@@ -21,7 +17,7 @@
         			paramsNotFns.push(param);
         		}
         	});
-        	
+
             var extraFields = {
                 functionName: fn.name,
                 paramsNotFns: paramsNotFns
@@ -29,7 +25,7 @@
 
             logError(e, extraFields);
         }
-    };
+    }
 
     function guardCallback(fn, params) {
         return function(callbackData) {
@@ -46,10 +42,10 @@
                 logError(e);
             }
         };
-    };
+    }
 
     function logError(exception, extraFields) {
-    	
+
         if (typeof console !== 'undefined') {
             console.log(exception);
         }
@@ -64,10 +60,9 @@
                 }
             });
         }
-    };
+    }
 
     function logMessage(message) {
-    	
         if (typeof console !== 'undefined') {
             console.log(message);
         }
@@ -78,6 +73,5 @@
                 }
             });
         }
-    };
-
+    }
 </script>

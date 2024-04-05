@@ -25,7 +25,7 @@
 				function createStartCheckoutCartItem() {
 
 					var productSku = "${masterProductObj.getID()}";
-					
+
 					if(${masterProductObj.getManufacturerSKU() != null} && ${skuReference == 'Manufacturer SKU'}){
 						productSku = "${masterProductObj.getManufacturerSKU()}";
 					}
@@ -40,7 +40,7 @@
 					cartArray.push(cartItem);
 					cartTotal += parseFloat("${lineItem.getPrice()}".replace(/[^0-9\.]+/g,""));
 					cartTotalQuantity += parseInt("${lineItem.getQuantityValue()}");
-				};
+				}
 				// Guard the creation of cartItem so that if something breaks, we'll get the log
 				guard(createStartCheckoutCartItem, []);
 			</script>
@@ -67,7 +67,7 @@
 
 		// The listener on the other side of this function has its own guard
 		launchEvent('checkout:start', payload);
-	};
+	}
 
 	</script>
 </isif>

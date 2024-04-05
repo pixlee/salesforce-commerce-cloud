@@ -6,7 +6,6 @@
 <isset name="pixee_locale" value="${pdict.CurrentRequest.locale}" scope="page" />
 
 <script data="pixlee-launch-event">
-
 	function launchEvent(event, obj) {
 		obj.version_hash = getVersionHash();
 		obj.ecommerce_platform = "demandware";
@@ -17,6 +16,5 @@
 		if (typeof pixlee_analytics !== 'undefined') {
 			pixlee_analytics.events.trigger(event, obj);
 		}
-    };
-
+    }
 </script>
