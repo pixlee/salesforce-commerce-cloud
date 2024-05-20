@@ -154,13 +154,26 @@ function generateUniqueId() {
 exports.execute = function (jobParameters) {
     var PixleeService = require('~/cartridge/scripts/pixlee/services/PixleeService');
     var ProductExportPayload = require('~/cartridge/scripts/pixlee/models/productExportPayload');
+    var currentSite = require('dw/system/Site').getCurrent();
+    if (!currentSite.getCustomPreferenceValue('PixleeEnabled')) {
+        Logger.info('Pixlee integration is disabled');
+        return new Status(Status.OK, 'OK', 'Pixlee integration is disabled');
+    }
+    if (!currentSite.getCustomPreferenceValue('PixleePrivateApiKey')) {
+        Logger.warn('Pixlee Private API Key not set');
+        return new Status(Status.ERROR, 'FINISHED_WITH_WARNINGS', 'Pixlee Private API Key not set');
+    }
+    if (!currentSite.getCustomPreferenceValue('PixleeSecretKey')) {
+        Logger.warn('Pixlee Secret Key Key not set');
+        return new Status(Status.ERROR, 'FINISHED_WITH_WARNINGS', 'Pixlee Secret Key Key not set');
+    }
 
     var useSearchIndex = jobParameters['Products Source'] === 'SEARCH_INDEX';
     var breakAfter = parseInt(jobParameters['Break After'], 10);
     breakAfter = isNaN(breakAfter) ? 0 : breakAfter;
     var exportOptions = {
         imageViewType: jobParameters['Images View Type'] || null,
-        onlyRegionalDetails: jobParameters['Main site ID'] && (require('dw/system/Site').current.ID !== jobParameters['Main site ID'])
+        onlyRegionalDetails: jobParameters['Main site ID'] && (currentSite.ID !== jobParameters['Main site ID'])
     };
     var testProductId = jobParameters['Test Product ID'] || null;
 

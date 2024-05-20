@@ -15,10 +15,10 @@ function getPayloadSignature(payload) {
     var Mac = require('dw/crypto/Mac');
     var Site = require('dw/system/Site');
 
-    var secterKey = Site.getCurrent().getCustomPreferenceValue('PixleeSecretKey');
+    var secretKey = Site.getCurrent().getCustomPreferenceValue('PixleeSecretKey');
     var payloadStr = JSON.stringify(payload);
 
-    var signature = Encoding.toBase64(new Mac(Mac.HMAC_SHA_256).digest(payloadStr, secterKey));
+    var signature = Encoding.toBase64(new Mac(Mac.HMAC_SHA_256).digest(payloadStr, secretKey));
 
     return signature;
 }
@@ -30,7 +30,7 @@ function getPayloadSignature(payload) {
  */
 function getApiKey() {
     var Site = require('dw/system/Site');
-    return Site.getCurrent().getCustomPreferenceValue('PixleeApiKey');
+    return Site.getCurrent().getCustomPreferenceValue('PixleePrivateApiKey');
 }
 
 /**
