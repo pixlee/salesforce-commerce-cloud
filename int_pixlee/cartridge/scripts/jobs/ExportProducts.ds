@@ -32,7 +32,7 @@ var DISTILLERY_BASE_URL = "https://distillery.pixlee.com/api/v2/albums";
 function execute()
 {
 	try {
-		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleeApiKey == null){
+		if(Site.current.preferences.custom.PixleeSecretKey == null || Site.current.preferences.custom.PixleePrivateApiKey == null){
 			Logger.error("Pixlee Secret Key is not defined.");
 			return PIPELET_ERROR;
 		}
@@ -510,7 +510,7 @@ function postToAPI(payload : Object) {
 	var signature = generateSignature(payload);
 
 	service = ServiceRegistry.get("int_pixlee.http.distillery.post");
-	service.URL = getDistilleryBaseUrl() + "?api_key="+Site.current.preferences.custom.PixleeApiKey;
+	service.URL = getDistilleryBaseUrl() + "?api_key="+Site.current.preferences.custom.PixleePrivateApiKey;
 
 	result = service.call(payload, signature);
 	return result;
@@ -519,7 +519,7 @@ function postToAPI(payload : Object) {
 //Get the CurrencyMap from Distillery to get the regional prices
 //Hopefully, one day someone finds out how to do this natively i.e. without distillery
 function getCurrencyMap() {
-	var apiKey = Site.current.preferences.custom.PixleeApiKey;
+	var apiKey = Site.current.preferences.custom.PixleePrivateApiKey;
 	var httpClient : HTTPClient = new HTTPClient();
 	httpClient.open('GET', 'https://distillery.pixlee.com/api/v1/getSFCountryMap?api_key=' + apiKey);
 	httpClient.setRequestHeader('Content-Type', 'application/json');
@@ -558,7 +558,7 @@ function isPositiveInt(s)
 }
 
 function notifyExportStatus(status, jobId, numProducts) {
-	var apiKey = Site.current.preferences.custom.PixleeApiKey;
+	var apiKey = Site.current.preferences.custom.PixleePrivateApiKey;
 	var httpClient : HTTPClient = new HTTPClient();
 	httpClient.open('POST', 'https://distillery.pixlee.com/api/v1/notifyExportStatus?api_key=' + apiKey);
 	httpClient.setRequestHeader('Content-Type', 'application/json');
