@@ -1,8 +1,7 @@
 node_modules/
+cartridges/*/cartridge/static/
+
 dw.json
 
-cartridges/*/cartridge/static/default/js/
-
-.DS_STORE
-.idea
-.vscode
+metadata/pixlee_site_template.zip
+package-lock.json
