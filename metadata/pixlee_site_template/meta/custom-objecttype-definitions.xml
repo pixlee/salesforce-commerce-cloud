@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xmlns="http://www.demandware.com/xml/impex/metadata/2006-10-31">
+    <custom-type type-id="PixleeCategoryHierarchy">
+        <display-name xml:lang="x-default">Pixlee Category Hierarchy</display-name>
+        <description xml:lang="x-default">Stores category hierarchy information for Pixlee product export optimization</description>
+        <staging-mode>no-staging</staging-mode>
+        <storage-scope>site</storage-scope>
+        <key-definition attribute-id="custom.categoryId">
+            <type>string</type>
+            <min-length>1</min-length>
+            <field-length>256</field-length>
+        </key-definition>
+        <attribute-definitions>
+            <attribute-definition attribute-id="fullName">
+                <display-name xml:lang="x-default">Full Category Name</display-name>
+                <description xml:lang="x-default">The complete display name of the category</description>
+                <type>string</type>
+                <localizable-flag>false</localizable-flag>
+                <mandatory-flag>true</mandatory-flag>
+                <min-length>1</min-length>
+                <field-length>512</field-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="parentIDs">
+                <display-name xml:lang="x-default">Parent Category IDs</display-name>
+                <description xml:lang="x-default">JSON array of parent category IDs for hierarchy building</description>
+                <type>text</type>
+                <localizable-flag>false</localizable-flag>
+                <mandatory-flag>false</mandatory-flag>
+            </attribute-definition>
+        </attribute-definitions>
+    </custom-type>
+</metadata>
