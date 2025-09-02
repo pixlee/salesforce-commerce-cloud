@@ -170,7 +170,7 @@ exports.execute = function (jobParameters) {
 
     var useSearchIndex = jobParameters['Products Source'] === 'SEARCH_INDEX';
     var breakAfter = parseInt(jobParameters['Break After'], 10);
-    breakAfter = isNaN(breakAfter) ? 0 : breakAfter;
+    breakAfter = Number.isNaN(breakAfter) ? 0 : breakAfter;
     var exportOptions = {
         imageViewType: jobParameters['Images View Type'] || null,
         onlyRegionalDetails: jobParameters['Main site ID'] && (currentSite.ID !== jobParameters['Main site ID'])
@@ -194,6 +194,14 @@ exports.execute = function (jobParameters) {
 
         PixleeService.notifyExportStatus('started', jobId, totalProductsToProcess);
 
+        try {
+            // This call will initialize and cache the category strategy and maps
+            ProductExportPayload.preInitializeCategoryProcessing();
+            Logger.info('Category processing strategy successfully built');
+        } catch (e) {
+            Logger.warn('Failed to build category processing: ' + e.message + '. Will initialize per-product.');
+        }
+
         while (productsIter.hasNext()) {
             var product = productsIter.next();
 
@@ -202,13 +210,13 @@ exports.execute = function (jobParameters) {
                     Logger.info('About to export product {0}', product.ID);
                     var productPayload = new ProductExportPayload(product, exportOptions);
                     PixleeService.postProduct(productPayload);
-                    productsExported++;
+                    productsExported += 1;
                     consecutiveFails = 0;
                     Logger.info('Product {0} successfully exported', product.ID);
                 } catch (e) {
                     Logger.error('Failed to export product {0}, original error was {1}', product.ID, e);
-                    consecutiveFails++;
-                    totalFails++;
+                    consecutiveFails += 1;
+                    totalFails += 1;
                 }
             }
 
