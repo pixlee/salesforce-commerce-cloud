@@ -1,16 +1,39 @@
 {
-    "root": true,
-    "extends": "airbnb-base/legacy",
-    "rules": {
-        "import/no-unresolved": "off",
-        "indent": ["error", 4, { "SwitchCase": 1, "VariableDeclarator": 1 }],
-        "func-names": "off",
-        "require-jsdoc": "error",
-        "valid-jsdoc": ["error", { "preferType": { "Boolean": "boolean", "Number": "number", "object": "Object", "String": "string" }, "requireReturn": false}],
-        "vars-on-top": "off",
-        "global-require": "off",
-        "no-shadow": ["error", { "allow": ["err", "callback"]}],
-        "max-len": "off",
-        "linebreak-style": 0
-    }
+  "root": true,
+  "extends": [
+    "airbnb-base/legacy",
+    "prettier"
+  ],
+  "env": {
+    "es6": true,
+    "node": true
+  },
+  "globals": {
+    "session": "readonly",
+    "request": "readonly",
+    "response": "readonly",
+    "customer": "readonly",
+    "dw": "readonly",
+    "empty": "readonly",
+    "PIPELET_ERROR": "readonly",
+    "PIPELET_NEXT": "readonly",
+    "PIPELET_ERROR_EXIT": "readonly"
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "script"
+  },
+  "rules": {
+    "import/no-unresolved": "off",
+    "indent": ["error", 4, { "SwitchCase": 1, "VariableDeclarator": 1 }],
+    "func-names": "off",
+    "require-jsdoc": "error",
+    "valid-jsdoc": ["error", { "preferType": { "Boolean": "boolean", "Number": "number", "object": "Object", "String": "string" }, "requireReturn": false}],
+    "vars-on-top": "off",
+    "global-require": "off",
+    "no-shadow": ["error", { "allow": ["err", "callback"]}],
+    "max-len": "off",
+    "no-plusplus": "off",
+    "linebreak-style": 0
+  }
 }
