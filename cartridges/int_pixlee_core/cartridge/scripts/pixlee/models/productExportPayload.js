@@ -4,11 +4,7 @@
 
 var DEFAULT_IMAGE_VIEW_TYPE = 'large';
 var DEFAULT_NO_IMAGE_PATH = '/images/noimagesmall.png';
-var CATEGORY_SAFETY_LIMIT = 1900;
-var SMALL_CATALOG_THRESHOLD = 1700;
-var LARGE_CATALOG_THRESHOLD = 4000;
-var DFS_CHUNK_SIZE = 1600;
-var CUSTOM_OBJECT_BATCH_SIZE = 100;
+var CATEGORY_SAFETY_LIMIT = 1800; // Conservative limit to account for multiple objects and additional properties
 var MAX_RECURSION_DEPTH = 20;
 
 var Logger = require('dw/system/Logger');
@@ -16,8 +12,6 @@ var Site = require('dw/system/Site');
 var Resource = require('dw/web/Resource');
 var URLUtils = require('dw/web/URLUtils');
 var CatalogMgr = require('dw/catalog/CatalogMgr');
-var CustomObjectMgr = require('dw/object/CustomObjectMgr');
-var Transaction = require('dw/system/Transaction');
 var Currency = require('dw/util/Currency');
 var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
 var currencyLookupHelper = require('*/cartridge/scripts/pixlee/helpers/currencyLookupHelper');
@@ -64,15 +58,6 @@ var ModuleLevelCache = {
  * Simple variable is more appropriate than complex caching for a single strategy object
  */
 var categoryStrategyInstance = null;
-
-/**
- * Clears the category strategy cache (useful for testing or module reloading)
- * @function clearCategoryStrategy
- * @ignore - Utility function for testing, intentionally not exported
- */
-function clearCategoryStrategy() { // eslint-disable-line no-unused-vars
-    categoryStrategyInstance = null;
-}
 
 /**
  * Request-scoped cache for primitive values only (SFCC session storage compliant)
@@ -131,9 +116,37 @@ var RequestCache = {
         // Number, String, Boolean wrapper objects are allowed
         if (value instanceof Number || value instanceof String || value instanceof Boolean) return true;
 
-        // Everything else is not allowed (objects, arrays, functions, etc.)
+        // Arrays are specifically not allowed
+        if (Array.isArray(value)) {
+            Logger.warn('Arrays not allowed in session storage. Use comma-separated strings instead.');
+            return false;
+        }
+
+        // Everything else is not allowed (objects, functions, etc.)
         Logger.warn('Unsupported session data type: ' + type + ', constructor: ' + (value.constructor ? value.constructor.name : 'unknown'));
         return false;
+    },
+
+    /**
+     * Helper to safely store arrays as comma-separated strings
+     * @param {Array} array - Array to convert
+     * @param {string} separator - Separator to use (default: ',')
+     * @returns {string} - Comma-separated string safe for session storage
+     */
+    arrayToString: function (array, separator) {
+        if (!Array.isArray(array)) return array;
+        return array.join(separator || ',');
+    },
+
+    /**
+     * Helper to convert comma-separated strings back to arrays
+     * @param {string} str - String to convert
+     * @param {string} separator - Separator used (default: ',')
+     * @returns {Array} - Array of strings
+     */
+    stringToArray: function (str, separator) {
+        if (typeof str !== 'string') return str;
+        return str.split(separator || ',');
     },
 
     /**
@@ -316,32 +329,40 @@ function getProductImageURL(product, options) {
 }
 
 /**
- * Returns the product price.
- *
- * @param {dw.catalog.Product} product - Product for which to retrieve price.
- * @returns {number} - The retrieved price.
+ * Returns the product price using pre-fetched price model and variant data
+ * @param {dw.catalog.Product} product - The product to get price for
+ * @param {Object} cachedProductData - Pre-fetched product data
+ * @returns {number} - The retrieved price
  */
-function getProductPrice(product) {
+function getProductPrice(product, cachedProductData) {
     var productPrice = null;
-    var priceModel = product.getPriceModel();
 
-    if (priceModel) {
+    if (cachedProductData.priceModel) {
         try {
-            // For the most part, master products don't have price, we need to get from a variant
-            // getDefaultVariant() will give us either the default variant or an arbitrary one
-            // I'm okay with getting an arbitrary one
-            var productVariant = product.getVariationModel().getDefaultVariant();
-
-            if (!productVariant) {
-                productPrice = priceModel.getPrice().decimalValue.valueOf();
-            // But some products don't have variants, and have a PriceModel object on the Product
+            var price;
+            if (!cachedProductData.defaultVariant) {
+                price = cachedProductData.priceModel.getPrice();
             } else {
-                productPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
+                price = cachedProductData.defaultVariant.getPriceModel().getPrice();
+            }
+
+            // Check if price is null (common for product sets, bundles, etc.)
+            if (price && price.decimalValue !== null && price.decimalValue !== undefined) {
+                productPrice = price.decimalValue.valueOf();
+            } else {
+                Logger.debug('Product has no price (product set/bundle/etc.): ' + product.ID);
+                productPrice = 0; // Default price for products without pricing
             }
         } catch (e) {
-            Logger.warn('Could not get the price for product id: ' + product.ID);
-            Logger.warn(e.message);
+            Logger.warn('Could not get the price from cached data: ' + e.message);
+            productPrice = 0; // Fallback to 0 instead of leaving undefined
         }
+    }
+
+    // Final fallback for products with no price model at all
+    if (productPrice === null || productPrice === undefined) {
+        Logger.debug('Product has no price model - using default value 0: ' + (product ? product.ID : 'unknown'));
+        productPrice = 0;
     }
 
     return productPrice;
@@ -479,7 +500,7 @@ function estimateCategoryCount(catalog) {
         queue.push(topLevelCategories[i]);
     }
 
-    while (queue.length > 0 && count <= LARGE_CATALOG_THRESHOLD) { // Stop once we know it's a large catalog
+    while (queue.length > 0 && count <= CATEGORY_SAFETY_LIMIT) { // Stop once we know it's a large catalog
         var category = queue.shift();
         count += 1;
 
@@ -492,34 +513,6 @@ function estimateCategoryCount(catalog) {
     return count;
 }
 
-/**
- * Shared utility function for DFS category collection
- * @param {dw.catalog.Category} category - Category to process
- * @param {Array} currentPath - Current path of parent category IDs
- * @param {Array} allCategoryNodes - Array to collect all category nodes
- * @param {number} depth - Current recursion depth
- */
-function collectCategoriesDFS(category, currentPath, allCategoryNodes, depth) {
-    var currentDepth = depth || 0;
-    if (currentDepth > MAX_RECURSION_DEPTH) {
-        Logger.warn('Category tree depth limit reached for category: ' + category.getID());
-        return;
-    }
-
-    allCategoryNodes.push({
-        category: category,
-        path: currentPath.slice()
-    });
-
-    var categoryID = category.getID();
-    var newPath = currentPath.slice();
-    newPath.push(categoryID);
-
-    var children = category.getSubCategories();
-    for (var i = 0; i < children.length; i += 1) {
-        collectCategoriesDFS(children[i], newPath, allCategoryNodes, currentDepth + 1);
-    }
-}
 
 /**
  * Generic function to extract product categories and their parent hierarchy using
@@ -540,7 +533,7 @@ function collectCategoriesDFS(category, currentPath, allCategoryNodes, depth) {
  *   [{category_id: string, category_name: string}, ...]
  * @throws {Error} If product category processing fails
  * @performance O(n*d) where n=assigned categories, d=average depth of category tree
- * @safety Enforces CATEGORY_SAFETY_LIMIT (1900) to prevent excessive processing
+ * @safety Enforces CATEGORY_SAFETY_LIMIT (1800) to prevent excessive processing
  */
 function getProductCategoriesGeneric(product, lookupFunction) {
     var productCategories = {};
@@ -587,16 +580,6 @@ function getProductCategoriesGeneric(product, lookupFunction) {
 }
 
 /**
- * Optimized lookup for category info using O(1) map lookup
- * @param {number} categoryId - ID of the category to look up
- * @param {Object} categoryMap - Map of categoryId -> category data for direct lookup
- * @returns {*|null} - Category info if found, otherwise null
- */
-function getCategoryFromMap(categoryId, categoryMap) {
-    return categoryMap[categoryId] || null;
-}
-
-/**
  * Improved category path building with better performance
  * @param {Array} pathStack - Stack of parent category IDs
  * @param {Object} namesMap - Map of category IDs to names
@@ -634,8 +617,6 @@ function SingleMapStrategy() {
         var result = {};
         var namesMap = {};
 
-        Logger.info('Building single categories map...');
-
         // Standard BFS approach (safe for small catalogs)
         var queue = [];
         var topLevelCategories = root.getSubCategories();
@@ -669,7 +650,6 @@ function SingleMapStrategy() {
             }
         }
 
-        Logger.info('Single map built with ' + Object.keys(result).length + ' categories');
         return result;
     }
 
@@ -690,384 +670,197 @@ function SingleMapStrategy() {
 }
 
 /**
- * Strategy 2: DFS Chunked Strategy - Optimized for medium-sized catalogs (1700-4000 categories)
- *
- * Uses Depth-First Search (DFS) to collect categories in hierarchical chunks for better
- * memory locality. Categories are processed in batches and stored in a flat map for O(1) lookups.
- * This balances memory efficiency with lookup performance.
- *
- * Memory Usage: Moderate - stores all categories in flat map
- * Lookup Performance: O(1) - direct hash map access
- * Build Performance: O(n) - single DFS traversal with chunked processing
- *
- * Ideal for: E-commerce sites with moderate category trees where memory allows
- * full in-memory storage but chunked processing provides better cache locality.
- *
+ * Hybrid BFS Strategy for large catalogs (1800+ categories)
  * @extends CategoryStrategy
- * @since 24.1.0
- * @performance Build: O(n), Lookup: O(1), Memory: O(n)
  */
-function DFSChunkedStrategy() {
+function HybridBFSStrategy() {
     CategoryStrategy.call(this);
-    var categoryMap = {}; // Single flat map: categoryId -> category data for O(1) lookup
+    var topLevelCategoryMap = {}; // BFS map limited to ~1950 categories
+    var unmappedCategoryCache = {}; // Cache for categories not in BFS map
+    var maxMapSize = 1950; // Close to 2000 limit since topLevelCategoryMap is now the only large object
+    var maxUnmappedCacheSize = 300; // Additional cache for unmapped categories
+    var isBuilt = false;
 
     /**
-     * Finds missing parent names in the allCategoryNodes
-     * @param {Array} missingIds - Array of category IDs that are missing names
-     * @param {Array} allCategoryNodes - Array of all category nodes to search in
-     * @param {Object} namesMap - Map to fill with missing names
+     * Builds partial category map using BFS (breadth-first search)
      */
-    function findMissingParentNames(missingIds, allCategoryNodes, namesMap) {
-        var remainingIds = missingIds.slice();
+    function buildBFSCategoryMap() {
+        var catalog = getSiteCatalog();
+        var root = catalog.getRoot();
+        var queue = [];
+        var count = 0;
 
-        for (var i = 0; i < allCategoryNodes.length && remainingIds.length > 0; i += 1) {
-            var nodeId = allCategoryNodes[i].category.getID();
-            var index = remainingIds.indexOf(nodeId);
-
-            if (index >= 0) {
-                // eslint-disable-next-line no-param-reassign
-                namesMap[nodeId] = allCategoryNodes[i].category.getDisplayName();
-                remainingIds.splice(index, 1);
-            }
-        }
-    }
-
-    /**
-     * Processes a chunk of categories with optimized parent lookup using a 4-phase approach:
-     * Phase 1: Build local names map from current chunk categories
-     * Phase 2: Identify missing parent category names not in local map
-     * Phase 3: Resolve missing parent names by searching all category nodes
-     * Phase 4: Build final category objects directly into target map
-     *
-     * This approach minimizes expensive searches by batching missing name lookups.
-     * OPTIMIZED: Populates target map directly instead of creating intermediate objects.
-     *
-     * @param {Array} categoryChunk - Array of category objects with structure:
-     *   [{category: dw.catalog.Category, path: Array<string>}, ...]
-     * @param {Array} allCategoryNodes - Complete array of all category nodes for parent lookup.
-     *   Used only when parent names are missing from the current chunk.
-     * @param {Object} targetMap - Target map to populate directly (avoids intermediate object creation)
-     * @throws {Error} If category chunk processing fails
-     * @performance O(n*m) where n=chunk size, m=missing parents. Optimized to minimize m.
-     */
-    function processChunk(categoryChunk, allCategoryNodes, targetMap) {
-        var localNamesMap = {};
-        var missingParentIds = {};
-        var item;
-        var categoryID;
-        var pathToNode;
-        var i;
-
-        // Phase 1: Build local names map
-        for (i = 0; i < categoryChunk.length; i += 1) {
-            item = categoryChunk[i];
-            categoryID = item.category.getID();
-            localNamesMap[categoryID] = item.category.getDisplayName();
+        // Initialize BFS queue with top-level categories
+        var topLevelCategories = root.getSubCategories();
+        for (var i = 0; i < topLevelCategories.length; i += 1) {
+            queue.push({
+                category: topLevelCategories[i],
+                path: [],
+                pathNames: [] // Store parent names directly in queue items
+            });
         }
 
-        // Phase 2: Identify missing parents (much fewer with DFS)
-        for (i = 0; i < categoryChunk.length; i += 1) {
-            pathToNode = categoryChunk[i].path;
-            for (var j = 0; j < pathToNode.length; j += 1) {
-                var parentID = pathToNode[j];
-                if (!localNamesMap[parentID]) {
-                    missingParentIds[parentID] = true;
+        // BFS traversal until we hit the map size limit
+        while (queue.length > 0 && count < maxMapSize) {
+            var item = queue.shift();
+            var category = item.category;
+            var categoryId = category.getID();
+            var categoryName = category.getDisplayName();
+            var pathToNode = item.path;
+            var pathNamesToNode = item.pathNames;
+
+            // Build full path directly without separate namesMap
+            var fullPath = pathNamesToNode.length > 0
+                ? pathNamesToNode.join(' > ') + ' > ' + categoryName
+                : categoryName;
+
+            // Store in BFS map (SINGLE object only)
+            topLevelCategoryMap[categoryId] = {
+                fullName: fullPath,
+                parentIDs: pathToNode.join(','),
+                isMapped: true // Flag to identify BFS-mapped categories
+            };
+            count += 1;
+
+            // Add children to queue for next BFS level
+            var children = category.getSubCategories();
+            var newPath = pathToNode.slice();
+            newPath.push(categoryId);
+            var newPathNames = pathNamesToNode.slice();
+            newPathNames.push(categoryName);
+
+            for (var j = 0; j < children.length; j += 1) {
+                if (count < maxMapSize) { // Only add if we haven't hit the limit
+                    queue.push({
+                        category: children[j],
+                        path: newPath,
+                        pathNames: newPathNames
+                    });
                 }
             }
         }
 
-        // Phase 3: Efficient lookup of missing parents only
-        var missingParentsList = Object.keys(missingParentIds);
-        if (missingParentsList.length > 0) {
-            findMissingParentNames(missingParentsList, allCategoryNodes, localNamesMap);
-        }
-
-        // Phase 4: Build final category objects directly into target map
-        for (i = 0; i < categoryChunk.length; i += 1) {
-            item = categoryChunk[i];
-            categoryID = item.category.getID();
-            pathToNode = item.path;
-
-            // eslint-disable-next-line no-param-reassign
-            targetMap[categoryID] = {
-                fullName: buildCategoryPath(pathToNode, localNamesMap, localNamesMap[categoryID]),
-                parentIDs: pathToNode.join(',')
-            };
-        }
     }
 
     /**
-     * Builds a DFS chunked map of categories into the provided target map
-     * @param {Object} targetMap - Target map to populate with category data
+     * Hybrid lookup: checks BFS map first, then traverses tree for unmapped categories
+     * @param {string} categoryId - The category ID to look up
+     * @returns {Object|null} - Category data or null if not found
      */
-    function buildDFSChunkedMap(targetMap) {
-        var catalog = getSiteCatalog();
-        var root = catalog.getRoot();
-        var allCategoryNodes = [];
-
-        Logger.info('Building DFS chunked categories map...');
-
-        // DFS collection for better hierarchical locality
-        var topLevelCategories = root.getSubCategories();
-        for (var i = 0; i < topLevelCategories.length; i += 1) {
-            collectCategoriesDFS(topLevelCategories[i], [], allCategoryNodes, 0);
+    function hybridLookup(categoryId) {
+        // First check: BFS map (O(1) lookup)
+        if (topLevelCategoryMap[categoryId]) {
+            return topLevelCategoryMap[categoryId];
         }
 
-        Logger.info('Collected ' + allCategoryNodes.length + ' categories via DFS');
-
-        // Process in chunks and build single flat map
-        for (var chunkStart = 0; chunkStart < allCategoryNodes.length; chunkStart += DFS_CHUNK_SIZE) {
-            var chunkEnd = Math.min(chunkStart + DFS_CHUNK_SIZE, allCategoryNodes.length);
-            var currentChunk = allCategoryNodes.slice(chunkStart, chunkEnd);
-
-            processChunk(currentChunk, allCategoryNodes, targetMap);
-
-            Logger.info('Processed DFS chunk ' + Math.ceil(chunkEnd / DFS_CHUNK_SIZE)
-                + ': ' + chunkEnd + '/' + allCategoryNodes.length + ' categories');
-        }
-    }
-
-    this.getCategories = function (product) {
-        if (!validateProductForCategories(product, 'DFSChunkedStrategy')) {
-            return [];
+        // Second check: unmapped category cache
+        if (unmappedCategoryCache[categoryId]) {
+            return unmappedCategoryCache[categoryId];
         }
 
-        // Use module-level cache to avoid rebuilding category map
-        if (!ModuleLevelCache.categoryMap) {
-            ModuleLevelCache.categoryMap = {};
-            buildDFSChunkedMap(ModuleLevelCache.categoryMap);
-        }
-        categoryMap = ModuleLevelCache.categoryMap;
-        return getProductCategoriesGeneric(product, function (categoryId) {
-            return getCategoryFromMap(categoryId, categoryMap);
-        });
-    };
-}
-
-/**
- * Strategy 3: Custom Objects (for large catalogs 4000+ categories)
- * @extends CategoryStrategy
- */
-function CustomObjectStrategy() {
-    CategoryStrategy.call(this);
-    var isBuilt = false;
-    var globalNamesMap = null;
-
-    /**
-     * Retrieves product categories using Custom Objects
-     * @param {dw.product} product - Product for which to retrieve categories
-     * @returns {Array} - Array of categories for the product
-     */
-    function getProductCategoriesFromCustomObjectsOptimized(product) {
-        /**
-         * Create lookup function that converts Custom Object format to standard format
-         * @param {number} categoryId - ID of the category to look up
-         * @returns {null|Object} - Custom Object
-         */
-        function customObjectLookup(categoryId) {
-            var categoryObj = CustomObjectMgr.getCustomObject('PixleeCategoryHierarchy', categoryId);
-            if (categoryObj) {
-                var parentIDsArray = JSON.parse(categoryObj.custom.parentIDs);
-                return {
-                    fullName: categoryObj.custom.fullName,
-                    parentIDs: parentIDsArray.join(',')
-                };
-            }
+        // Not in either cache - traverse up tree to find mapped category
+        var category = CatalogMgr.getCategory(categoryId);
+        if (!category) {
             return null;
         }
 
-        return getProductCategoriesGeneric(product, customObjectLookup);
-    }
+        var traversalPath = []; // Categories we traverse up from target
+        var currentCategory = category;
+        var depth = 0;
 
-    /**
-     * Builds a global names map from all category nodes
-     * @param {Array} allCategoryNodes - Array of all category nodes
-     * @returns {Object} - Map of category IDs to display names
-     */
-    function buildGlobalNamesMap(allCategoryNodes) {
-        var namesMap = {};
-        for (var i = 0; i < allCategoryNodes.length; i += 1) {
-            var nodeId = allCategoryNodes[i].category.getID();
-            namesMap[nodeId] = allCategoryNodes[i].category.getDisplayName();
-        }
-        return namesMap;
-    }
+        // Traverse up until we find a BFS-mapped category or hit root
+        while (currentCategory && depth < MAX_RECURSION_DEPTH) {
+            var currentId = currentCategory.getID();
 
-    /**
-     * Builds the full path for a custom object category
-     * @param {Array} pathToNode - Array of parent category IDs leading to the current node
-     * @param {Object} category - The current category object
-     * @returns {string} - Full path string for the category
-     */
-    function buildFullPathForCustomObject(pathToNode, category) {
-        var pathParts = [];
+            // Found a BFS-mapped category!
+            if (topLevelCategoryMap[currentId]) {
+                var mappedCategory = topLevelCategoryMap[currentId];
 
-        for (var j = 0; j < pathToNode.length; j += 1) {
-            var parentID = pathToNode[j];
-            if (globalNamesMap[parentID]) {
-                pathParts.push(globalNamesMap[parentID]);
-            }
-        }
-        pathParts.push(category.getDisplayName());
+                // Build full path: mapped category path + traversed path
+                var fullPath = mappedCategory.fullName;
+                for (var i = traversalPath.length - 1; i >= 0; i -= 1) {
+                    fullPath += ' > ' + traversalPath[i].name;
+                }
 
-        return pathParts.join(' > ');
-    }
-
-    /**
-     * Builds the category map using Custom Objects
-     */
-    function buildCategoryMapToCustomObjects() {
-        var catalog = getSiteCatalog();
-
-        Logger.info('Building category map using Custom Objects...');
-
-        // Clear existing data with comprehensive error handling and rollback
-        try {
-            var deletedCount = 0;
-            Transaction.wrap(function () {
-                Logger.debug('Starting Custom Object cleanup transaction...');
-                var existing = CustomObjectMgr.getAllCustomObjects('PixleeCategoryHierarchy');
-
-                try {
-                    while (existing.hasNext()) {
-                        var objToRemove = existing.next();
-                        if (objToRemove) {
-                            CustomObjectMgr.remove(objToRemove);
-                            deletedCount += 1;
-
-                            // Log progress for large cleanup operations
-                            if (deletedCount % 100 === 0) {
-                                Logger.debug('Deleted ' + deletedCount + ' Custom Objects...');
-                            }
-                        }
+                // Build parent IDs: mapped parents + traversed parents (excluding target)
+                var parentIds = mappedCategory.parentIDs;
+                if (traversalPath.length > 1) {
+                    var traversedParents = [];
+                    for (var j = traversalPath.length - 1; j > 0; j -= 1) {
+                        traversedParents.push(traversalPath[j].id);
                     }
-                    Logger.info('Custom Object cleanup completed: ' + deletedCount + ' objects deleted');
-                } catch (iteratorError) {
-                    Logger.error('Iterator/remove failed during Custom Object cleanup at count ' + deletedCount + ': ' + iteratorError.message);
-                    Logger.error('Transaction will be rolled back - no partial cleanup');
-                    throw iteratorError; // CRITICAL: Re-throw to rollback transaction
-                } finally {
-                    // Close iterator if it exists to prevent resource leaks
-                    if (existing && typeof existing.close === 'function') {
-                        try {
-                            existing.close();
-                        } catch (closeError) {
-                            Logger.warn('Failed to close Custom Object iterator: ' + closeError.message);
-                        }
+                    if (parentIds) {
+                        parentIds += ',' + traversedParents.join(',');
+                    } else {
+                        parentIds = traversedParents.join(',');
                     }
                 }
-            });
-            Logger.info('Custom Object cleanup transaction committed successfully');
-        } catch (e) {
-            Logger.error('Custom Object cleanup transaction failed and was rolled back: ' + e.message);
-            Logger.error('Database state remains unchanged - no partial cleanup occurred');
-            throw new Error('Custom Object cleanup failed with rollback: ' + e.message);
-        }
 
-        // Collect all categories via DFS
-        var allCategoryNodes = [];
-        var root = catalog.getRoot();
-        var topLevelCategories = root.getSubCategories();
-
-        var i;
-        for (i = 0; i < topLevelCategories.length; i += 1) {
-            collectCategoriesDFS(topLevelCategories[i], [], allCategoryNodes, 0);
-        }
-
-        // Build global names map once for efficiency
-        globalNamesMap = buildGlobalNamesMap(allCategoryNodes);
-
-        // Store in batches
-        for (i = 0; i < allCategoryNodes.length; i += CUSTOM_OBJECT_BATCH_SIZE) {
-            var batchEnd = Math.min(i + CUSTOM_OBJECT_BATCH_SIZE, allCategoryNodes.length);
-            var batch = allCategoryNodes.slice(i, batchEnd);
-
-            var batchNumber = Math.ceil((i + 1) / CUSTOM_OBJECT_BATCH_SIZE);
-
-            try {
-                var createdInBatch = Transaction.wrap((function (currentBatch, batchNum) {
-                    return function () {
-                        Logger.debug('Starting Custom Object creation transaction for batch ' + batchNum + '...');
-                        var localCreatedCount = 0;
-
-                        for (var j = 0; j < currentBatch.length; j += 1) {
-                            var item = currentBatch[j];
-                            var categoryID = null;
-
-                            try {
-                                categoryID = item.category.getID();
-
-                                // Validate category data before creating Custom Object
-                                if (!categoryID) {
-                                    throw new Error('Category ID is null or undefined for item ' + j);
-                                }
-
-                                // Check if Custom Object already exists (defensive programming)
-                                var existingObj = CustomObjectMgr.getCustomObject('PixleeCategoryHierarchy', categoryID);
-                                if (existingObj) {
-                                    Logger.warn('Custom Object already exists for category ' + categoryID + ', skipping creation');
-                                    // Skip creation but don't use continue statement per ESLint rules
-                                } else {
-                                    var customObj = CustomObjectMgr.createCustomObject('PixleeCategoryHierarchy', categoryID);
-                                    if (!customObj) {
-                                        throw new Error('Failed to create Custom Object for category: ' + categoryID);
-                                    }
-
-                                    customObj.custom.fullName = buildFullPathForCustomObject(item.path || [], item.category);
-                                    customObj.custom.parentIDs = safeJSONStringify(item.path || [], 'category parent IDs');
-
-                                    localCreatedCount += 1;
-                                }
-                            } catch (itemError) {
-                                Logger.error('Category item ' + j + ' (ID: ' + (categoryID || 'unknown') + ') failed in batch ' + batchNum + ': ' + itemError.message);
-                                Logger.error('Transaction will be rolled back - no partial batch creation');
-                                throw itemError; // CRITICAL: Re-throw to rollback entire batch
-                            }
-                        }
-
-                        Logger.debug('Batch ' + batchNum + ' transaction prepared: ' + localCreatedCount + ' objects ready for commit');
-                        return localCreatedCount;
-                    };
-                }(batch, batchNumber)));
-
-                Logger.debug('Successfully committed batch ' + batchNumber + ' with ' + createdInBatch + ' categories created');
-            } catch (e) {
-                Logger.error('Custom Object batch ' + batchNumber + ' transaction failed and was rolled back: ' + e.message);
-                Logger.error('Batch range: ' + i + '-' + (batchEnd - 1) + ' of ' + allCategoryNodes.length + ' total categories');
-                Logger.error('Database state remains consistent - no partial batch was created');
-
-                // Enhanced error context for debugging
-                var errorContext = {
-                    batchNumber: batchNumber,
-                    batchSize: batch.length,
-                    rangeStart: i,
-                    rangeEnd: batchEnd - 1,
-                    totalCategories: allCategoryNodes.length
+                var result = {
+                    fullName: fullPath,
+                    parentIDs: parentIds
                 };
 
-                Logger.error('Batch failure context: ' + JSON.stringify(errorContext));
+                // Cache the result if we have room
+                if (Object.keys(unmappedCategoryCache).length < maxUnmappedCacheSize) {
+                    unmappedCategoryCache[categoryId] = result;
+                }
 
-                // Re-throw with additional context - caller can decide whether to continue or abort
-                throw new Error('Custom Object batch creation failed at batch ' + batchNumber + ' with rollback: ' + e.message);
+                return result;
             }
 
-            Logger.info('Stored batch ' + Math.ceil((i + 1) / CUSTOM_OBJECT_BATCH_SIZE)
-                + ': ' + batchEnd + '/' + allCategoryNodes.length + ' categories');
+            // Continue traversing up
+            traversalPath.push({
+                id: currentId,
+                name: currentCategory.getDisplayName()
+            });
+            currentCategory = currentCategory.getParent();
+            depth += 1;
         }
 
-        Logger.info('Custom Objects strategy built with ' + allCategoryNodes.length + ' categories');
+        // Reached root without finding mapped category (shouldn't happen with proper BFS)
+        Logger.warn('No mapped parent found for category: ' + categoryId + ' after ' + depth + ' levels');
+        return null;
     }
 
+    /**
+     * Clears all caches (useful for testing or between batch processing)
+     */
+    this.clearCache = function () {
+        unmappedCategoryCache = {};
+    };
+
+    /**
+     * Gets comprehensive cache statistics for monitoring
+     * @returns {Object} - Cache statistics including both BFS map and unmapped cache
+     */
+    this.getCacheStats = function () {
+        return {
+            bfsMap: {
+                size: Object.keys(topLevelCategoryMap).length,
+                maxSize: maxMapSize,
+                utilization: (Object.keys(topLevelCategoryMap).length / maxMapSize * 100).toFixed(1) + '%'
+            },
+            unmappedCache: {
+                size: Object.keys(unmappedCategoryCache).length,
+                maxSize: maxUnmappedCacheSize,
+                utilization: (Object.keys(unmappedCategoryCache).length / maxUnmappedCacheSize * 100).toFixed(1) + '%'
+            },
+            totalCachedCategories: Object.keys(topLevelCategoryMap).length + Object.keys(unmappedCategoryCache).length
+        };
+    };
+
     this.getCategories = function (product) {
-        if (!validateProductForCategories(product, 'CustomObjectStrategy')) {
+        if (!validateProductForCategories(product, 'HybridBFSStrategy')) {
             return [];
         }
 
         if (!isBuilt) {
-            buildCategoryMapToCustomObjects();
+            buildBFSCategoryMap();
             isBuilt = true;
         }
-        return getProductCategoriesFromCustomObjectsOptimized(product);
+
+        return getProductCategoriesGeneric(product, hybridLookup);
     };
 }
 
@@ -1084,21 +877,12 @@ function initializeCategoryStrategy() {
         }
         var categoryCount = ModuleLevelCache.categoryCount;
 
-        if (categoryCount < SMALL_CATALOG_THRESHOLD) {
-            Logger.info('Detected ' + categoryCount + ' categories. Using SingleMapStrategy for small catalog');
+        if (categoryCount < CATEGORY_SAFETY_LIMIT) {
+            Logger.info('Detected ' + categoryCount + ' categories. Using SingleMapStrategy');
             return new SingleMapStrategy();
-        } if (categoryCount < LARGE_CATALOG_THRESHOLD) {
-            Logger.info('Detected ' + categoryCount + ' categories. Using DFSChunkedStrategy for medium catalog');
-            return new DFSChunkedStrategy();
         }
-        Logger.info('Detected ' + categoryCount + ' categories. Using CustomObjectStrategy for large catalog');
-        try {
-            return new CustomObjectStrategy();
-        } catch (customObjectError) {
-            Logger.warn('CustomObjectStrategy failed (likely missing Custom Object type. Import cartridge metadata): ' + customObjectError.message);
-            Logger.info('Falling back to DFSChunkedStrategy for large catalog');
-            return new DFSChunkedStrategy();
-        }
+        Logger.info('Detected ' + categoryCount + ' categories. Using HybridBFSStrategy for large catalog');
+        return new HybridBFSStrategy();
     } catch (e) {
         Logger.error('Failed to initialize category strategy: ' + e.message);
         Logger.info('Falling back to SingleMapStrategy');
@@ -1132,27 +916,7 @@ function getProductCategories(product) {
         // Get cached strategy (automatically initializes if needed)
         var strategy = getCategoryStrategy();
 
-        try {
-            return strategy.getCategories(product);
-        } catch (strategyError) {
-            // Check if this is a CustomObjectStrategy failure
-            if (strategy.constructor.name === 'CustomObjectStrategy'
-                && strategyError.message
-                && (strategyError.message.indexOf('Type does not exist: PixleeCategoryHierarchy') > -1)) {
-                Logger.warn('CustomObjectStrategy failed due to missing Custom Object type. Import cartridge metadata. Falling back to DFSChunkedStrategy.');
-
-                // Clear the failed strategy and use DFS fallback
-                categoryStrategyInstance = null;
-                var fallbackStrategy = new DFSChunkedStrategy();
-                categoryStrategyInstance = fallbackStrategy;
-
-                Logger.info('Fallback to DFSChunkedStrategy successful');
-                return fallbackStrategy.getCategories(product);
-            }
-
-            // Re-throw if not a known CustomObjectStrategy issue
-            throw strategyError;
-        }
+        return strategy.getCategories(product);
     } catch (e) {
         Logger.error('Error in getProductCategories for product ' + (product ? product.ID : 'unknown') + ': ' + e.message);
         return []; // Return empty array on error
@@ -1165,19 +929,23 @@ function getProductCategories(product) {
  * @param {dw.catalog.Product} product - Product to get regional details for.
  * @param {string} variantsJSON - Variants JSON, same for all regions so passed
  *   to this function as a parameter.
+ * @param {Object} cachedProductData - Pre-fetched product data
  * @returns {Array} - Array of objects, separate object for each region (locale)
  */
-function getRegionalInfo(product, variantsJSON) {
-    // Get site locales directly - no caching since arrays can't be stored in session
-    var locales = getCurrentSite().getAllowedLocales();
-    var siteLocales = [];
-    for (var i = 0; i < locales.length; i += 1) {
-        siteLocales.push(locales[i].toString());
-    }
+function getRegionalInfo(product, variantsJSON, cachedProductData) {
+    // Use cached site locales to avoid repeated API calls
+    // Cache as comma-separated string (SFCC session compliant)
+    var siteLocalesString = RequestCache.get('pixlee:siteLocales', function () {
+        var locales = getCurrentSite().getAllowedLocales();
+        var localeStrings = [];
+        for (var i = 0; i < locales.length; i += 1) {
+            localeStrings.push(locales[i].toString());
+        }
+        return RequestCache.arrayToString(localeStrings); // Use helper function
+    });
+    var siteLocales = RequestCache.stringToArray(siteLocalesString); // Convert back to array for use
 
     var regional = [];
-
-    Logger.debug('Processing Product: ' + product.getName());
 
     for (var j = 0; j < siteLocales.length; j += 1) {
         var currentLocale = siteLocales[j];
@@ -1195,8 +963,6 @@ function getRegionalInfo(product, variantsJSON) {
             request.setLocale(currentLocale);
             session.setCurrency(Currency.getCurrency(localeCurrency));
 
-            Logger.debug('Processing Locale: ' + currentLocale);
-
             // Product URL
             var regionalUrl = getProductPageUrl(product);
 
@@ -1206,31 +972,67 @@ function getRegionalInfo(product, variantsJSON) {
             // Product Price
             var regionalPrice = null;
             var regionalCurrency = null;
-            if (product.getPriceModel()) {
+            if (cachedProductData && cachedProductData.priceModel) {
                 try {
-                // For the most part, master products don't have price, we need to get from a variant
-                // getDefaultVariant() will give us either the default variant or an arbitrary one
-                // I'm okay with getting an arbitrary one
-                    var productVariant = product.getVariationModel().getDefaultVariant();
-
-                    if (!productVariant) {
-                        regionalPrice = product.getPriceModel().getPrice().decimalValue.valueOf();
-                        regionalCurrency = product.getPriceModel().getPrice().getCurrencyCode();
-                        // But some products don't have variants, and have a PriceModel object on the Product
+                    var price;
+                    if (!cachedProductData.defaultVariant) {
+                        price = cachedProductData.priceModel.getPrice();
                     } else {
-                        regionalPrice = productVariant.getPriceModel().getPrice().decimalValue.valueOf();
-                        regionalCurrency = productVariant.getPriceModel().getPrice().getCurrencyCode();
+                        price = cachedProductData.defaultVariant.getPriceModel().getPrice();
+                    }
+
+                    // Check if price is null (common for product sets, bundles, etc.)
+                    if (price && price.decimalValue !== null && price.decimalValue !== undefined) {
+                        regionalPrice = price.decimalValue.valueOf();
+                        regionalCurrency = price.getCurrencyCode();
+                    } else {
+                        Logger.debug('Product has no regional price (product set/bundle/etc.): ' + product.ID);
+                        regionalPrice = 0; // Default price for products without pricing
+                        regionalCurrency = localeCurrency || 'USD'; // Use locale currency or default
                     }
                 } catch (err) {
                     Logger.warn('Could not get the regional price for product id: ' + product.ID);
                     Logger.warn(err.message);
+                    regionalPrice = 0; // Fallback to 0
+                    regionalCurrency = localeCurrency || 'USD'; // Fallback currency
+                }
+            } else if (product.getPriceModel()) {
+                // Fallback to original logic if cached data not available
+                try {
+                    var productVariant = product.getVariationModel().getDefaultVariant();
+                    var fallbackPrice;
+                    if (!productVariant) {
+                        fallbackPrice = product.getPriceModel().getPrice();
+                    } else {
+                        fallbackPrice = productVariant.getPriceModel().getPrice();
+                    }
+
+                    // Check if price is null (common for product sets, bundles, etc.)
+                    if (fallbackPrice && fallbackPrice.decimalValue !== null && fallbackPrice.decimalValue !== undefined) {
+                        regionalPrice = fallbackPrice.decimalValue.valueOf();
+                        regionalCurrency = fallbackPrice.getCurrencyCode();
+                    } else {
+                        Logger.debug('Product has no fallback regional price (product set/bundle/etc.): ' + product.ID);
+                        regionalPrice = 0; // Default price for products without pricing
+                        regionalCurrency = localeCurrency || 'USD'; // Use locale currency or default
+                    }
+                } catch (err) {
+                    Logger.warn('Could not get the regional price for product id: ' + product.ID);
+                    Logger.warn(err.message);
+                    regionalPrice = 0; // Fallback to 0
+                    regionalCurrency = localeCurrency || 'USD'; // Fallback currency
                 }
             }
 
-            // Product Stock
-            // NOTE: The stock should generally be the same for all regions so
-            //   may be passed as a parameter to improve performance
-            var regionalStock = getProductStock(product);
+            // Final fallback for products with no price model at all
+            if (regionalPrice === null || regionalPrice === undefined) {
+                Logger.debug('Product has no price model - using default values: ' + product.ID);
+                regionalPrice = 0;
+                regionalCurrency = localeCurrency || 'USD';
+            }
+
+            // Product Stock - use cached value to avoid repeated API calls
+            var regionalStock = cachedProductData ? cachedProductData.stock : getProductStock(product);
 
             var productRegion = {
                 buy_now_link_url: regionalUrl,
@@ -1299,9 +1101,30 @@ function getRegionalInfo(product, variantsJSON) {
  */
 function ProductExportPayload(product, options) {
     var exportOptions = options || {};
+
+    // Cache expensive product API calls to avoid duplication
+    var cachedProductData = {
+        price: null,
+        stock: null,
+        priceModel: null,
+        defaultVariant: null
+    };
+
+    // Get price model and variant once for reuse
+    cachedProductData.priceModel = product.getPriceModel();
+    if (cachedProductData.priceModel) {
+        cachedProductData.defaultVariant = product.getVariationModel().getDefaultVariant();
+    }
+
+    // Calculate price once
+    cachedProductData.price = getProductPrice(product, cachedProductData);
+
+    // Calculate stock once
+    cachedProductData.stock = getProductStock(product);
+
     var variants = getProductVariants(product);
     var variantsJSON = safeJSONStringify(variants, 'product variants');
-    var regionalInfo = getRegionalInfo(product, variantsJSON);
+    var regionalInfo = getRegionalInfo(product, variantsJSON, cachedProductData);
 
     this.title = product.name || '';
     this.product = {
@@ -1326,8 +1149,8 @@ function ProductExportPayload(product, options) {
         this.product.name = product.name || '';
         this.product.buy_now_link_url = getProductPageUrl(product);
         this.product.product_photo = getProductImageURL(product, exportOptions);
-        this.product.price = getProductPrice(product);
-        this.product.stock = getProductStock(product);
+        this.product.price = cachedProductData.price;
+        this.product.stock = cachedProductData.stock;
         this.product.extra_fields = safeJSONStringify(productExtraFields, 'product extra fields');
         this.product.currency = RequestCache.get('pixlee:defaultCurrencyCode', function () {
             return getCurrentSite().getDefaultCurrency();
@@ -1372,11 +1195,22 @@ ProductExportPayload.preInitializeCategoryProcessing = function () {
             return getCurrentSite().getCustomPreferenceValue('ProductHost');
         });
 
+        // Pre-cache site locales to avoid repeated API calls in regional processing
+        // Store as comma-separated string (SFCC session compliant)
+        RequestCache.get('pixlee:siteLocales', function () {
+            var locales = getCurrentSite().getAllowedLocales();
+            var localeStrings = [];
+            for (var i = 0; i < locales.length; i += 1) {
+                localeStrings.push(locales[i].toString());
+            }
+            return RequestCache.arrayToString(localeStrings); // Use helper function
+        });
+
         Logger.info('Job-level constants cached successfully');
 
         // Log cache status for monitoring
         var cacheKeys = [
-            'pixlee:jobStartTime', 'pixlee:defaultCurrencyCode', 'pixlee:productHost'
+            'pixlee:jobStartTime', 'pixlee:defaultCurrencyCode', 'pixlee:productHost', 'pixlee:siteLocales'
         ];
         var cachedItems = 0;
         var privacyCache = session.getPrivacy();
@@ -1392,4 +1226,43 @@ ProductExportPayload.preInitializeCategoryProcessing = function () {
     }
 };
 
+/**
+ * Static method to get category processing cache statistics
+ * Useful for monitoring and debugging category processing performance
+ *
+ * @static
+ * @returns {Object} - Cache statistics including strategy type and cache utilization
+ */
+ProductExportPayload.getCacheStatistics = function () {
+    try {
+        var strategy = getCategoryStrategy();
+        var stats = {
+            strategyType: strategy.constructor.name,
+            moduleCache: {
+                categoryMapExists: !!ModuleLevelCache.categoryMap,
+                categoryCount: ModuleLevelCache.categoryCount
+            }
+        };
+
+        // Add strategy-specific cache stats if available
+        if (typeof strategy.getCacheStats === 'function') {
+            var cacheStats = strategy.getCacheStats();
+            if (strategy.constructor.name === 'HybridBFSStrategy') {
+                stats.hybridBFS = cacheStats;
+            } else {
+                stats.requestCache = cacheStats;
+            }
+        }
+
+        return stats;
+    } catch (e) {
+        Logger.warn('Failed to get cache statistics: ' + e.message);
+        return {
+            error: 'Failed to get cache statistics',
+            message: e.message
+        };
+    }
+};
+
 module.exports = ProductExportPayload;
+

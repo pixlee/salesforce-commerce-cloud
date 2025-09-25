@@ -202,17 +202,27 @@ exports.execute = function (jobParameters) {
             Logger.warn('Failed to build category processing: ' + e.message + '. Will initialize per-product.');
         }
 
+        var processedCount = 0;
+        var progressLogInterval = Math.max(100, Math.floor(totalProductsToProcess / 20));
+
         while (productsIter.hasNext()) {
             var product = productsIter.next();
+            processedCount += 1;
 
             if (product.online && product.searchable && !product.variant) {
                 try {
-                    Logger.info('About to export product {0}', product.ID);
+                    if (processedCount % progressLogInterval === 0 || processedCount <= 10) {
+                        Logger.info('Processing product {0} ({1}/{2})', product.ID, processedCount, totalProductsToProcess);
+                    }
+
                     var productPayload = new ProductExportPayload(product, exportOptions);
                     PixleeService.postProduct(productPayload);
                     productsExported += 1;
                     consecutiveFails = 0;
-                    Logger.info('Product {0} successfully exported', product.ID);
+
+                    if (productsExported <= 5 || productsExported % progressLogInterval === 0) {
+                        Logger.info('Product {0} successfully exported ({1} total)', product.ID, productsExported);
+                    }
                 } catch (e) {
                     Logger.error('Failed to export product {0}, original error was {1}', product.ID, e);
                     consecutiveFails += 1;
@@ -223,6 +233,13 @@ exports.execute = function (jobParameters) {
             if (breakAfter && (consecutiveFails > breakAfter)) {
                 throw new Error('Reached the maximum number of consecutive product export failures');
             }
+        }
+
+        try {
+            var cacheStats = ProductExportPayload.getCacheStatistics();
+            Logger.info('Final cache statistics: ' + JSON.stringify(cacheStats));
+        } catch (e) {
+            Logger.warn('Failed to get final cache statistics: ' + e.message);
         }
 
         if (totalProductsToProcess && !productsExported) {
