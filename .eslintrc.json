@@ -5,7 +5,7 @@
     "prettier"
   ],
   "env": {
-    "es6": true,
+    "es6": false,
     "node": true
   },
   "globals": {
@@ -20,7 +20,7 @@
     "PIPELET_ERROR_EXIT": "readonly"
   },
   "parserOptions": {
-    "ecmaVersion": 2020,
+    "ecmaVersion": 5,
     "sourceType": "script"
   },
   "rules": {
@@ -35,5 +35,24 @@
     "max-len": "off",
     "no-plusplus": "off",
     "linebreak-style": 0
-  }
+  },
+  "overrides": [
+    {
+      "files": ["cartridges/**/client/**/js/**/*.js"],
+      "env": {
+        "browser": true,
+        "es6": true
+      },
+      "parserOptions": {
+        "ecmaVersion": 2020,
+        "sourceType": "module"
+      },
+      "rules": {
+        "no-var": "error",
+        "prefer-const": "warn",
+        "require-jsdoc": "off",
+        "valid-jsdoc": "off"
+      }
+    }
+  ]
 }
