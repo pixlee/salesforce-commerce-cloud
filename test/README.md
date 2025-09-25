@@ -78,36 +78,19 @@ test/
 ### Prerequisites
 
 #### Node.js Version
-This project requires **Node.js ≤14** for SFCC compatibility:
+This project requires **Node.js ≥18** for modern tooling (`sgmf-scripts@3`):
 
 ```bash
 # Check your Node version
 node --version
 
-# Should show v14.x.x or lower
-# If you have a higher version, use nvm to switch:
-nvm install 14
-nvm use 14
-
-# Or use nvmrc file (recommended)
-nvm use
+# Should show v18.x.x or higher
+# If you have an older version, use nvm to upgrade:
+nvm install 18
+nvm use 18
 ```
 
-#### Cursor/VS Code Setup
-Since you've added nvm to your `.zshrc`, the setup is simple:
-
-1. **Each Terminal Session**:
-   ```bash
-   # In Cursor terminal, run:
-   nvm use
-   # Verify: node --version should show v14.x.x
-   ```
-
-2. **Alternative - Use nvm Terminal Profile**:
-   - In Cursor terminal dropdown, select "zsh-nvm" profile
-   - This will automatically run `nvm use` when the terminal opens
-
-**Note**: The `.vscode/` folder contains workspace-specific optimizations for SFCC development (gitignored). The `.nvmrc` file ensures all team members use Node 14.
+**Important**: While tests run on Node 18+, SFCC server-side code is ES5-compatible for Rhino engine compatibility. ESLint enforces ES5 syntax for cartridge code and allows ES6+ for client-side code.
 
 #### Dependencies
 ```bash
@@ -116,21 +99,6 @@ npm install
 ```
 
 ### Quick Start
-```bash
-# Run all tests
-node test/run-tests.js
-
-# Run category processing tests (includes SFCC compliance)
-node test/run-category-tests.js
-
-# Run with verbose output
-node test/run-tests.js --verbose
-
-# Run specific test suite
-node test/run-tests.js --suite=category
-```
-
-### Standard Test Commands
 ```bash
 # All unit tests
 npm run test
@@ -144,20 +112,11 @@ npm run cover
 # Specific cartridge tests
 npm run test:core          # int_pixlee_core (shared logic)
 npm run test:sfra          # int_pixlee_sfra (SFRA-specific)
-npm run test:sitegenesis   # int_pixlee (SiteGenesis-specific)
-```
+npm run test:sg            # int_pixlee (SiteGenesis-specific)
 
-### Specialized Test Runners
-```bash
-# Category processing (SFCC compliance, strategy selection, scalability)
-node test/run-category-tests.js
-
-# Comprehensive test runner with options
-node test/run-tests.js --suite=category --verbose
-node test/run-tests.js --cartridge=int_pixlee_core --unit    # Shared logic only
-node test/run-tests.js --cartridge=int_pixlee_sfra --unit    # SFRA-specific only
-node test/run-tests.js --cartridge=int_pixlee --unit         # SiteGenesis-specific only
-node test/run-tests.js --integration --coverage
+# Run specific test patterns
+npm run test -- --grep "Category Strategy Tests"
+npm run test:integration -- --grep "Large Catalog"
 ```
 
 ## Test Scenarios Covered
@@ -310,7 +269,7 @@ const processCategories = () => {
 }
 ```
 
-See [COMPATIBILITY.md](COMPATIBILITY.md) for detailed guidelines.
+**ESLint Configuration**: The project uses ESLint to enforce ES5 syntax for server-side code while allowing ES6+ for client-side JavaScript in the `client/` directories.
 
 ## Contributing
 
