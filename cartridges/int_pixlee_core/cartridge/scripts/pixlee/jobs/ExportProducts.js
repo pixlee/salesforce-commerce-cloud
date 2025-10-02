@@ -4,9 +4,9 @@ var Logger = require('dw/system/Logger');
 var Status = require('dw/system/Status');
 
 /**
- * A class for wrapping a single product in an iterator.
+ * @function SingleProductIterator
+ * @description A class for wrapping a single product in an iterator.
  * To be used for test purposes only.
- *
  * @constructor
  * @param {string} productId - Product ID.
  */
@@ -51,13 +51,12 @@ function SingleProductIterator(productId) {
 }
 
 /**
- * A class for wrapping a product iterator.
+ * @function ProductsIterator
+ * @description A class for wrapping a product iterator.
  * Depending on the passed parameter it could return products from the search
  * index (only online, searchable and assigned to a site catalog category) or
  * use dw.catalog API to return all products assigned to the site.
- *
  * @constructor
- *
  * @param {boolean} fromIndex - Indicates whether the iterator should be created
  *   from the search index (if true) or all products assigned to the site should
  *   be returned (if false, in which case ProductMgr.queryAllSiteProducts()
@@ -77,7 +76,11 @@ function ProductsIterator(fromIndex) {
     } else {
         var ProductMgr = require('dw/catalog/ProductMgr');
         productsIterator = ProductMgr.queryAllSiteProducts();
-        count = productsIterator.count;
+        if (productsIterator && typeof productsIterator.getCount === 'function') {
+            count = productsIterator.getCount()
+        } else {
+            count = productsIterator && typeof productsIterator.count === 'number' ? productsIterator.count : 0
+        }
     }
 
     /**
@@ -124,31 +127,20 @@ function ProductsIterator(fromIndex) {
 }
 
 /**
- * Generates a unique ID.
- *
- * NOTE: Ported from the original cartridge implementation, could be replaced
- *   with dw.util.UUIDUtils.createUUID()
- *
- * @return {string} - The generated unique ID
+ * @function generateUniqueId
+ * @description Generates a unique ID using SFCC platform UUID utilities.
+ * @returns {string} - The generated unique ID
  */
 function generateUniqueId() {
-    /**
-     * Returns a random string.
-     * @return {string} - random string
-     */
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-    }
-
-    return s4() + s4() + s4();
+    var UUIDUtils = require('dw/util/UUIDUtils');
+    return UUIDUtils.createUUID();
 }
 
 /**
- * Main job step entry point.
- *
+ * @function execute
+ * @description Main job step entry point.
  * @param {Object} jobParameters - A map of parameters configured for the job step
  *   in Business Manager.
- *
  * @returns {dw.system.Status} - Status OK or ERROR
  */
 exports.execute = function (jobParameters) {
@@ -170,7 +162,7 @@ exports.execute = function (jobParameters) {
 
     var useSearchIndex = jobParameters['Products Source'] === 'SEARCH_INDEX';
     var breakAfter = parseInt(jobParameters['Break After'], 10);
-    breakAfter = Number.isNaN(breakAfter) ? 0 : breakAfter;
+    breakAfter = isNaN(breakAfter) ? 0 : breakAfter;
     var exportOptions = {
         imageViewType: jobParameters['Images View Type'] || null,
         onlyRegionalDetails: jobParameters['Main site ID'] && (currentSite.ID !== jobParameters['Main site ID'])
@@ -203,7 +195,9 @@ exports.execute = function (jobParameters) {
         }
 
         var processedCount = 0;
-        var progressLogInterval = Math.max(100, Math.floor(totalProductsToProcess / 20));
+        var progressLogInterval = (totalProductsToProcess && !isNaN(totalProductsToProcess) && totalProductsToProcess > 0)
+            ? Math.max(100, Math.floor(totalProductsToProcess / 20))
+            : 500;
 
         while (productsIter.hasNext()) {
             var product = productsIter.next();
@@ -212,7 +206,8 @@ exports.execute = function (jobParameters) {
             if (product.online && product.searchable && !product.variant) {
                 try {
                     if (processedCount % progressLogInterval === 0 || processedCount <= 10) {
-                        Logger.info('Processing product {0} ({1}/{2})', product.ID, processedCount, totalProductsToProcess);
+                        var totalText = totalProductsToProcess ? totalProductsToProcess.toString() : 'unknown';
+                        Logger.info('Processing product {0} ({1}/{2})', product.ID, processedCount, totalText);
                     }
 
                     var productPayload = new ProductExportPayload(product, exportOptions);
@@ -230,7 +225,7 @@ exports.execute = function (jobParameters) {
                 }
             }
 
-            if (breakAfter && (consecutiveFails > breakAfter)) {
+            if (breakAfter && (consecutiveFails >= breakAfter)) {
                 throw new Error('Reached the maximum number of consecutive product export failures');
             }
         }

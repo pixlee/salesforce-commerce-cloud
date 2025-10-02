@@ -4,7 +4,7 @@
 
 var DEFAULT_IMAGE_VIEW_TYPE = 'large';
 var DEFAULT_NO_IMAGE_PATH = '/images/noimagesmall.png';
-var CATEGORY_SAFETY_LIMIT = 1800; // Conservative limit to account for multiple objects and additional properties
+var CATEGORY_SAFETY_LIMIT = 650;
 var MAX_RECURSION_DEPTH = 20;
 
 var Logger = require('dw/system/Logger');
@@ -193,7 +193,8 @@ var RequestCache = {
 };
 
 /**
- * Validates that a product has the required methods for category processing
+ * @function
+ * @description Validates that a product has the required methods for category processing
  * @param {dw.catalog.Product} product - Product to validate
  * @param {string} context - Context string for error logging (e.g., strategy name)
  * @returns {boolean} - True if product is valid, false otherwise
@@ -207,7 +208,8 @@ function validateProductForCategories(product, context) {
 }
 
 /**
- * Gets the site catalog - no caching since Catalog objects can't be stored in session
+ * @function
+ * @description Gets the site catalog - no caching since Catalog objects can't be stored in session
  * @returns {dw.catalog.Catalog} - The site catalog
  */
 function getSiteCatalog() {
@@ -215,7 +217,8 @@ function getSiteCatalog() {
 }
 
 /**
- * Gets the current site - no caching since Site objects can't be stored in session
+ * @function
+ * @description Gets the current site - no caching since Site objects can't be stored in session
  * @returns {dw.system.Site} - The current site instance
  */
 function getCurrentSite() {
@@ -223,7 +226,8 @@ function getCurrentSite() {
 }
 
 /**
- * Optimized JSON serialization that handles large objects gracefully
+ * @function
+ * @description Optimized JSON serialization that handles large objects gracefully
  * @param {Object} obj - Object to serialize
  * @param {string} context - Context for error logging
  * @returns {string} - JSON string or fallback on error
@@ -273,9 +277,9 @@ function safeJSONStringify(obj, context) {
 }
 
 /**
- * Retrieves the PDP URL for a given product. In case ProductHost site preference
+ * @function
+ * @description Retrieves the PDP URL for a given product. In case ProductHost site preference
  * is configured, the URL domain is replaced with that host name.
- *
  * @param {dw.catalog.Product} product - Product to retrieve the PDP URL for
  * @returns {string} - Product Page URL.
  */
@@ -293,8 +297,8 @@ function getProductPageUrl(product) {
 }
 
 /**
- * Retrieves the URL of the product main image.
- *
+ * @function
+ * @description Retrieves the URL of the product main image.
  * @param {dw.catalog.Product} product - Product for which to retrieve the main
  *   product image URL.
  * @param {Object} options - Export configuration options
@@ -329,7 +333,8 @@ function getProductImageURL(product, options) {
 }
 
 /**
- * Returns the product price using pre-fetched price model and variant data
+ * @function
+ * @description Returns the product price using pre-fetched price model and variant data
  * @param {dw.catalog.Product} product - The product to get price for
  * @param {Object} cachedProductData - Pre-fetched product data
  * @returns {number} - The retrieved price
@@ -369,8 +374,8 @@ function getProductPrice(product, cachedProductData) {
 }
 
 /**
- * Retrieves the product stock.
- *
+ * @function
+ * @description Retrieves the product stock.
  * @param {dw.catalog.Product} product - Product for which to retrieve stock.
  * @returns {number} - Stock for the product.
  */
@@ -401,32 +406,33 @@ function getProductStock(product) {
 }
 
 /**
- * Retrieves a list of URLs of all product images of a product.
- *
+ * @function
+ * @description Retrieves a list of URLs of all product images of a product.
  * @param {dw.catalog.Product} product - Product for which to retrieve stock.
  * @param {Object} exportOptions - Export configuration options
  * @returns {Array} - Array of all product image URLs.
  */
 function getAllProductImages(product, exportOptions) {
     var allImages = [];
-    var imageUrlsSet = {}; // For O(1) duplicate checking
+    var imageUrlsSet = {};
     var imageViewType = exportOptions.imageViewType || DEFAULT_IMAGE_VIEW_TYPE;
+    var MAX_IMAGES = 1900; // Cap to stay well under SFCC 2000 property limit
 
     var productImages = product.getImages(imageViewType);
-    for (var i = 0; i < productImages.length; i += 1) {
+    for (var i = 0; i < productImages.length && allImages.length < MAX_IMAGES; i += 1) {
         var image = productImages[i];
         var imageUrl = image.absURL.toString();
         imageUrlsSet[imageUrl] = true;
         allImages.push(imageUrl);
     }
 
-    if (product.master) {
+    if (product.master && allImages.length < MAX_IMAGES) {
         var variantIterator = product.getVariants().iterator();
 
-        while (variantIterator.hasNext()) {
+        while (variantIterator.hasNext() && allImages.length < MAX_IMAGES) {
             var variant = variantIterator.next();
             var variantPhotos = variant.getImages(imageViewType);
-            for (var j = 0; j < variantPhotos.length; j += 1) {
+            for (var j = 0; j < variantPhotos.length && allImages.length < MAX_IMAGES; j += 1) {
                 var photoURL = variantPhotos[j].absURL.toString();
                 // Use object for O(1) duplicate checking
                 if (!imageUrlsSet[photoURL]) {
@@ -437,22 +443,30 @@ function getAllProductImages(product, exportOptions) {
         }
     }
 
+    // Log warning if we hit the cap
+    if (allImages.length >= MAX_IMAGES) {
+        Logger.warn('Product {0} has more than {1} images. Only first {1} images included to prevent SFCC object size limit.',
+            product.ID, MAX_IMAGES);
+    }
+
     return allImages;
 }
 
 /**
- * Retrieves details of product variants.
- *
+ * @function
+ * @description Retrieves details of product variants.
  * @param {dw.catalog.Product} product - Product for which to retrieve variants.
  * @returns {Object} - An object (map) having details of all product variants.
  */
 function getProductVariants(product) {
     var variantsDict = {};
+    var MAX_VARIANTS = 650; // Cap to stay under SFCC 2000 property limit
 
     if (product.master) {
         var variantIterator = product.getVariants().iterator();
+        var variantCount = 0;
 
-        while (variantIterator.hasNext()) {
+        while (variantIterator.hasNext() && variantCount < MAX_VARIANTS) {
             var variant = variantIterator.next();
 
             var variantID = variant.getID();
@@ -465,6 +479,14 @@ function getProductVariants(product) {
                 variant_stock: variantStock,
                 variant_sku: variantID
             };
+
+            variantCount++;
+        }
+
+        // Log warning if we hit the cap
+        if (variantIterator.hasNext()) {
+            Logger.warn('Product {0} has more than {1} variants. Only first {1} variants included to prevent SFCC object size limit.',
+                product.ID, MAX_VARIANTS);
         }
     }
 
@@ -486,7 +508,8 @@ function CategoryStrategy() {
 }
 
 /**
- * Estimates category count efficiently without building full tree
+ * @function
+ * @description Estimates category count efficiently without building full tree
  * @param {dw.catalog.Catalog} catalog - The catalog to estimate categories for
  * @returns {number} - Estimated number of categories in the catalog
  */
@@ -515,7 +538,8 @@ function estimateCategoryCount(catalog) {
 
 
 /**
- * Generic function to extract product categories and their parent hierarchy using
+ * @function
+ * @description Generic function to extract product categories and their parent hierarchy using
  * a pluggable lookup strategy. Handles both direct category assignments and parent
  * category inheritance with safety limits to prevent infinite processing.
  *
@@ -533,7 +557,7 @@ function estimateCategoryCount(catalog) {
  *   [{category_id: string, category_name: string}, ...]
  * @throws {Error} If product category processing fails
  * @performance O(n*d) where n=assigned categories, d=average depth of category tree
- * @safety Enforces CATEGORY_SAFETY_LIMIT (1800) to prevent excessive processing
+ * @safety Enforces CATEGORY_SAFETY_LIMIT (650) to prevent excessive processing
  */
 function getProductCategoriesGeneric(product, lookupFunction) {
     var productCategories = {};
@@ -580,7 +604,8 @@ function getProductCategoriesGeneric(product, lookupFunction) {
 }
 
 /**
- * Improved category path building with better performance
+ * @function
+ * @description Improved category path building with better performance
  * @param {Array} pathStack - Stack of parent category IDs
  * @param {Object} namesMap - Map of category IDs to names
  * @param {string} categoryName - Name of the current category
@@ -608,7 +633,9 @@ function SingleMapStrategy() {
     var categoriesMap = null;
 
     /**
-     * Builds a single categories map for small catalogs
+     * @function
+     * @private
+     * @description Builds a single categories map for small catalogs
      * @returns {Object} - Map of categories with full names and parent IDs
      */
     function buildSingleCategoriesMap() {
@@ -653,20 +680,42 @@ function SingleMapStrategy() {
         return result;
     }
 
+    /**
+     * @function
+     * @private
+     * @description Lazy initialization helper to ensure category map is built only once
+     * @returns {Object} - The initialized category map
+     */
+    function ensureCategoryMapInitialized() {
+        if (!ModuleLevelCache.categoryMap) {
+            ModuleLevelCache.categoryMap = buildSingleCategoriesMap();
+        }
+        return ModuleLevelCache.categoryMap;
+    }
+
     this.getCategories = function (product) {
         if (!validateProductForCategories(product, 'SingleMapStrategy')) {
             return [];
         }
 
-        // Use module-level cache to avoid rebuilding category map
-        if (!ModuleLevelCache.categoryMap) {
-            ModuleLevelCache.categoryMap = buildSingleCategoriesMap();
-        }
-        categoriesMap = ModuleLevelCache.categoryMap;
+        categoriesMap = ensureCategoryMapInitialized();
         return getProductCategoriesGeneric(product, function (categoryId) {
             return categoriesMap[categoryId];
         });
     };
+
+    /**
+     * Gets cache statistics for monitoring
+     * @returns {Object} - Cache statistics for SingleMapStrategy
+     */
+    this.getCacheStats = function () {
+        var categoryMap = ensureCategoryMapInitialized();
+        return {
+            size: Object.keys(categoryMap).length,
+            totalCachedCategories: Object.keys(categoryMap).length
+        };
+    };
+
 }
 
 /**
@@ -675,14 +724,17 @@ function SingleMapStrategy() {
  */
 function HybridBFSStrategy() {
     CategoryStrategy.call(this);
-    var topLevelCategoryMap = {}; // BFS map limited to ~1950 categories
-    var unmappedCategoryCache = {}; // Cache for categories not in BFS map
-    var maxMapSize = 1950; // Close to 2000 limit since topLevelCategoryMap is now the only large object
-    var maxUnmappedCacheSize = 300; // Additional cache for unmapped categories
+    var topLevelCategoryMap = {}; // BFS map for highest level (parent) categories
+    var additionalCategoriesMap = {}; // Additional lower-level categories that did not fit in primary BFS map
+    var maxMapSize = 650; // Safe limit: 650 categories × 3 properties = 1950 total properties (under 2000)
+    var maxAdditionalMapSize = 650; // Safe limit: 650 categories × 3 properties = 1950 total properties (under 2000)
     var isBuilt = false;
 
     /**
-     * Builds partial category map using BFS (breadth-first search)
+     * @function
+     * @private
+     * @description Builds partial category map using BFS (breadth-first search)
+     * @returns {void}
      */
     function buildBFSCategoryMap() {
         var catalog = getSiteCatalog();
@@ -717,8 +769,7 @@ function HybridBFSStrategy() {
             // Store in BFS map (SINGLE object only)
             topLevelCategoryMap[categoryId] = {
                 fullName: fullPath,
-                parentIDs: pathToNode.join(','),
-                isMapped: true // Flag to identify BFS-mapped categories
+                parentIDs: pathToNode.join(',')
             };
             count += 1;
 
@@ -743,7 +794,9 @@ function HybridBFSStrategy() {
     }
 
     /**
-     * Hybrid lookup: checks BFS map first, then traverses tree for unmapped categories
+     * @function
+     * @private
+     * @description Hybrid lookup: checks BFS map first, then traverses tree for unmapped categories
      * @param {string} categoryId - The category ID to look up
      * @returns {Object|null} - Category data or null if not found
      */
@@ -753,9 +806,9 @@ function HybridBFSStrategy() {
             return topLevelCategoryMap[categoryId];
         }
 
-        // Second check: unmapped category cache
-        if (unmappedCategoryCache[categoryId]) {
-            return unmappedCategoryCache[categoryId];
+        // Second check: additional categories map
+        if (additionalCategoriesMap[categoryId]) {
+            return additionalCategoriesMap[categoryId];
         }
 
         // Not in either cache - traverse up tree to find mapped category
@@ -782,18 +835,23 @@ function HybridBFSStrategy() {
                     fullPath += ' > ' + traversalPath[i].name;
                 }
 
-                // Build parent IDs: mapped parents + traversed parents (excluding target)
+                // Build parent IDs: mapped parents + mapped ancestor + traversed parents (excluding target)
                 var parentIds = mappedCategory.parentIDs;
+
+                // Include the mapped ancestor itself in the parent chain
+                if (parentIds) {
+                    parentIds += ',' + currentId;
+                } else {
+                    parentIds = currentId;
+                }
+
+                // Add traversed parents (excluding the target category)
                 if (traversalPath.length > 1) {
                     var traversedParents = [];
                     for (var j = traversalPath.length - 1; j > 0; j -= 1) {
                         traversedParents.push(traversalPath[j].id);
                     }
-                    if (parentIds) {
-                        parentIds += ',' + traversedParents.join(',');
-                    } else {
-                        parentIds = traversedParents.join(',');
-                    }
+                    parentIds += ',' + traversedParents.join(',');
                 }
 
                 var result = {
@@ -801,9 +859,9 @@ function HybridBFSStrategy() {
                     parentIDs: parentIds
                 };
 
-                // Cache the result if we have room
-                if (Object.keys(unmappedCategoryCache).length < maxUnmappedCacheSize) {
-                    unmappedCategoryCache[categoryId] = result;
+                // Store the result if we have room
+                if (Object.keys(additionalCategoriesMap).length < maxAdditionalMapSize) {
+                    additionalCategoriesMap[categoryId] = result;
                 }
 
                 return result;
@@ -824,14 +882,17 @@ function HybridBFSStrategy() {
     }
 
     /**
-     * Clears all caches (useful for testing or between batch processing)
+     * @function
+     * @description Clears all caches (useful for testing or between batch processing)
+     * @returns {void}
      */
     this.clearCache = function () {
-        unmappedCategoryCache = {};
+        additionalCategoriesMap = {};
     };
 
     /**
-     * Gets comprehensive cache statistics for monitoring
+     * @function
+     * @description Gets comprehensive cache statistics for monitoring
      * @returns {Object} - Cache statistics including both BFS map and unmapped cache
      */
     this.getCacheStats = function () {
@@ -841,14 +902,15 @@ function HybridBFSStrategy() {
                 maxSize: maxMapSize,
                 utilization: (Object.keys(topLevelCategoryMap).length / maxMapSize * 100).toFixed(1) + '%'
             },
-            unmappedCache: {
-                size: Object.keys(unmappedCategoryCache).length,
-                maxSize: maxUnmappedCacheSize,
-                utilization: (Object.keys(unmappedCategoryCache).length / maxUnmappedCacheSize * 100).toFixed(1) + '%'
+            additionalMap: {
+                size: Object.keys(additionalCategoriesMap).length,
+                maxSize: maxAdditionalMapSize,
+                utilization: (Object.keys(additionalCategoriesMap).length / maxAdditionalMapSize * 100).toFixed(1) + '%'
             },
-            totalCachedCategories: Object.keys(topLevelCategoryMap).length + Object.keys(unmappedCategoryCache).length
+            totalCachedCategories: Object.keys(topLevelCategoryMap).length + Object.keys(additionalCategoriesMap).length
         };
     };
+
 
     this.getCategories = function (product) {
         if (!validateProductForCategories(product, 'HybridBFSStrategy')) {
@@ -862,10 +924,21 @@ function HybridBFSStrategy() {
 
         return getProductCategoriesGeneric(product, hybridLookup);
     };
+
+    // Test-only method to access internal objects for SFCC compliance testing
+    if (typeof global !== 'undefined' && global.describe) {
+        this.getInternalObjectsForTesting = function () {
+            return {
+                topLevelCategoryMap: topLevelCategoryMap,
+                additionalCategoriesMap: additionalCategoriesMap
+            };
+        };
+    }
 }
 
 /**
- * Initializes and returns the optimal category processing strategy based on catalog size
+ * @function
+ * @description Initializes and returns the optimal category processing strategy based on catalog size
  * @returns {CategoryStrategy} - The appropriate strategy instance
  */
 function initializeCategoryStrategy() {
@@ -891,7 +964,8 @@ function initializeCategoryStrategy() {
 }
 
 /**
- * Gets the category processing strategy with simple module-level variable caching
+ * @function
+ * @description Gets the category processing strategy with simple module-level variable caching
  * @returns {CategoryStrategy} - The appropriate category strategy for current catalog size
  */
 function getCategoryStrategy() {
@@ -902,9 +976,10 @@ function getCategoryStrategy() {
 }
 
 /**
- * Main function to get product categories using adaptive strategy
+ * @function
+ * @description Main function to get product categories using adaptive strategy
  * @param {dw.catalog.Product} product - Product for which to retrieve categories
- * @return {Array} - Array of categories for the product
+ * @returns {Array} - Array of categories for the product
  */
 function getProductCategories(product) {
     try {
@@ -924,8 +999,8 @@ function getProductCategories(product) {
 }
 
 /**
- * Retrieves regional (locale-specific) details of a product
- *
+ * @function
+ * @description Retrieves regional (locale-specific) details of a product
  * @param {dw.catalog.Product} product - Product to get regional details for.
  * @param {string} variantsJSON - Variants JSON, same for all regions so passed
  *   to this function as a parameter.
@@ -950,7 +1025,7 @@ function getRegionalInfo(product, variantsJSON, cachedProductData) {
     for (var j = 0; j < siteLocales.length; j += 1) {
         var currentLocale = siteLocales[j];
 
-        if ('default'.equalsIgnoreCase(currentLocale)) {
+        if ('default'.toLowerCase() === currentLocale.toLowerCase()) {
             // Skip default locale processing
         } else {
             var cacheKey = 'pixlee:localeCurrency:' + encodeURIComponent(currentLocale);
@@ -1053,10 +1128,10 @@ function getRegionalInfo(product, variantsJSON, cachedProductData) {
     // Add these lines at the end helped
     // Cache only the string values, not the objects - SFCC session compliance
     var defaultLocale = RequestCache.get('pixlee:defaultLocale', function () {
-        return Site.current.getDefaultLocale().toString(); // Convert Locale object to string
+        return getCurrentSite().getDefaultLocale().toString(); // Convert Locale object to string
     });
     var defaultCurrencyCode = RequestCache.get('pixlee:defaultCurrencyCode', function () {
-        return Site.current.getDefaultCurrency(); // Already returns string
+        return getCurrentSite().getDefaultCurrency(); // Already returns string
     });
     var defaultCurrency = Currency.getCurrency(defaultCurrencyCode);
 
@@ -1067,7 +1142,8 @@ function getRegionalInfo(product, variantsJSON, cachedProductData) {
 }
 
 /**
- * Creates a comprehensive product payload object for Pixlee API integration.
+ * @function
+ * @description Creates a comprehensive product payload object for Pixlee API integration.
  *
  * This constructor aggregates product data from multiple sources including:
  * - Basic product information (name, SKU, UPC, price, stock)
@@ -1078,8 +1154,6 @@ function getRegionalInfo(product, variantsJSON, cachedProductData) {
  *
  * The payload structure adapts based on export options - regional-only exports
  * include minimal data while full exports include complete product details.
- *
- * @constructor
  * @param {dw.catalog.Product} product - SFCC Product object to export. Must be a valid
  *   product with accessible properties. Supports both master and variant products.
  * @param {Object} [options] - Export configuration parameters:
@@ -1087,17 +1161,7 @@ function getRegionalInfo(product, variantsJSON, cachedProductData) {
  *   pricing data, excluding images, categories, and other extended product information
  * @param {string} [options.imageViewType='large'] - Image view type for product photos
  * @param {Object} [options.customFields] - Additional custom fields to include in export
- *
- * @throws {Error} If product parameter is invalid or required data cannot be accessed
- * @since 24.1.0
- *
- * @example
- * // Full product export
- * var payload = new ProductExportPayload(product, {imageViewType: 'medium'});
- *
- * @example
- * // Regional-only export for pricing updates
- * var regionalPayload = new ProductExportPayload(product, {onlyRegionalDetails: true});
+ * @returns {ProductExportPayload} - The product export payload instance
  */
 function ProductExportPayload(product, options) {
     var exportOptions = options || {};
@@ -1165,12 +1229,11 @@ function ProductExportPayload(product, options) {
 }
 
 /**
- * Static method to pre-initialize category processing strategy and maps
+ * @function
+ * @description Static method to pre-initialize category processing strategy and maps
  * This should be called once before processing multiple products to ensure
  * optimal performance by avoiding repeated category map builds
- *
- * @static
- * @throws {Error} If category processing initialization fails
+ * @returns {void}
  */
 ProductExportPayload.preInitializeCategoryProcessing = function () {
     Logger.info('Pre-initializing category processing for optimal performance...');
@@ -1227,10 +1290,9 @@ ProductExportPayload.preInitializeCategoryProcessing = function () {
 };
 
 /**
- * Static method to get category processing cache statistics
+ * @function
+ * @description Static method to get category processing cache statistics
  * Useful for monitoring and debugging category processing performance
- *
- * @static
  * @returns {Object} - Cache statistics including strategy type and cache utilization
  */
 ProductExportPayload.getCacheStatistics = function () {
@@ -1249,6 +1311,8 @@ ProductExportPayload.getCacheStatistics = function () {
             var cacheStats = strategy.getCacheStats();
             if (strategy.constructor.name === 'HybridBFSStrategy') {
                 stats.hybridBFS = cacheStats;
+            } else if (strategy.constructor.name === 'SingleMapStrategy') {
+                stats.singleMap = cacheStats;
             } else {
                 stats.requestCache = cacheStats;
             }
@@ -1263,6 +1327,38 @@ ProductExportPayload.getCacheStatistics = function () {
         };
     }
 };
+
+// Test utilities - only available in test environment
+if (typeof global !== 'undefined' && global.describe) {
+    ProductExportPayload.__testUtils = {
+        getModuleLevelCache: function () {
+            return ModuleLevelCache;
+        },
+        getCategoryStrategyInstance: function () {
+            return categoryStrategyInstance;
+        },
+        getInternalObjects: function () {
+            if (!categoryStrategyInstance) {
+                return null;
+            }
+
+            // For SingleMapStrategy, return the module-level cache
+            if (categoryStrategyInstance.constructor.name === 'SingleMapStrategy') {
+                return {
+                    categoriesMap: ModuleLevelCache.categoryMap
+                };
+            }
+
+            // For HybridBFSStrategy, use the test-only method if available
+            if (categoryStrategyInstance.constructor.name === 'HybridBFSStrategy' &&
+                typeof categoryStrategyInstance.getInternalObjectsForTesting === 'function') {
+                return categoryStrategyInstance.getInternalObjectsForTesting();
+            }
+
+            return null;
+        }
+    };
+}
 
 module.exports = ProductExportPayload;
 
