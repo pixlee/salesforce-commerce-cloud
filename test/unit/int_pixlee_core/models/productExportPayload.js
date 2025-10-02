@@ -540,6 +540,569 @@ describe('ProductExportPayload', function () {
             assert.isTrue(extraFields.categories.length >= 0, 'Should handle deep category hierarchies');
         });
 
+        it('should maintain correct parent ID ordering for deep category chains in HybridBFSStrategy', function () {
+            // Force HybridBFSStrategy by creating a large catalog (this will be the BFS mapped portion)
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(1800); // Smaller to ensure A is mapped but deeper levels aren't
+
+            // Create a specific deep category structure for testing
+            // Structure: Root > A (mapped in BFS) > B > C > D > E (target, not mapped)
+            // This forces the scenario where B,C,D are traversed upward and need proper ordering
+            var rootCategory = largeCatalog.root;
+
+            // Create the chain with proper parent-child relationships
+            var categoryA = mockCatalogMgr.testUtils.createMockCategory('A', 'Cat_A', [], rootCategory);
+            var categoryB = mockCatalogMgr.testUtils.createMockCategory('B', 'Cat_B', [], categoryA);
+            var categoryC = mockCatalogMgr.testUtils.createMockCategory('C', 'Cat_C', [], categoryB);
+            var categoryD = mockCatalogMgr.testUtils.createMockCategory('D', 'Cat_D', [], categoryC);
+            var categoryE = mockCatalogMgr.testUtils.createMockCategory('E', 'Cat_E', [], categoryD);
+
+            // Add A to the root's children (so A gets mapped in BFS, but B,C,D,E don't)
+            rootCategory.getSubCategories().push(categoryA);
+
+            // Add to catalog structure for getCategory lookups
+            largeCatalog.categories.A = categoryA;
+            largeCatalog.categories.B = categoryB;
+            largeCatalog.categories.C = categoryC;
+            largeCatalog.categories.D = categoryD;
+            largeCatalog.categories.E = categoryE;
+
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
+
+            // Create product assigned to the deepest category (E)
+            var product = mockProductMgr.testUtils.createMockProduct('deep_chain_product', {
+                name: 'Deep Chain Product',
+                categoryAssignments: ['E'] // Target category
+            });
+
+            var payload = new ProductExportPayload(product, {});
+            var extraFields = JSON.parse(payload.product.extra_fields);
+
+            assert.isArray(extraFields.categories, 'Should have categories array');
+
+            // Find the target category E in the results
+            var targetCategory = extraFields.categories.find(function (cat) {
+                return cat.category_id === 'E';
+            });
+
+            // Verify that parent IDs are in correct root-to-leaf order
+            var testUtils = ProductExportPayload.testUtils;
+            if (testUtils) {
+                var internalObjects = testUtils.getInternalObjects();
+                if (internalObjects && internalObjects.additionalCategoryMap && internalObjects.additionalCategoryMap.E) {
+                    var categoryEInfo = internalObjects.additionalCategoryMap.E;
+
+                    // The parentIDs should be in root-to-leaf order: A,B,C,D
+                    if (categoryEInfo.parentIDs) {
+                        var parentIdArray = categoryEInfo.parentIDs.split(',');
+
+                        // Find the positions of each category in the parent ID array
+                        var aIndex = parentIdArray.indexOf('A');
+                        var bIndex = parentIdArray.indexOf('B');
+                        var cIndex = parentIdArray.indexOf('C');
+                        var dIndex = parentIdArray.indexOf('D');
+
+                        // Verify correct root-to-leaf ordering
+                        if (aIndex !== -1 && bIndex !== -1) {
+                            assert.isTrue(aIndex < bIndex, 'Parent ID A should come before B');
+                        }
+                        if (bIndex !== -1 && cIndex !== -1) {
+                            assert.isTrue(bIndex < cIndex, 'Parent ID B should come before C');
+                        }
+                        if (cIndex !== -1 && dIndex !== -1) {
+                            assert.isTrue(cIndex < dIndex, 'Parent ID C should come before D');
+                        }
+                    }
+                }
+            }
+
+            if (targetCategory) {
+                // The category_name contains the full path, check ordering
+                var fullPath = targetCategory.category_name;
+
+                // Expected order should be Root > Cat_A > Cat_B > Cat_C > Cat_D > Cat_E
+                // Verify that parents appear in root-to-leaf order
+                if (fullPath.indexOf('Cat_A') !== -1 && fullPath.indexOf('Cat_B') !== -1) {
+                    assert.isTrue(fullPath.indexOf('Cat_A') < fullPath.indexOf('Cat_B'), 'Cat_A should appear before Cat_B in path');
+                }
+                if (fullPath.indexOf('Cat_B') !== -1 && fullPath.indexOf('Cat_C') !== -1) {
+                    assert.isTrue(fullPath.indexOf('Cat_B') < fullPath.indexOf('Cat_C'), 'Cat_B should appear before Cat_C in path');
+                }
+                if (fullPath.indexOf('Cat_C') !== -1 && fullPath.indexOf('Cat_D') !== -1) {
+                    assert.isTrue(fullPath.indexOf('Cat_C') < fullPath.indexOf('Cat_D'), 'Cat_C should appear before Cat_D in path');
+                }
+                if (fullPath.indexOf('Cat_D') !== -1 && fullPath.indexOf('Cat_E') !== -1) {
+                    assert.isTrue(fullPath.indexOf('Cat_D') < fullPath.indexOf('Cat_E'), 'Cat_D should appear before Cat_E in path');
+                }
+            }
+
+            // Also verify parent categories are included with correct ordering
+            var parentCategories = extraFields.categories.filter(function (cat) {
+                return ['A', 'B', 'C', 'D'].indexOf(cat.category_id) !== -1;
+            });
+
+            // Should have parent categories (at least some of them)
+            var parentIds = parentCategories.map(function (cat) { return cat.category_id; });
+
+            // Verify we have the expected categories
+            assert.isTrue(extraFields.categories.length > 0, 'Should have at least the target category');
+            assert.include(parentIds, 'A', 'Should include parent category A');
+            assert.include(parentIds, 'B', 'Should include parent category B');
+            assert.include(parentIds, 'C', 'Should include parent category C');
+            assert.include(parentIds, 'D', 'Should include parent category D');
+        });
+
+        it('should handle multiple products with different category depths and maintain ordering consistency', function () {
+            // Create a large catalog to force HybridBFSStrategy
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2000);
+            var rootCategory = largeCatalog.root;
+
+            // Create multiple category chains of different depths
+            // Chain 1: Root > Sports (mapped) > Outdoor > Hiking > Boots (target1)
+            var categorySports = mockCatalogMgr.testUtils.createMockCategory('Sports', 'Sports', [], rootCategory);
+            var categoryOutdoor = mockCatalogMgr.testUtils.createMockCategory('Outdoor', 'Outdoor', [], categorySports);
+            var categoryHiking = mockCatalogMgr.testUtils.createMockCategory('Hiking', 'Hiking', [], categoryOutdoor);
+            var categoryBoots = mockCatalogMgr.testUtils.createMockCategory('Boots', 'Boots', [], categoryHiking);
+
+            // Chain 2: Root > Electronics (mapped) > Computers > Laptops > Gaming > HighEnd (target2)
+            var categoryElectronics = mockCatalogMgr.testUtils.createMockCategory('Electronics', 'Electronics', [], rootCategory);
+            var categoryComputers = mockCatalogMgr.testUtils.createMockCategory('Computers', 'Computers', [], categoryElectronics);
+            var categoryLaptops = mockCatalogMgr.testUtils.createMockCategory('Laptops', 'Laptops', [], categoryComputers);
+            var categoryGaming = mockCatalogMgr.testUtils.createMockCategory('Gaming', 'Gaming', [], categoryLaptops);
+            var categoryHighEnd = mockCatalogMgr.testUtils.createMockCategory('HighEnd', 'HighEnd', [], categoryGaming);
+
+            // Add top-level categories to root (so they get mapped in BFS)
+            rootCategory.getSubCategories().push(categorySports, categoryElectronics);
+
+            // Add all categories to catalog structure
+            largeCatalog.categories.Sports = categorySports;
+            largeCatalog.categories.Outdoor = categoryOutdoor;
+            largeCatalog.categories.Hiking = categoryHiking;
+            largeCatalog.categories.Boots = categoryBoots;
+            largeCatalog.categories.Electronics = categoryElectronics;
+            largeCatalog.categories.Computers = categoryComputers;
+            largeCatalog.categories.Laptops = categoryLaptops;
+            largeCatalog.categories.Gaming = categoryGaming;
+            largeCatalog.categories.HighEnd = categoryHighEnd;
+
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
+
+            // Create products assigned to different depth categories
+            var product1 = mockProductMgr.testUtils.createMockProduct('hiking_boots', {
+                name: 'Hiking Boots',
+                categoryAssignments: ['Boots']
+            });
+
+            var product2 = mockProductMgr.testUtils.createMockProduct('gaming_laptop', {
+                name: 'Gaming Laptop',
+                categoryAssignments: ['HighEnd']
+            });
+
+            var payload1 = new ProductExportPayload(product1, {});
+            var payload2 = new ProductExportPayload(product2, {});
+
+            var extraFields1 = JSON.parse(payload1.product.extra_fields);
+            var extraFields2 = JSON.parse(payload2.product.extra_fields);
+
+            // Test ordering for first product (Boots)
+            var testUtils = ProductExportPayload.testUtils;
+            if (testUtils) {
+                var internalObjects = testUtils.getInternalObjects();
+
+                // Check Boots category ordering
+                if (internalObjects.additionalCategoryMap && internalObjects.additionalCategoryMap.Boots) {
+                    var bootsInfo = internalObjects.additionalCategoryMap.Boots;
+                    if (bootsInfo.parentIDs) {
+                        var bootsParentIds = bootsInfo.parentIDs.split(',');
+                        var sportsIdx = bootsParentIds.indexOf('Sports');
+                        var outdoorIdx = bootsParentIds.indexOf('Outdoor');
+                        var hikingIdx = bootsParentIds.indexOf('Hiking');
+
+                        if (sportsIdx !== -1 && outdoorIdx !== -1) {
+                            assert.isTrue(sportsIdx < outdoorIdx, 'Sports should come before Outdoor in Boots parentIDs');
+                        }
+                        if (outdoorIdx !== -1 && hikingIdx !== -1) {
+                            assert.isTrue(outdoorIdx < hikingIdx, 'Outdoor should come before Hiking in Boots parentIDs');
+                        }
+                    }
+                }
+
+                // Check HighEnd category ordering
+                if (internalObjects.additionalCategoryMap && internalObjects.additionalCategoryMap.HighEnd) {
+                    var highEndInfo = internalObjects.additionalCategoryMap.HighEnd;
+                    if (highEndInfo.parentIDs) {
+                        var highEndParentIds = highEndInfo.parentIDs.split(',');
+                        var electronicsIdx = highEndParentIds.indexOf('Electronics');
+                        var computersIdx = highEndParentIds.indexOf('Computers');
+                        var laptopsIdx = highEndParentIds.indexOf('Laptops');
+                        var gamingIdx = highEndParentIds.indexOf('Gaming');
+
+                        if (electronicsIdx !== -1 && computersIdx !== -1) {
+                            assert.isTrue(electronicsIdx < computersIdx, 'Electronics should come before Computers in HighEnd parentIDs');
+                        }
+                        if (computersIdx !== -1 && laptopsIdx !== -1) {
+                            assert.isTrue(computersIdx < laptopsIdx, 'Computers should come before Laptops in HighEnd parentIDs');
+                        }
+                        if (laptopsIdx !== -1 && gamingIdx !== -1) {
+                            assert.isTrue(laptopsIdx < gamingIdx, 'Laptops should come before Gaming in HighEnd parentIDs');
+                        }
+                    }
+                }
+            }
+
+            // Verify both products have their categories
+            assert.isArray(extraFields1.categories, 'Product 1 should have categories array');
+            assert.isArray(extraFields2.categories, 'Product 2 should have categories array');
+            assert.isTrue(extraFields1.categories.length > 0, 'Product 1 should have categories');
+            assert.isTrue(extraFields2.categories.length > 0, 'Product 2 should have categories');
+        });
+
+        it('should maintain ordering consistency when categories are processed in different orders', function () {
+            // Create a large catalog to force HybridBFSStrategy
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2000);
+            var rootCategory = largeCatalog.root;
+
+            // Create a shared category chain: Root > Fashion (mapped) > Clothing > Shirts > Casual (shared)
+            var categoryFashion = mockCatalogMgr.testUtils.createMockCategory('Fashion', 'Fashion', [], rootCategory);
+            var categoryClothing = mockCatalogMgr.testUtils.createMockCategory('Clothing', 'Clothing', [], categoryFashion);
+            var categoryShirts = mockCatalogMgr.testUtils.createMockCategory('Shirts', 'Shirts', [], categoryClothing);
+            var categoryCasual = mockCatalogMgr.testUtils.createMockCategory('Casual', 'Casual', [], categoryShirts);
+
+            rootCategory.getSubCategories().push(categoryFashion);
+
+            largeCatalog.categories.Fashion = categoryFashion;
+            largeCatalog.categories.Clothing = categoryClothing;
+            largeCatalog.categories.Shirts = categoryShirts;
+            largeCatalog.categories.Casual = categoryCasual;
+
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
+
+            // Create multiple products that will access the same category chain
+            // This tests that caching doesn't affect ordering consistency
+            var products = [];
+            for (var i = 0; i < 5; i++) {
+                products.push(mockProductMgr.testUtils.createMockProduct('casual_shirt_' + i, {
+                    name: 'Casual Shirt ' + i,
+                    categoryAssignments: ['Casual']
+                }));
+            }
+
+            var payloads = [];
+            for (var j = 0; j < products.length; j++) {
+                payloads.push(new ProductExportPayload(products[j], {}));
+            }
+
+            // Verify all products have consistent category ordering
+            var testUtils = ProductExportPayload.testUtils;
+            if (testUtils) {
+                var internalObjects = testUtils.getInternalObjects();
+
+                if (internalObjects.additionalCategoryMap && internalObjects.additionalCategoryMap.Casual) {
+                    var casualInfo = internalObjects.additionalCategoryMap.Casual;
+                    if (casualInfo.parentIDs) {
+                        var parentIds = casualInfo.parentIDs.split(',');
+                        var fashionIdx = parentIds.indexOf('Fashion');
+                        var clothingIdx = parentIds.indexOf('Clothing');
+                        var shirtsIdx = parentIds.indexOf('Shirts');
+
+                        // Verify consistent ordering across all product processing
+                        assert.isTrue(fashionIdx < clothingIdx, 'Fashion should consistently come before Clothing');
+                        assert.isTrue(clothingIdx < shirtsIdx, 'Clothing should consistently come before Shirts');
+
+                        // Verify the exact expected order
+                        assert.deepEqual(parentIds, ['Fashion', 'Clothing', 'Shirts'], 'Parent IDs should be in exact root-to-leaf order');
+                    }
+                }
+            }
+
+            // Verify all payloads have the same category structure
+            for (var k = 0; k < payloads.length; k++) {
+                var extraFields = JSON.parse(payloads[k].product.extra_fields);
+                assert.isArray(extraFields.categories, 'Product ' + k + ' should have categories array');
+
+                var casualCategory = extraFields.categories.find(function (cat) {
+                    return cat.category_id === 'Casual';
+                });
+
+                if (casualCategory) {
+                    // All products should have the same path structure
+                    assert.include(casualCategory.category_name, 'Fashion', 'Should include Fashion in path');
+                    assert.include(casualCategory.category_name, 'Clothing', 'Should include Clothing in path');
+                    assert.include(casualCategory.category_name, 'Shirts', 'Should include Shirts in path');
+                    assert.include(casualCategory.category_name, 'Casual', 'Should include Casual in path');
+                }
+            }
+        });
+
+        it('should handle edge case of single-level unmapped categories correctly', function () {
+            // Create a large catalog to force HybridBFSStrategy
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2000);
+            var rootCategory = largeCatalog.root;
+
+            // Create a simple case: Root > Books (mapped) > Fiction (unmapped target)
+            var categoryBooks = mockCatalogMgr.testUtils.createMockCategory('Books', 'Books', [], rootCategory);
+            var categoryFiction = mockCatalogMgr.testUtils.createMockCategory('Fiction', 'Fiction', [], categoryBooks);
+
+            rootCategory.getSubCategories().push(categoryBooks);
+
+            largeCatalog.categories.Books = categoryBooks;
+            largeCatalog.categories.Fiction = categoryFiction;
+
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
+
+            var product = mockProductMgr.testUtils.createMockProduct('fiction_book', {
+                name: 'Fiction Book',
+                categoryAssignments: ['Fiction']
+            });
+
+            var payload = new ProductExportPayload(product, {});
+            var extraFields = JSON.parse(payload.product.extra_fields);
+
+            // Test single-level unmapped category ordering
+            var testUtils = ProductExportPayload.testUtils;
+            if (testUtils) {
+                var internalObjects = testUtils.getInternalObjects();
+
+                if (internalObjects.additionalCategoryMap && internalObjects.additionalCategoryMap.Fiction) {
+                    var fictionInfo = internalObjects.additionalCategoryMap.Fiction;
+                    if (fictionInfo.parentIDs) {
+                        var parentIds = fictionInfo.parentIDs.split(',');
+
+                        // Should only have Books as parent (no traversed parents to reverse)
+                        assert.deepEqual(parentIds, ['Books'], 'Single-level unmapped should have correct parent');
+                    }
+                }
+            }
+
+            // Verify the category path is correct
+            var fictionCategory = extraFields.categories.find(function (cat) {
+                return cat.category_id === 'Fiction';
+            });
+
+            if (fictionCategory) {
+                assert.include(fictionCategory.category_name, 'Books', 'Should include Books in path');
+                assert.include(fictionCategory.category_name, 'Fiction', 'Should include Fiction in path');
+
+                // Verify ordering in path string
+                var booksPos = fictionCategory.category_name.indexOf('Books');
+                var fictionPos = fictionCategory.category_name.indexOf('Fiction');
+                assert.isTrue(booksPos < fictionPos, 'Books should appear before Fiction in path string');
+            }
+        });
+
+        it('should handle root-level mapped categories correctly (no parent IDs)', function () {
+            // Create a large catalog to force HybridBFSStrategy
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2000);
+            var rootCategory = largeCatalog.root;
+
+            // Create a root-level category that will be mapped in BFS
+            var categoryMusic = mockCatalogMgr.testUtils.createMockCategory('Music', 'Music', [], rootCategory);
+            rootCategory.getSubCategories().push(categoryMusic);
+            largeCatalog.categories.Music = categoryMusic;
+
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
+
+            var product = mockProductMgr.testUtils.createMockProduct('music_album', {
+                name: 'Music Album',
+                categoryAssignments: ['Music']
+            });
+
+            var payload = new ProductExportPayload(product, {});
+            var extraFields = JSON.parse(payload.product.extra_fields);
+
+            // Verify root-level category handling
+            var musicCategory = extraFields.categories.find(function (cat) {
+                return cat.category_id === 'Music';
+            });
+
+            assert.isDefined(musicCategory, 'Should find Music category');
+            if (musicCategory) {
+                // Root-level categories should have simple names (no parent path)
+                assert.equal(musicCategory.category_name, 'Music', 'Root-level category should have simple name');
+            }
+
+            // Check internal structure
+            var testUtils = ProductExportPayload.testUtils;
+            if (testUtils) {
+                var internalObjects = testUtils.getInternalObjects();
+
+                // Music should be in BFS map (not additional map) since it's root-level
+                if (internalObjects.bfsCategoryMap && internalObjects.bfsCategoryMap.Music) {
+                    var musicInfo = internalObjects.bfsCategoryMap.Music;
+                    // Root categories should have empty or no parentIDs
+                    assert.isTrue(!musicInfo.parentIDs || musicInfo.parentIDs === '', 'Root category should have no parent IDs');
+                }
+            }
+        });
+
+        it('should handle very deep category chains (stress test for ordering)', function () {
+            // Create a large catalog to force HybridBFSStrategy
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(1500);
+            var rootCategory = largeCatalog.root;
+
+            // Create a very deep chain: Root > Level1 (mapped) > Level2 > Level3 > ... > Level10 (target)
+            var categories = [];
+            var categoryNames = [];
+
+            for (var i = 1; i <= 10; i++) {
+                var categoryId = 'Level' + i;
+                var categoryName = 'Level ' + i;
+                var parentCategory = i === 1 ? rootCategory : categories[i - 2];
+
+                var category = mockCatalogMgr.testUtils.createMockCategory(categoryId, categoryName, [], parentCategory);
+                categories.push(category);
+                categoryNames.push(categoryId);
+                largeCatalog.categories[categoryId] = category;
+            }
+
+            // Add Level1 to root (so it gets mapped in BFS)
+            rootCategory.getSubCategories().push(categories[0]);
+
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
+
+            var product = mockProductMgr.testUtils.createMockProduct('deep_product', {
+                name: 'Deep Product',
+                categoryAssignments: ['Level10'] // Deepest category
+            });
+
+            var payload = new ProductExportPayload(product, {});
+            var extraFields = JSON.parse(payload.product.extra_fields);
+
+            // Test very deep category ordering
+            var testUtils = ProductExportPayload.testUtils;
+            if (testUtils) {
+                var internalObjects = testUtils.getInternalObjects();
+
+                if (internalObjects.additionalCategoryMap && internalObjects.additionalCategoryMap.Level10) {
+                    var level10Info = internalObjects.additionalCategoryMap.Level10;
+                    if (level10Info.parentIDs) {
+                        var parentIds = level10Info.parentIDs.split(',');
+
+                        // Should have all levels 1-9 as parents in correct order
+                        var expectedParents = ['Level1', 'Level2', 'Level3', 'Level4', 'Level5', 'Level6', 'Level7', 'Level8', 'Level9'];
+
+                        // Verify all expected parents are present
+                        for (var j = 0; j < expectedParents.length; j++) {
+                            assert.include(parentIds, expectedParents[j], 'Should include ' + expectedParents[j] + ' in parent IDs');
+                        }
+
+                        // Verify they are in correct order
+                        for (var k = 0; k < expectedParents.length - 1; k++) {
+                            var currentIdx = parentIds.indexOf(expectedParents[k]);
+                            var nextIdx = parentIds.indexOf(expectedParents[k + 1]);
+                            assert.isTrue(currentIdx < nextIdx, expectedParents[k] + ' should come before ' + expectedParents[k + 1]);
+                        }
+                    }
+                }
+            }
+
+            // Verify the target category exists and has a reasonable path
+            var level10Category = extraFields.categories.find(function (cat) {
+                return cat.category_id === 'Level10';
+            });
+
+            assert.isDefined(level10Category, 'Should find Level10 category');
+            if (level10Category) {
+                // Should contain all levels in the path
+                for (var m = 1; m <= 10; m++) {
+                    assert.include(level10Category.category_name, 'Level ' + m, 'Should include Level ' + m + ' in path');
+                }
+            }
+        });
+
+        it('should handle products with multiple category assignments and maintain consistent ordering', function () {
+            // Create a large catalog to force HybridBFSStrategy
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2000);
+            var rootCategory = largeCatalog.root;
+
+            // Create multiple category chains
+            // Chain 1: Root > Home (mapped) > Kitchen > Appliances (target1)
+            var categoryHome = mockCatalogMgr.testUtils.createMockCategory('Home', 'Home', [], rootCategory);
+            var categoryKitchen = mockCatalogMgr.testUtils.createMockCategory('Kitchen', 'Kitchen', [], categoryHome);
+            var categoryAppliances = mockCatalogMgr.testUtils.createMockCategory('Appliances', 'Appliances', [], categoryKitchen);
+
+            // Chain 2: Root > Tech (mapped) > Mobile > Phones (target2)
+            var categoryTech = mockCatalogMgr.testUtils.createMockCategory('Tech', 'Tech', [], rootCategory);
+            var categoryMobile = mockCatalogMgr.testUtils.createMockCategory('Mobile', 'Mobile', [], categoryTech);
+            var categoryPhones = mockCatalogMgr.testUtils.createMockCategory('Phones', 'Phones', [], categoryMobile);
+
+            rootCategory.getSubCategories().push(categoryHome, categoryTech);
+
+            largeCatalog.categories.Home = categoryHome;
+            largeCatalog.categories.Kitchen = categoryKitchen;
+            largeCatalog.categories.Appliances = categoryAppliances;
+            largeCatalog.categories.Tech = categoryTech;
+            largeCatalog.categories.Mobile = categoryMobile;
+            largeCatalog.categories.Phones = categoryPhones;
+
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
+
+            // Create product assigned to multiple categories
+            var product = mockProductMgr.testUtils.createMockProduct('smart_device', {
+                name: 'Smart Device',
+                categoryAssignments: ['Appliances', 'Phones'] // Multiple categories
+            });
+
+            var payload = new ProductExportPayload(product, {});
+            var extraFields = JSON.parse(payload.product.extra_fields);
+
+            // Should have categories from both chains
+            var categoryIds = extraFields.categories.map(function (cat) { return cat.category_id; });
+            assert.include(categoryIds, 'Appliances', 'Should include Appliances category');
+            assert.include(categoryIds, 'Phones', 'Should include Phones category');
+
+            // Test ordering for both category chains
+            var testUtils = ProductExportPayload.testUtils;
+            if (testUtils) {
+                var internalObjects = testUtils.getInternalObjects();
+
+                // Check Appliances category ordering
+                if (internalObjects.additionalCategoryMap && internalObjects.additionalCategoryMap.Appliances) {
+                    var appliancesInfo = internalObjects.additionalCategoryMap.Appliances;
+                    if (appliancesInfo.parentIDs) {
+                        var appliancesParentIds = appliancesInfo.parentIDs.split(',');
+                        var homeIdx = appliancesParentIds.indexOf('Home');
+                        var kitchenIdx = appliancesParentIds.indexOf('Kitchen');
+
+                        if (homeIdx !== -1 && kitchenIdx !== -1) {
+                            assert.isTrue(homeIdx < kitchenIdx, 'Home should come before Kitchen in Appliances parentIDs');
+                        }
+                    }
+                }
+
+                // Check Phones category ordering
+                if (internalObjects.additionalCategoryMap && internalObjects.additionalCategoryMap.Phones) {
+                    var phonesInfo = internalObjects.additionalCategoryMap.Phones;
+                    if (phonesInfo.parentIDs) {
+                        var phonesParentIds = phonesInfo.parentIDs.split(',');
+                        var techIdx = phonesParentIds.indexOf('Tech');
+                        var mobileIdx = phonesParentIds.indexOf('Mobile');
+
+                        if (techIdx !== -1 && mobileIdx !== -1) {
+                            assert.isTrue(techIdx < mobileIdx, 'Tech should come before Mobile in Phones parentIDs');
+                        }
+                    }
+                }
+            }
+
+            // Verify path strings are correct for both categories
+            var appliancesCategory = extraFields.categories.find(function (cat) {
+                return cat.category_id === 'Appliances';
+            });
+            var phonesCategory = extraFields.categories.find(function (cat) {
+                return cat.category_id === 'Phones';
+            });
+
+            if (appliancesCategory) {
+                assert.include(appliancesCategory.category_name, 'Home', 'Appliances path should include Home');
+                assert.include(appliancesCategory.category_name, 'Kitchen', 'Appliances path should include Kitchen');
+            }
+
+            if (phonesCategory) {
+                assert.include(phonesCategory.category_name, 'Tech', 'Phones path should include Tech');
+                assert.include(phonesCategory.category_name, 'Mobile', 'Phones path should include Mobile');
+            }
+        });
+
         it('should handle products with no category assignments', function () {
             var product = mockProductMgr.testUtils.createMockProduct('no_cats', {
                 categoryAssignments: []
