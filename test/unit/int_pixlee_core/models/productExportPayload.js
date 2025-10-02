@@ -468,9 +468,9 @@ describe('ProductExportPayload', function () {
 
             // Verify SFCC object size compliance for both internal maps
             var internalObjects = ProductExportPayload.__testUtils ? ProductExportPayload.__testUtils.getInternalObjects() : null;
-            if (internalObjects && internalObjects.topLevelCategoryMap && internalObjects.unmappedCategoryCache) {
+            if (internalObjects && internalObjects.topLevelCategoryMap && internalObjects.additionalCategoriesMap) {
                 assertSFCCObjectSizeCompliance(internalObjects.topLevelCategoryMap, 'HybridBFSStrategy.topLevelCategoryMap');
-                assertSFCCObjectSizeCompliance(internalObjects.unmappedCategoryCache, 'HybridBFSStrategy.unmappedCategoryCache');
+                assertSFCCObjectSizeCompliance(internalObjects.additionalCategoriesMap, 'HybridBFSStrategy.additionalCategoriesMap');
             }
 
             // Verify categories were processed
@@ -516,9 +516,9 @@ describe('ProductExportPayload', function () {
                     if (internalObjects.categoriesMap) {
                         assertSFCCObjectSizeCompliance(internalObjects.categoriesMap, 'SingleMapStrategy.categoriesMap (' + testCase.description + ')');
                     }
-                    if (internalObjects.topLevelCategoryMap && internalObjects.unmappedCategoryCache) {
+                    if (internalObjects.topLevelCategoryMap && internalObjects.additionalCategoriesMap) {
                         assertSFCCObjectSizeCompliance(internalObjects.topLevelCategoryMap, 'HybridBFSStrategy.topLevelCategoryMap (' + testCase.description + ')');
-                        assertSFCCObjectSizeCompliance(internalObjects.unmappedCategoryCache, 'HybridBFSStrategy.unmappedCategoryCache (' + testCase.description + ')');
+                        assertSFCCObjectSizeCompliance(internalObjects.additionalCategoriesMap, 'HybridBFSStrategy.additionalCategoriesMap (' + testCase.description + ')');
                     }
                 }
             });
