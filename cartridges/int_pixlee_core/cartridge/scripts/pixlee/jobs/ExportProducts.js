@@ -77,7 +77,7 @@ function ProductsIterator(fromIndex) {
         var ProductMgr = require('dw/catalog/ProductMgr');
         productsIterator = ProductMgr.queryAllSiteProducts();
         if (productsIterator && typeof productsIterator.getCount === 'function') {
-            count = productsIterator.getCount()
+            count = productsIterator.getCount();
         } else {
             count = productsIterator && typeof productsIterator.count === 'number' ? productsIterator.count : 0
         }
@@ -162,6 +162,7 @@ exports.execute = function (jobParameters) {
 
     var useSearchIndex = jobParameters['Products Source'] === 'SEARCH_INDEX';
     var breakAfter = parseInt(jobParameters['Break After'], 10);
+    // eslint-disable-next-line no-restricted-globals
     breakAfter = isNaN(breakAfter) ? 0 : breakAfter;
     var exportOptions = {
         imageViewType: jobParameters['Images View Type'] || null,
@@ -195,6 +196,7 @@ exports.execute = function (jobParameters) {
         }
 
         var processedCount = 0;
+        // eslint-disable-next-line no-restricted-globals
         var progressLogInterval = (totalProductsToProcess && !isNaN(totalProductsToProcess) && totalProductsToProcess > 0)
             ? Math.max(100, Math.floor(totalProductsToProcess / 20))
             : 500;
