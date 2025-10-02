@@ -723,7 +723,7 @@ function SingleMapStrategy() {
 function HybridBFSStrategy() {
     CategoryStrategy.call(this);
     var topLevelCategoryMap = {}; // BFS map for highest level (parent) categories
-    var additionalCategoriesMap = {}; // Additional lower-level categories that did not fit in primary BFS map
+    var additionalCategoryMap = {}; // Additional lower-level categories that did not fit in primary BFS map
     var isBuilt = false;
 
     /**
@@ -803,8 +803,8 @@ function HybridBFSStrategy() {
         }
 
         // Second check: additional categories map
-        if (additionalCategoriesMap[categoryId]) {
-            return additionalCategoriesMap[categoryId];
+        if (additionalCategoryMap[categoryId]) {
+            return additionalCategoryMap[categoryId];
         }
 
         // Not in either cache - traverse up tree to find mapped category
@@ -856,8 +856,8 @@ function HybridBFSStrategy() {
                 };
 
                 // Store the result if we have room
-                if (Object.keys(additionalCategoriesMap).length < OBJECT_SAFETY_LIMIT) {
-                    additionalCategoriesMap[categoryId] = result;
+                if (Object.keys(additionalCategoryMap).length < OBJECT_SAFETY_LIMIT) {
+                    additionalCategoryMap[categoryId] = result;
                 }
 
                 return result;
@@ -883,7 +883,7 @@ function HybridBFSStrategy() {
      * @returns {void}
      */
     this.clearCache = function () {
-        additionalCategoriesMap = {};
+        additionalCategoryMap = {};
     };
 
     /**
@@ -899,11 +899,11 @@ function HybridBFSStrategy() {
                 utilization: (Object.keys(topLevelCategoryMap).length / OBJECT_SAFETY_LIMIT * 100).toFixed(1) + '%'
             },
             additionalMap: {
-                size: Object.keys(additionalCategoriesMap).length,
+                size: Object.keys(additionalCategoryMap).length,
                 maxSize: OBJECT_SAFETY_LIMIT,
-                utilization: (Object.keys(additionalCategoriesMap).length / OBJECT_SAFETY_LIMIT * 100).toFixed(1) + '%'
+                utilization: (Object.keys(additionalCategoryMap).length / OBJECT_SAFETY_LIMIT * 100).toFixed(1) + '%'
             },
-            totalCachedCategories: Object.keys(topLevelCategoryMap).length + Object.keys(additionalCategoriesMap).length
+            totalCachedCategories: Object.keys(topLevelCategoryMap).length + Object.keys(additionalCategoryMap).length
         };
     };
 
@@ -926,7 +926,7 @@ function HybridBFSStrategy() {
         this.getInternalObjectsForTesting = function () {
             return {
                 topLevelCategoryMap: topLevelCategoryMap,
-                additionalCategoriesMap: additionalCategoriesMap
+                additionalCategoryMap: additionalCategoryMap
             };
         };
     }
