@@ -295,6 +295,61 @@ describe('ExportProducts Job', function () {
 
             assert.equal(result.status, 'ERROR', 'Should return ERROR status after consecutive failures');
         });
+
+        it('should stop exactly on break after threshold with single failure', function () {
+            // Test exact threshold behavior: Break After = 1 should stop on >= 1 consecutive failure
+            mockProductMgr.queryAllSiteProducts = function () {
+                return {
+                    count: 3,
+                    hasNext: function () {
+                        return this._index < this._products.length;
+                    },
+                    next: function () {
+                        return this._products[this._index++];
+                    },
+                    close: function () {},
+                    _index: 0,
+                    _products: [
+                        { ID: 'good-product', name: 'Good Product', online: true, searchable: true, variant: false },
+                        { ID: 'bad-product', name: 'Bad Product', online: true, searchable: true, variant: false },
+                        { ID: 'never-reached', name: 'Never Reached', online: true, searchable: true, variant: false }
+                    ]
+                };
+            };
+
+            // Make the second product fail
+            var originalPostProduct = mockPixleeService.postProduct;
+            mockPixleeService.postProduct = function (payload) {
+                if (payload.product && payload.product.sku === 'bad-product') {
+                    throw new Error('Simulated export failure');
+                }
+                return originalPostProduct.call(this, payload);
+            };
+
+            var jobParameters = {
+                'Break After': '1' // Should stop after exactly 1 consecutive failure
+            };
+
+            var result = ExportProducts.execute(jobParameters);
+
+            // Should stop after the first failure, not process the third product
+            assert.equal(result.status, 'ERROR', 'Should return ERROR status when break after threshold is reached');
+
+            // Verify only 2 products were processed (1 success + 1 failure = stop)
+            var logs = mockLogger.__testUtils.getLogMessages('info');
+            var processingLogs = logs.filter(function(log) {
+                return log.includes('Processing product');
+            });
+
+            // Should have processed exactly 2 products before stopping
+            assert.isAtMost(processingLogs.length, 2, 'Should stop processing after break after threshold');
+
+            // Should not have processed the third product
+            var neverReachedLogs = logs.filter(function(log) {
+                return log.includes('never-reached');
+            });
+            assert.equal(neverReachedLogs.length, 0, 'Should not process products after break after threshold');
+        });
     });
 
     describe('Product Processing', function () {

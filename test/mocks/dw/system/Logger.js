@@ -37,7 +37,7 @@ Logger.prototype.info = function (message) {
     if (arguments.length > 1) {
         for (var i = 1; i < arguments.length; i++) {
             var placeholder = '{' + (i - 1) + '}';
-            formattedMessage = formattedMessage.replace(placeholder, arguments[i]);
+            formattedMessage = formattedMessage.replace(new RegExp('\\{' + (i - 1) + '\\}', 'g'), arguments[i]);
         }
     }
 
@@ -51,10 +51,19 @@ Logger.prototype.info = function (message) {
 };
 
 Logger.prototype.warn = function (message) {
+    // Handle SFCC-style format strings with additional arguments
+    var formattedMessage = message;
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            var placeholder = '{' + (i - 1) + '}';
+            formattedMessage = formattedMessage.replace(new RegExp('\\{' + (i - 1) + '\\}', 'g'), arguments[i]);
+        }
+    }
+
     var logEntry = {
         level: 'warn',
         category: this.category,
-        message: message,
+        message: formattedMessage,
         timestamp: new Date()
     };
     globalLogs.warn.push(logEntry);
@@ -87,7 +96,7 @@ Logger.info = function (message) {
 
 Logger.warn = function (message) {
     var logger = new Logger('root');
-    logger.warn(message);
+    logger.warn.apply(logger, arguments);
 };
 
 Logger.error = function (message) {

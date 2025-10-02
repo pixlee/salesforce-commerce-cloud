@@ -702,6 +702,81 @@ describe('ProductExportPayload', function () {
                 assert.isObject(payload, 'Should create payload even with malformed product');
             }, 'Should handle malformed products gracefully');
         });
+
+        it('should cap variants at 650 to prevent SFCC object size violations', function () {
+            var ProductExportPayload = createFreshProductExportPayload();
+
+            // Create a master product with > 650 variants
+            var masterProduct = mockProductMgr.__testUtils.createMockProduct('master_with_many_variants', {
+                name: 'Master Product with Many Variants',
+                master: true,
+                variantCount: 700 // This will exceed the 650 cap
+            });
+
+            mockLogger.__testUtils.clearLogs();
+            var payload = new ProductExportPayload(masterProduct, {});
+
+            // Verify variants_json is valid JSON and capped
+            assert.isString(payload.product.variants_json, 'Should have variants_json string');
+            var variantsJSON = JSON.parse(payload.product.variants_json);
+            var variantCount = Object.keys(variantsJSON).length;
+
+            assert.isAtMost(variantCount, 650, 'Should cap variants at 650');
+            assert.equal(variantCount, 650, 'Should have exactly 650 variants when capped');
+
+            // Verify warning was logged
+            var warnLogs = mockLogger.__testUtils.getLogMessages('warn');
+            var hasCapWarning = warnLogs.some(function(log) {
+                return log.includes('has more than 650 variants') && log.includes('SFCC object size limit');
+            });
+            assert.isTrue(hasCapWarning, 'Should log warning when variants are capped');
+
+            // Verify SFCC compliance - each variant has 3 properties (key + 2 nested)
+            // 650 variants × 3 properties = 1950 properties (under 2000 limit)
+            var expectedMaxProperties = 650 * 3;
+            assert.isBelow(expectedMaxProperties, 2000, 'Capped variants should stay under SFCC 2000 property limit');
+        });
+
+        it('should cap images at 1900 to prevent SFCC object size violations', function () {
+            var ProductExportPayload = createFreshProductExportPayload();
+
+            // Create a master product with > 1900 total images
+            var masterProduct = mockProductMgr.__testUtils.createMockProduct('master_with_many_images', {
+                name: 'Master Product with Many Images',
+                master: true,
+                imageCount: 2000, // This will exceed the 1900 cap
+                variantCount: 5,
+                imagesPerVariant: 400 // 5 variants × 400 images = 2000 more images
+            });
+
+            mockLogger.__testUtils.clearLogs();
+            var payload = new ProductExportPayload(masterProduct, {});
+
+            // Verify product_photos is capped
+            var extraFields = JSON.parse(payload.product.extra_fields);
+            var allImages = extraFields.product_photos;
+            assert.isArray(allImages, 'Should have product_photos array');
+            assert.isAtMost(allImages.length, 1900, 'Should cap images at 1900');
+
+            // Verify warning was logged
+            var warnLogs = mockLogger.__testUtils.getLogMessages('warn');
+            var hasCapWarning = warnLogs.some(function(log) {
+                return log.includes('has more than 1900 images') && log.includes('SFCC object size limit');
+            });
+            assert.isTrue(hasCapWarning, 'Should log warning when images are capped');
+
+            // Verify no duplicates in capped images
+            var uniqueImages = {};
+            var duplicateCount = 0;
+            for (var i = 0; i < allImages.length; i++) {
+                if (uniqueImages[allImages[i]]) {
+                    duplicateCount++;
+                } else {
+                    uniqueImages[allImages[i]] = true;
+                }
+            }
+            assert.equal(duplicateCount, 0, 'Should not have duplicate images');
+        });
     });
 
     describe('Performance and Memory Management', function () {

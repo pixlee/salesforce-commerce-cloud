@@ -6,9 +6,9 @@
 
 function createMockProduct(id, options) {
     options = options || {};
-    
+
     var mockCategoryAssignments = options.categoryAssignments || [];
-    
+
     return {
         ID: id,
         name: options.name || 'Mock Product ' + id,
@@ -16,7 +16,8 @@ function createMockProduct(id, options) {
         online: options.online !== false,
         searchable: options.searchable !== false,
         variant: options.variant || false,
-        
+        master: options.master || false,
+
         getCategoryAssignments: function () {
             return mockCategoryAssignments.map(function (catId) {
                 return {
@@ -29,7 +30,7 @@ function createMockProduct(id, options) {
                 };
             });
         },
-        
+
         getPriceModel: function () {
             return {
                 getPrice: function () {
@@ -40,7 +41,7 @@ function createMockProduct(id, options) {
                 }
             };
         },
-        
+
         getVariationModel: function () {
             return {
                 getDefaultVariant: function () {
@@ -59,7 +60,7 @@ function createMockProduct(id, options) {
                 }
             };
         },
-        
+
         getAvailabilityModel: function () {
             return {
                 isInStock: function () { return true; },
@@ -70,30 +71,73 @@ function createMockProduct(id, options) {
                 }
             };
         },
-        
+
         getImage: function () {
             return {
                 absURL: { toString: function () { return 'https://example.com/image.jpg'; } }
             };
         },
-        
+
         getImages: function () {
-            return [{
-                absURL: { toString: function () { return 'https://example.com/image1.jpg'; } }
-            }];
+            var imageCount = options.imageCount || 1;
+            var images = [];
+            for (var i = 0; i < imageCount; i++) {
+                (function(imageIndex) {
+                    images.push({
+                        absURL: { toString: function () { return 'https://example.com/image' + imageIndex + '.jpg'; } }
+                    });
+                })(i);
+            }
+            return images;
         },
-        
+
         getVariants: function () {
+            var variantCount = options.variantCount || 0;
+            var variants = [];
+
+            // Create mock variants if this is a master product
+            if (options.master && variantCount > 0) {
+                for (var i = 0; i < variantCount; i++) {
+                    (function(variantIndex) {
+                        variants.push({
+                            getID: function () { return id + '_variant_' + variantIndex; },
+                            getAvailabilityModel: function () {
+                                return {
+                                    getInventoryRecord: function () {
+                                        return {
+                                            ATS: { value: 5 }
+                                        };
+                                    }
+                                };
+                            },
+                            getImages: function () {
+                                var imagesPerVariant = options.imagesPerVariant || 1;
+                                var variantImages = [];
+                                for (var j = 0; j < imagesPerVariant; j++) {
+                                    (function(imageIndex) {
+                                        variantImages.push({
+                                            absURL: { toString: function () { return 'https://example.com/variant' + variantIndex + '_image' + imageIndex + '.jpg'; } }
+                                        });
+                                    })(j);
+                                }
+                                return variantImages;
+                            }
+                        });
+                    })(i);
+                }
+            }
+
+            var index = 0;
             return {
                 iterator: function () {
                     return {
-                        hasNext: function () { return false; },
-                        next: function () { return null; }
+                        hasNext: function () { return index < variants.length; },
+                        next: function () { return variants[index++]; }
                     };
                 }
             };
         },
-        
+
         getName: function () {
             return this.name;
         }
@@ -104,7 +148,7 @@ var ProductMgr = {
     getProduct: function (productId) {
         return createMockProduct(productId);
     },
-    
+
     queryAllSiteProducts: function () {
         // Return an iterator with a few mock products
         var products = [
@@ -112,7 +156,7 @@ var ProductMgr = {
             createMockProduct('prod2', { categoryAssignments: ['cat2', 'cat1_0'] })
         ];
         var index = 0;
-        
+
         return {
             count: products.length,
             hasNext: function () { return index < products.length; },
