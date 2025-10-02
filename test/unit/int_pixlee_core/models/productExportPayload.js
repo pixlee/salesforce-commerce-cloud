@@ -18,15 +18,15 @@ function countObjectProperties(obj) {
     }
 
     var count = 0;
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            count++; // Count the key itself
+    var keys = Object.keys(obj);
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        count++; // Count the key itself
 
-            // If the value is an object, recursively count its properties
-            var value = obj[key];
-            if (value && typeof value === 'object' && !Array.isArray(value)) {
-                count += countObjectProperties(value);
-            }
+        // If the value is an object, recursively count its properties
+        var value = obj[key];
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            count += countObjectProperties(value);
         }
     }
     return count;
@@ -39,19 +39,19 @@ function countObjectProperties(obj) {
  * @param {number} limit - Property limit (default 2000)
  */
 function assertSFCCObjectSizeCompliance(obj, objectName, limit) {
-    limit = limit || 2000;
+    var maxLimit = limit || 2000;
     var propertyCount = countObjectProperties(obj);
 
-    assert.isBelow(propertyCount, limit,
-        objectName + ' has ' + propertyCount + ' properties, exceeding SFCC limit of ' + limit +
-        '. This would trigger: "Limit for quota \'api.jsObjectSize\' exceeded. Limit is ' + limit + ', actual is ' + propertyCount + '."');
+    assert.isBelow(propertyCount, maxLimit,
+        objectName + ' has ' + propertyCount + ' properties, exceeding SFCC limit of ' + maxLimit +
+        '. This would trigger: "Limit for quota \'api.jsObjectSize\' exceeded. Limit is ' + maxLimit + ', actual is ' + propertyCount + '."');
 }
 
 /**
  * Helper to create a fresh ProductExportPayload instance with proper mocks
  */
 function createFreshProductExportPayload(customMocks) {
-    customMocks = customMocks || {};
+    var mocks = customMocks || {};
 
     var defaultMocks = {
         'dw/catalog/CatalogMgr': require('../../../mocks/dw/catalog/CatalogMgr'),
@@ -66,15 +66,15 @@ function createFreshProductExportPayload(customMocks) {
             getPixleeProductSKU: function(product) { return product.ID || 'test-sku'; }
         },
         '*/cartridge/scripts/pixlee/helpers/currencyLookupHelper': {
-            getCurrencyForLocale: function(locale) {
+            getCurrencyForLocale: function() {
                 return { currencyCode: 'USD', symbol: '$' };
             }
         }
     };
 
     // Merge custom mocks with defaults
-    Object.keys(customMocks).forEach(function(key) {
-        defaultMocks[key] = customMocks[key];
+    Object.keys(mocks).forEach(function(key) {
+        defaultMocks[key] = mocks[key];
     });
 
     return proxyquire('../../../../cartridges/int_pixlee_core/cartridge/scripts/pixlee/models/productExportPayload', defaultMocks);
@@ -97,14 +97,14 @@ describe('ProductExportPayload', function () {
         mockLogger = require('../../../mocks/dw/system/Logger');
 
         // Reset catalog mock data
-        mockCatalogMgr.__testUtils.reset();
-        mockLogger.__testUtils.clearLogs();
+        mockCatalogMgr.testUtils.reset();
+        mockLogger.testUtils.clearLogs();
     });
 
     describe('Constructor and Basic Functionality', function () {
         it('should create a valid payload with minimal product data', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('minimal_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('minimal_product', {
                 name: 'Minimal Test Product',
                 upc: '123456789012'
             });
@@ -129,7 +129,7 @@ describe('ProductExportPayload', function () {
 
         it('should handle regional-only export option', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('regional_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('regional_product', {
                 name: 'Regional Test Product'
             });
 
@@ -145,7 +145,7 @@ describe('ProductExportPayload', function () {
 
         it('should handle products with null/undefined properties gracefully', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('null_props_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('null_props_product', {
                 name: null,
                 upc: null
             });
@@ -161,7 +161,7 @@ describe('ProductExportPayload', function () {
 
         it('should validate extra_fields JSON structure', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('json_validation_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('json_validation_product', {
                 name: 'JSON Validation Product'
             });
 
@@ -185,7 +185,7 @@ describe('ProductExportPayload', function () {
     describe('Product Images and Media', function () {
         it('should handle products with multiple images', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('multi_image_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('multi_image_product', {
                 name: 'Multi Image Product',
                 images: [
                     { URL: 'http://example.com/image1.jpg', alt: 'Image 1' },
@@ -203,7 +203,7 @@ describe('ProductExportPayload', function () {
 
         it('should handle products with no images', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('no_image_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('no_image_product', {
                 name: 'No Image Product',
                 images: []
             });
@@ -216,7 +216,7 @@ describe('ProductExportPayload', function () {
 
         it('should respect imageViewType option', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('view_type_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('view_type_product', {
                 name: 'View Type Product'
             });
 
@@ -231,7 +231,7 @@ describe('ProductExportPayload', function () {
     describe('Product Variants', function () {
         it('should handle master products with variants', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var masterProduct = mockProductMgr.__testUtils.createMockProduct('master_product', {
+            var masterProduct = mockProductMgr.testUtils.createMockProduct('master_product', {
                 name: 'Master Product',
                 isMaster: true,
                 variants: [
@@ -251,7 +251,7 @@ describe('ProductExportPayload', function () {
 
         it('should handle variant products', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var variantProduct = mockProductMgr.__testUtils.createMockProduct('variant_product', {
+            var variantProduct = mockProductMgr.testUtils.createMockProduct('variant_product', {
                 name: 'Variant Product',
                 isVariant: true,
                 masterProduct: { ID: 'master-123', name: 'Master Product' }
@@ -268,7 +268,7 @@ describe('ProductExportPayload', function () {
     describe('Pricing and Currency', function () {
         it('should handle products with valid pricing', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('priced_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('priced_product', {
                 name: 'Priced Product',
                 price: 29.99,
                 currency: 'USD'
@@ -283,7 +283,7 @@ describe('ProductExportPayload', function () {
 
         it('should handle products without pricing (bundles, sets)', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('bundle_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('bundle_product', {
                 name: 'Bundle Product',
                 isBundle: true,
                 price: null
@@ -292,13 +292,15 @@ describe('ProductExportPayload', function () {
             var payload = new ProductExportPayload(product, {});
 
             // Should not throw error for products without pricing
-            assert.isObject(payload, 'Should handle products without pricing');
+            assert.doesNotThrow(function () {
+                new ProductExportPayload(product, {});
+            }, 'Should handle products without pricing');
             assert.isArray(payload.product.regional_info, 'Should still have regional_info array');
         });
 
         it('should handle multiple currencies in regional info', function () {
             var ProductExportPayload = createFreshProductExportPayload();
-            var product = mockProductMgr.__testUtils.createMockProduct('multi_currency_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('multi_currency_product', {
                 name: 'Multi Currency Product',
                 price: 29.99
             });
@@ -323,7 +325,7 @@ describe('ProductExportPayload', function () {
             var warnMessages = [];
             var debugMessages = [];
 
-            var mockLogger = {
+            var testLogger = {
                 info: function (message) {
                     logMessages.push(message);
                 },
@@ -336,7 +338,7 @@ describe('ProductExportPayload', function () {
                 warn: function (message) {
                     warnMessages.push(message);
                 },
-                __testUtils: {
+                testUtils: {
                     clearLogs: function () {
                         logMessages.length = 0;
                         errorMessages.length = 0;
@@ -360,7 +362,7 @@ describe('ProductExportPayload', function () {
 
             // Load the module under test with improved mocks
             ProductExportPayload = proxyquire('../../../../cartridges/int_pixlee_core/cartridge/scripts/pixlee/models/productExportPayload', {
-                'dw/system/Logger': mockLogger,
+                'dw/system/Logger': testLogger,
                 'dw/system/Site': require('../../../mocks/dw/system/Site'),
                 'dw/catalog/CatalogMgr': mockCatalogMgr,
                 'dw/catalog/ProductMgr': mockProductMgr,
@@ -373,7 +375,7 @@ describe('ProductExportPayload', function () {
                     getPixleeProductSKU: function (product) { return product.ID || 'test-sku'; }
                 },
                 '*/cartridge/scripts/pixlee/helpers/currencyLookupHelper': {
-                    getCurrencyForLocale: function (locale) { return { currencyCode: 'USD', symbol: '$' }; }
+                    getCurrencyForLocale: function () { return { currencyCode: 'USD', symbol: '$' }; }
                 }
             });
         });
@@ -386,18 +388,15 @@ describe('ProductExportPayload', function () {
             };
 
             // Create a test product
-            var product = mockProductMgr.__testUtils.createMockProduct('test1', {
+            var product = mockProductMgr.testUtils.createMockProduct('test1', {
                 categoryAssignments: ['cat1']
             });
 
             // Create payload (this will initialize strategy)
             var payload = new ProductExportPayload(product, {});
 
-            // Check that SingleMapStrategy was used
-            var logs = mockLogger.__testUtils.getLogMessages();
-            var hasStrategyLog = Array.isArray(logs) && logs.some(function (log) {
-                return log.includes('SingleMapStrategy') || log.includes('small catalog');
-            });
+            // Check that SingleMapStrategy was used (logs available but not asserted in this test)
+            // var logs = testLogger.testUtils.getLogMessages();
 
             // Should use SingleMapStrategy for small catalogs
             assert.isObject(payload, 'Should create payload successfully');
@@ -406,10 +405,10 @@ describe('ProductExportPayload', function () {
 
         it('should use HybridBFSStrategy for catalogs over safety threshold', function () {
             // Setup large catalog
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(2000);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2000);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
-            var product = mockProductMgr.__testUtils.createMockProduct('test_large', {
+            var product = mockProductMgr.testUtils.createMockProduct('test_large', {
                 categoryAssignments: ['cat_0', 'cat_1_0']
             });
 
@@ -423,10 +422,10 @@ describe('ProductExportPayload', function () {
         it('should never exceed SFCC object property limits with SingleMapStrategy', function () {
             // Test with catalog size just under the safety limit
             var catalogSize = 649; // Just under CATEGORY_SAFETY_LIMIT of 650
-            var catalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(catalogSize);
-            mockCatalogMgr.__testUtils.setMockCatalogData(catalog);
+            var catalog = mockCatalogMgr.testUtils.createLargeCatalogMock(catalogSize);
+            mockCatalogMgr.testUtils.setMockCatalogData(catalog);
 
-            var product = mockProductMgr.__testUtils.createMockProduct('single_map_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('single_map_product', {
                 name: 'Single Map Test Product',
                 categoryAssignments: ['cat_0', 'cat_1_0', 'cat_2_1']
             });
@@ -439,7 +438,7 @@ describe('ProductExportPayload', function () {
 
             // Verify SFCC object size compliance by accessing internal objects
             // Note: This is a test-only access pattern to validate SFCC limits
-            var internalObjects = ProductExportPayload.__testUtils ? ProductExportPayload.__testUtils.getInternalObjects() : null;
+            var internalObjects = ProductExportPayload.testUtils ? ProductExportPayload.testUtils.getInternalObjects() : null;
             if (internalObjects && internalObjects.categoriesMap) {
                 assertSFCCObjectSizeCompliance(internalObjects.categoriesMap, 'SingleMapStrategy.categoriesMap');
             }
@@ -452,10 +451,10 @@ describe('ProductExportPayload', function () {
         it('should never exceed SFCC object property limits with HybridBFSStrategy', function () {
             // Test with catalog size over the safety limit
             var catalogSize = 2000; // Well over CATEGORY_SAFETY_LIMIT
-            var catalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(catalogSize);
-            mockCatalogMgr.__testUtils.setMockCatalogData(catalog);
+            var catalog = mockCatalogMgr.testUtils.createLargeCatalogMock(catalogSize);
+            mockCatalogMgr.testUtils.setMockCatalogData(catalog);
 
-            var product = mockProductMgr.__testUtils.createMockProduct('hybrid_bfs_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('hybrid_bfs_product', {
                 name: 'Hybrid BFS Test Product',
                 categoryAssignments: ['cat_0', 'cat_1_0', 'cat_2_1']
             });
@@ -467,10 +466,10 @@ describe('ProductExportPayload', function () {
             assert.equal(stats.strategyType, 'HybridBFSStrategy', 'Should use HybridBFSStrategy for large catalogs');
 
             // Verify SFCC object size compliance for both internal maps
-            var internalObjects = ProductExportPayload.__testUtils ? ProductExportPayload.__testUtils.getInternalObjects() : null;
-            if (internalObjects && internalObjects.topLevelCategoryMap && internalObjects.additionalCategoriesMap) {
+            var internalObjects = ProductExportPayload.testUtils ? ProductExportPayload.testUtils.getInternalObjects() : null;
+            if (internalObjects && internalObjects.topLevelCategoryMap && internalObjects.additionalCategoryMap) {
                 assertSFCCObjectSizeCompliance(internalObjects.topLevelCategoryMap, 'HybridBFSStrategy.topLevelCategoryMap');
-                assertSFCCObjectSizeCompliance(internalObjects.additionalCategoriesMap, 'HybridBFSStrategy.additionalCategoriesMap');
+                assertSFCCObjectSizeCompliance(internalObjects.additionalCategoryMap, 'HybridBFSStrategy.additionalCategoryMap');
             }
 
             // Verify categories were processed
@@ -486,7 +485,7 @@ describe('ProductExportPayload', function () {
             ];
 
             testCases.forEach(function(testCase) {
-                mockLogger.__testUtils.clearLogs();
+                mockLogger.testUtils.clearLogs();
                 var FreshProductExportPayload = proxyquire('../../../../cartridges/int_pixlee_core/cartridge/scripts/pixlee/models/productExportPayload', {
                     'dw/catalog/CatalogMgr': mockCatalogMgr,
                     'dw/system/Logger': mockLogger,
@@ -496,29 +495,28 @@ describe('ProductExportPayload', function () {
                     'dw/util/Currency': require('../../../mocks/dw/util/Currency'),
                     'dw/util/Collection': require('../../../mocks/dw/util/Collection'),
                     '*/cartridge/scripts/pixlee/helpers/pixleeHelper': { getProductStock: function() { return 10; }, getPixleeProductSKU: function(product) { return product.ID || 'test-sku'; } },
-                    '*/cartridge/scripts/pixlee/helpers/currencyLookupHelper': { getCurrencyForLocale: function(locale) { return { currencyCode: 'USD', symbol: '$' }; } }
+                    '*/cartridge/scripts/pixlee/helpers/currencyLookupHelper': { getCurrencyForLocale: function() { return { currencyCode: 'USD', symbol: '$' }; } }
                 });
 
-                var catalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(testCase.categoryCount);
-                mockCatalogMgr.__testUtils.setMockCatalogData(catalog);
+                var catalog = mockCatalogMgr.testUtils.createLargeCatalogMock(testCase.categoryCount);
+                mockCatalogMgr.testUtils.setMockCatalogData(catalog);
 
-                var product = mockProductMgr.__testUtils.createMockProduct('bug_test_product_' + testCase.categoryCount, {
+                var product = mockProductMgr.testUtils.createMockProduct('bug_test_product_' + testCase.categoryCount, {
                     categoryAssignments: ['cat_0', 'cat_1_0']
                 });
 
                 // This should NOT throw api.jsObjectSize error
-                var payload = new FreshProductExportPayload(product, {});
-                var stats = FreshProductExportPayload.getCacheStatistics();
+                new FreshProductExportPayload(product, {});
 
                 // Verify SFCC object size compliance
-                var internalObjects = FreshProductExportPayload.__testUtils ? FreshProductExportPayload.__testUtils.getInternalObjects() : null;
+                var internalObjects = FreshProductExportPayload.testUtils ? FreshProductExportPayload.testUtils.getInternalObjects() : null;
                 if (internalObjects) {
                     if (internalObjects.categoriesMap) {
                         assertSFCCObjectSizeCompliance(internalObjects.categoriesMap, 'SingleMapStrategy.categoriesMap (' + testCase.description + ')');
                     }
-                    if (internalObjects.topLevelCategoryMap && internalObjects.additionalCategoriesMap) {
+                    if (internalObjects.topLevelCategoryMap && internalObjects.additionalCategoryMap) {
                         assertSFCCObjectSizeCompliance(internalObjects.topLevelCategoryMap, 'HybridBFSStrategy.topLevelCategoryMap (' + testCase.description + ')');
-                        assertSFCCObjectSizeCompliance(internalObjects.additionalCategoriesMap, 'HybridBFSStrategy.additionalCategoriesMap (' + testCase.description + ')');
+                        assertSFCCObjectSizeCompliance(internalObjects.additionalCategoryMap, 'HybridBFSStrategy.additionalCategoryMap (' + testCase.description + ')');
                     }
                 }
             });
@@ -526,10 +524,10 @@ describe('ProductExportPayload', function () {
 
         it('should handle products with deep category hierarchies', function () {
             // Create a catalog with deep hierarchy using existing method
-            var deepCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(100, 10); // 100 categories, 10 levels deep
-            mockCatalogMgr.__testUtils.setMockCatalogData(deepCatalog);
+            var deepCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(100, 10); // 100 categories, 10 levels deep
+            mockCatalogMgr.testUtils.setMockCatalogData(deepCatalog);
 
-            var product = mockProductMgr.__testUtils.createMockProduct('deep_category_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('deep_category_product', {
                 name: 'Deep Category Product',
                 categoryAssignments: ['cat_5_2'] // Category with hierarchy
             });
@@ -543,7 +541,7 @@ describe('ProductExportPayload', function () {
         });
 
         it('should handle products with no category assignments', function () {
-            var product = mockProductMgr.__testUtils.createMockProduct('no_cats', {
+            var product = mockProductMgr.testUtils.createMockProduct('no_cats', {
                 categoryAssignments: []
             });
 
@@ -556,10 +554,10 @@ describe('ProductExportPayload', function () {
 
         it('should respect CATEGORY_SAFETY_LIMIT during processing', function () {
             // Test that the safety limit is properly enforced
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(1000);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(1000);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
-            var product = mockProductMgr.__testUtils.createMockProduct('safety_limit_test', {
+            var product = mockProductMgr.testUtils.createMockProduct('safety_limit_test', {
                 categoryAssignments: ['cat_0', 'cat_1_0', 'cat_2_1', 'cat_3_2']
             });
 
@@ -576,10 +574,10 @@ describe('ProductExportPayload', function () {
 
             // Create a large catalog to force HybridBFS strategy
             var catalogSize = 2000; // Over CATEGORY_SAFETY_LIMIT to force HybridBFS
-            var catalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(catalogSize);
-            mockCatalogMgr.__testUtils.setMockCatalogData(catalog);
+            var catalog = mockCatalogMgr.testUtils.createLargeCatalogMock(catalogSize);
+            mockCatalogMgr.testUtils.setMockCatalogData(catalog);
 
-            var ProductExportPayload = createFreshProductExportPayload();
+            var FreshProductExportPayload = createFreshProductExportPayload();
 
             // Create multiple products to trigger different scenarios
             var testProducts = [
@@ -592,13 +590,13 @@ describe('ProductExportPayload', function () {
 
             for (var i = 0; i < testProducts.length; i++) {
                 var testProduct = testProducts[i];
-                var product = mockProductMgr.__testUtils.createMockProduct(testProduct.id, {
+                var product = mockProductMgr.testUtils.createMockProduct(testProduct.id, {
                     name: 'Test Product ' + (i + 1),
                     categoryAssignments: testProduct.categoryAssignments
                 });
 
-                var payload = new ProductExportPayload(product, {});
-                var stats = ProductExportPayload.getCacheStatistics();
+                var payload = new FreshProductExportPayload(product, {});
+                var stats = FreshProductExportPayload.getCacheStatistics();
 
                 // Verify we're using HybridBFS
                 assert.equal(stats.strategyType, 'HybridBFSStrategy', 'Should use HybridBFSStrategy for large catalog');
@@ -618,11 +616,7 @@ describe('ProductExportPayload', function () {
                             var parentIds = category.parent_category_ids.split(',');
                             var fullNameParts = category.category_full_name.split(' > ');
 
-                            console.log('DEBUG: Testing category:', category.category_name);
-                            console.log('DEBUG: Full name:', category.category_full_name);
-                            console.log('DEBUG: Parent IDs:', category.parent_category_ids);
-                            console.log('DEBUG: Full name parts count:', fullNameParts.length);
-                            console.log('DEBUG: Parent IDs count:', parentIds.length);
+                            // DEBUG: Testing category hierarchy
 
                             // After the fix: parentIds should have (fullNameParts.length - 1) elements
                             // The full name includes the target category, parentIds should not
@@ -645,21 +639,20 @@ describe('ProductExportPayload', function () {
 
             if (!foundValidCase) {
                 // Create a more specific test case to force the scenario
-                console.log('INFO: Creating specific test case to demonstrate the fix');
+                // Creating specific test case to demonstrate the fix
 
                 // Test the fix by directly calling the internal objects if available
-                var internalObjects = ProductExportPayload.__testUtils ? ProductExportPayload.__testUtils.getInternalObjects() : null;
+                var internalObjects = FreshProductExportPayload.testUtils ? FreshProductExportPayload.testUtils.getInternalObjects() : null;
                 if (internalObjects && internalObjects.topLevelCategoryMap) {
                     var mapSize = Object.keys(internalObjects.topLevelCategoryMap).length;
-                    console.log('DEBUG: BFS map size:', mapSize);
-                    console.log('DEBUG: Sample BFS mapped categories:', Object.keys(internalObjects.topLevelCategoryMap).slice(0, 5));
+                    // DEBUG: BFS map size and sample categories
 
                     // The fix ensures that when hybridLookup finds a mapped ancestor,
                     // that ancestor is included in the parentIDs chain
                     assert.isTrue(mapSize > 0, 'Should have categories in BFS map');
                     assert.isTrue(mapSize <= 650, 'BFS map should respect size limit');
                 } else {
-                    console.log('SKIP: Could not access internal objects to verify the fix');
+                    // SKIP: Could not access internal objects to verify the fix
                 }
             }
         });
@@ -682,7 +675,7 @@ describe('ProductExportPayload', function () {
 
             // Should not throw error
             assert.doesNotThrow(function () {
-                var payload = new ProductExportPayload(invalidProduct, {});
+                new ProductExportPayload(invalidProduct, {});
             }, 'Should handle invalid products gracefully');
         });
 
@@ -690,7 +683,7 @@ describe('ProductExportPayload', function () {
             var ProductExportPayload = createFreshProductExportPayload();
 
             // Use a more realistic malformed product that won't cause immediate failures
-            var malformedProduct = mockProductMgr.__testUtils.createMockProduct('malformed_product', {
+            var malformedProduct = mockProductMgr.testUtils.createMockProduct('malformed_product', {
                 name: 'Malformed Product',
                 // Missing some expected properties but still functional
                 categoryAssignments: []
@@ -707,13 +700,13 @@ describe('ProductExportPayload', function () {
             var ProductExportPayload = createFreshProductExportPayload();
 
             // Create a master product with > 650 variants
-            var masterProduct = mockProductMgr.__testUtils.createMockProduct('master_with_many_variants', {
+            var masterProduct = mockProductMgr.testUtils.createMockProduct('master_with_many_variants', {
                 name: 'Master Product with Many Variants',
                 master: true,
                 variantCount: 700 // This will exceed the 650 cap
             });
 
-            mockLogger.__testUtils.clearLogs();
+            mockLogger.testUtils.clearLogs();
             var payload = new ProductExportPayload(masterProduct, {});
 
             // Verify variants_json is valid JSON and capped
@@ -725,7 +718,7 @@ describe('ProductExportPayload', function () {
             assert.equal(variantCount, 650, 'Should have exactly 650 variants when capped');
 
             // Verify warning was logged
-            var warnLogs = mockLogger.__testUtils.getLogMessages('warn');
+            var warnLogs = mockLogger.testUtils.getLogMessages('warn');
             var hasCapWarning = warnLogs.some(function(log) {
                 return log.includes('has more than 650 variants') && log.includes('SFCC object size limit');
             });
@@ -741,7 +734,7 @@ describe('ProductExportPayload', function () {
             var ProductExportPayload = createFreshProductExportPayload();
 
             // Create a master product with > 1900 total images
-            var masterProduct = mockProductMgr.__testUtils.createMockProduct('master_with_many_images', {
+            var masterProduct = mockProductMgr.testUtils.createMockProduct('master_with_many_images', {
                 name: 'Master Product with Many Images',
                 master: true,
                 imageCount: 2000, // This will exceed the 1900 cap
@@ -749,7 +742,7 @@ describe('ProductExportPayload', function () {
                 imagesPerVariant: 400 // 5 variants × 400 images = 2000 more images
             });
 
-            mockLogger.__testUtils.clearLogs();
+            mockLogger.testUtils.clearLogs();
             var payload = new ProductExportPayload(masterProduct, {});
 
             // Verify product_photos is capped
@@ -759,7 +752,7 @@ describe('ProductExportPayload', function () {
             assert.isAtMost(allImages.length, 1900, 'Should cap images at 1900');
 
             // Verify warning was logged
-            var warnLogs = mockLogger.__testUtils.getLogMessages('warn');
+            var warnLogs = mockLogger.testUtils.getLogMessages('warn');
             var hasCapWarning = warnLogs.some(function(log) {
                 return log.includes('has more than 1900 images') && log.includes('SFCC object size limit');
             });
@@ -784,12 +777,12 @@ describe('ProductExportPayload', function () {
             var ProductExportPayload = createFreshProductExportPayload();
 
             // Create some products to populate caches
-            var product1 = mockProductMgr.__testUtils.createMockProduct('cache_test_1', {
+            var product1 = mockProductMgr.testUtils.createMockProduct('cache_test_1', {
                 name: 'Cache Test 1',
                 categoryAssignments: ['cat_0']
             });
 
-            var payload1 = new ProductExportPayload(product1, {});
+            new ProductExportPayload(product1, {});
             var stats1 = ProductExportPayload.getCacheStatistics();
 
             // Verify cache statistics are available
@@ -797,12 +790,55 @@ describe('ProductExportPayload', function () {
             assert.property(stats1, 'strategyType', 'Should have strategy type in stats');
         });
 
+        it('should clear category caches via static API', function () {
+            var ProductExportPayload = createFreshProductExportPayload();
+
+            // Create a product to populate caches
+            var product = mockProductMgr.testUtils.createMockProduct('cache_clear_test', {
+                name: 'Cache Clear Test',
+                categoryAssignments: ['cat_0', 'cat_1']
+            });
+
+            // Process product to populate caches
+            new ProductExportPayload(product, {});
+            var statsBefore = ProductExportPayload.getCacheStatistics();
+
+            // Verify caches are populated
+            assert.isObject(statsBefore, 'Should have cache statistics before clear');
+            assert.property(statsBefore, 'strategyType', 'Should have strategy type');
+
+            // Clear caches using static API
+            mockLogger.testUtils.clearLogs();
+            ProductExportPayload.clearCategoryCaches();
+
+            // Verify clear operation completed without errors
+            // Note: Logger calls in static methods may not be captured by test mocks
+            // The important thing is that the method executes without throwing errors
+            assert.doesNotThrow(function() {
+                ProductExportPayload.clearCategoryCaches();
+            }, 'clearCategoryCaches should not throw errors');
+
+            // Verify caches are reset by checking internal state
+            var testUtils = ProductExportPayload.testUtils;
+            if (testUtils) {
+                var moduleCache = testUtils.getModuleLevelCache();
+                var strategyInstance = testUtils.getCategoryStrategyInstance();
+
+                // Module cache should be cleared
+                assert.isNull(moduleCache.categoryMap, 'Module categoryMap should be null after clear');
+                assert.isNull(moduleCache.categoryCount, 'Module categoryCount should be null after clear');
+
+                // Strategy instance should be reset
+                assert.isNull(strategyInstance, 'Strategy instance should be null after clear');
+            }
+        });
+
         it('should handle multiple products without memory leaks', function () {
             var ProductExportPayload = createFreshProductExportPayload();
 
             // Process multiple products to test memory management
             for (var i = 0; i < 10; i++) {
-                var product = mockProductMgr.__testUtils.createMockProduct('memory_test_' + i, {
+                var product = mockProductMgr.testUtils.createMockProduct('memory_test_' + i, {
                     name: 'Memory Test Product ' + i,
                     categoryAssignments: ['cat_' + (i % 3)]
                 });
@@ -820,7 +856,7 @@ describe('ProductExportPayload', function () {
             var ProductExportPayload = createFreshProductExportPayload();
 
             // Create a product that will exercise cache limits
-            var product = mockProductMgr.__testUtils.createMockProduct('cache_limit_test', {
+            var product = mockProductMgr.testUtils.createMockProduct('cache_limit_test', {
                 categoryAssignments: ['cat1', 'cat2']
             });
 
@@ -851,7 +887,7 @@ describe('ProductExportPayload', function () {
                     getPixleeProductSKU: function (product) { return product.ID || 'test-sku'; }
                 },
                 '*/cartridge/scripts/pixlee/helpers/currencyLookupHelper': {
-                    getCurrencyForLocale: function (locale) { return { currencyCode: 'USD', symbol: '$' }; }
+                    getCurrencyForLocale: function () { return { currencyCode: 'USD', symbol: '$' }; }
                 }
             });
         });
@@ -861,11 +897,11 @@ describe('ProductExportPayload', function () {
             // "Detected 3513 categories. Using DFSChunkedStrategy"
             // "Limit for quota 'api.jsObjectSize' exceeded. Limit is 2000, actual is 2001"
 
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(3513);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(3513);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
             // Create product similar to the one that failed
-            var product = mockProductMgr.__testUtils.createMockProduct('failing_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('failing_product', {
                 name: 'Product That Previously Failed',
                 categoryAssignments: ['cat_0', 'cat_1_0', 'cat_2_1'] // Deep category assignments
             });
@@ -891,10 +927,10 @@ describe('ProductExportPayload', function () {
 
         it('should use HybridBFSStrategy instead of the removed DFSChunkedStrategy', function () {
             // Test that we're using the new strategy instead of the old problematic one
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(2500);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2500);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
-            var product = mockProductMgr.__testUtils.createMockProduct('strategy_test_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('strategy_test_product', {
                 name: 'Strategy Test Product',
                 categoryAssignments: ['cat_0', 'cat_1_0']
             });
@@ -908,10 +944,10 @@ describe('ProductExportPayload', function () {
         });
 
         it('should properly integrate with CatalogMgr', function () {
-            var catalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(100);
-            mockCatalogMgr.__testUtils.setMockCatalogData(catalog);
+            var catalog = mockCatalogMgr.testUtils.createLargeCatalogMock(100);
+            mockCatalogMgr.testUtils.setMockCatalogData(catalog);
 
-            var product = mockProductMgr.__testUtils.createMockProduct('catalog_integration_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('catalog_integration_product', {
                 name: 'Catalog Integration Product',
                 categoryAssignments: ['cat_0', 'cat_1_0']
             });
@@ -924,7 +960,7 @@ describe('ProductExportPayload', function () {
         });
 
         it('should properly integrate with Site preferences', function () {
-            var product = mockProductMgr.__testUtils.createMockProduct('site_integration_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('site_integration_product', {
                 name: 'Site Integration Product'
             });
 
@@ -936,10 +972,10 @@ describe('ProductExportPayload', function () {
         });
 
         it('should handle very large catalogs without performance degradation', function () {
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(5000);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(5000);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
-            var product = mockProductMgr.__testUtils.createMockProduct('performance_test_product', {
+            var product = mockProductMgr.testUtils.createMockProduct('performance_test_product', {
                 categoryAssignments: ['cat_0', 'cat_1_0', 'cat_2_1']
             });
 
@@ -954,12 +990,12 @@ describe('ProductExportPayload', function () {
         });
 
         it('should maintain consistent memory usage across multiple products', function () {
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(1000);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(1000);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
             // Process multiple products to test memory consistency
             for (var i = 0; i < 5; i++) {
-                var product = mockProductMgr.__testUtils.createMockProduct('memory_consistency_' + i, {
+                var product = mockProductMgr.testUtils.createMockProduct('memory_consistency_' + i, {
                     categoryAssignments: ['cat_' + (i % 10)]
                 });
 

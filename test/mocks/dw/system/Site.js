@@ -1,5 +1,3 @@
-'use strict';
-
 // Mock Site object for SFCC testing
 var mockSite = {
     getCustomPreferenceValue: function (value) {
@@ -47,10 +45,15 @@ module.exports = {
     current: mockSite,
 
     // For parameterized tests (backward compatibility)
-    __createMock: function (params) {
+    createMock: function (params) {
         var skuReference = params ? params.skuReference : null;
 
-        var customMockSite = Object.assign({}, mockSite);
+        var customMockSite = {};
+        var keys = Object.keys(mockSite);
+        for (var i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            customMockSite[key] = mockSite[key];
+        }
         customMockSite.getCustomPreferenceValue = function (value) {
             if (value === 'SkuReference') {
                 if (skuReference === 'Manufacturer SKU') {

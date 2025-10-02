@@ -1,5 +1,3 @@
-'use strict';
-
 module.exports = function (array) {
     var items = [];
     if (array) {
@@ -41,7 +39,7 @@ module.exports = function (array) {
     };
 
     this.map = function () {
-        var args = Array.from(arguments);
+        var args = Array.prototype.slice.call(arguments);
         var list = args[0];
         var callback = args[1];
         if (list && Object.prototype.hasOwnProperty.call(list, 'toArray')) {

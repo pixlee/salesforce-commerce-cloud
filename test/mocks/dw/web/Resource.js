@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Mock for dw.web.Resource
  * Based on SFRA7 patterns with simplified resource handling for testing
@@ -68,7 +66,7 @@ function msgf(key, bundleName, defaultValue) {
     // Handle formatting arguments (simple {0}, {1}, etc. replacement)
     if (arguments.length > 3) {
         var formatArgs = Array.prototype.slice.call(arguments, 3);
-        message = message.replace(/\{(\d+)\}/g, function (match, index) {
+        message = message.replace(/\{(\d+)}/g, function (match, index) {
             var argIndex = parseInt(index, 10);
             return formatArgs[argIndex] !== undefined ? formatArgs[argIndex] : match;
         });

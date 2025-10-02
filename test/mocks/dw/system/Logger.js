@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Mock for dw.system.Logger
  * Based on SFRA7 patterns with enhanced logging capabilities for testing
@@ -36,7 +34,6 @@ Logger.prototype.info = function (message) {
     var formattedMessage = message;
     if (arguments.length > 1) {
         for (var i = 1; i < arguments.length; i++) {
-            var placeholder = '{' + (i - 1) + '}';
             formattedMessage = formattedMessage.replace(new RegExp('\\{' + (i - 1) + '\\}', 'g'), arguments[i]);
         }
     }
@@ -55,7 +52,6 @@ Logger.prototype.warn = function (message) {
     var formattedMessage = message;
     if (arguments.length > 1) {
         for (var i = 1; i < arguments.length; i++) {
-            var placeholder = '{' + (i - 1) + '}';
             formattedMessage = formattedMessage.replace(new RegExp('\\{' + (i - 1) + '\\}', 'g'), arguments[i]);
         }
     }
@@ -84,28 +80,28 @@ Logger.getLogger = function (category) {
     return new Logger(category);
 };
 
-Logger.debug = function (message) {
+Logger.debug = function () {
     var logger = new Logger('root');
-    logger.debug(message);
+    logger.debug.apply(logger, arguments);
 };
 
-Logger.info = function (message) {
+Logger.info = function () {
     var logger = new Logger('root');
     logger.info.apply(logger, arguments);
 };
 
-Logger.warn = function (message) {
+Logger.warn = function () {
     var logger = new Logger('root');
     logger.warn.apply(logger, arguments);
 };
 
-Logger.error = function (message) {
+Logger.error = function () {
     var logger = new Logger('root');
-    logger.error(message);
+    logger.error.apply(logger, arguments);
 };
 
 // Test utilities
-Logger.__testUtils = {
+Logger.testUtils = {
     clearLogs: function () {
         globalLogs.debug = [];
         globalLogs.info = [];

@@ -37,7 +37,7 @@ describe('Category Processing - Integration Tests', function () {
         };
 
         // Reset catalog mock data
-        mockCatalogMgr.__testUtils.reset();
+        mockCatalogMgr.testUtils.reset();
 
         // Load modules under test with mocks
         ProductExportPayload = proxyquire('../../../cartridges/int_pixlee_core/cartridge/scripts/pixlee/models/productExportPayload', {
@@ -96,8 +96,8 @@ describe('Category Processing - Integration Tests', function () {
     describe('SFCC Object Size Limit Compliance', function () {
         it('should handle large catalogs without exceeding SFCC api.jsObjectSize quota', function () {
             // Test with a large catalog (3513 categories represents a real-world enterprise scenario)
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(3513);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(3513);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
             var logMessages = [];
             var errorMessages = [];
@@ -155,8 +155,8 @@ describe('Category Processing - Integration Tests', function () {
         it('should handle threshold catalog size without exceeding SFCC object limits', function () {
             // Test the threshold boundary (1800 categories = CATEGORY_SAFETY_LIMIT)
             // This ensures proper strategy selection and object size compliance at the boundary
-            var thresholdCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(1799);
-            mockCatalogMgr.__testUtils.setMockCatalogData(thresholdCatalog);
+            var thresholdCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(1799);
+            mockCatalogMgr.testUtils.setMockCatalogData(thresholdCatalog);
 
             var logMessages = [];
             var errorMessages = [];
@@ -234,8 +234,8 @@ describe('Category Processing - Integration Tests', function () {
 
         it('should scale to enterprise-level catalogs without memory issues', function () {
             // Test scalability with very large catalogs (5000+ categories)
-            var hugeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(5000);
-            mockCatalogMgr.__testUtils.setMockCatalogData(hugeCatalog);
+            var hugeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(5000);
+            mockCatalogMgr.testUtils.setMockCatalogData(hugeCatalog);
 
             var logMessages = [];
             var warnMessages = [];
@@ -249,7 +249,7 @@ describe('Category Processing - Integration Tests', function () {
                 warnMessages.push(message);
             };
 
-            mockPixleeService.postProduct = function (payload) {
+            mockPixleeService.postProduct = function () {
                 exportedProducts++;
             };
 
@@ -273,19 +273,15 @@ describe('Category Processing - Integration Tests', function () {
             // Verify success
             assert.equal(result.status, 'OK', 'Should complete successfully with huge catalog');
 
-            // Verify memory warnings are reasonable
-            var memoryWarnings = warnMessages.filter(function (msg) {
-                return msg.indexOf('memory') > -1 || msg.indexOf('cache') > -1;
-            });
-            // Some warnings are OK, but should not indicate failures
+            // Memory warnings are OK, but should not indicate failures
 
             assert.isTrue(exportedProducts > 0, 'Should export products from huge catalog');
         });
 
         it('should maintain consistent performance across multiple job runs', function () {
             // Setup large catalog
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(2500);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2500);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
             var jobParameters = {
                 'Products Source': 'CATALOG',
@@ -296,7 +292,7 @@ describe('Category Processing - Integration Tests', function () {
             var runTimes = [];
             var totalExported = 0;
 
-            mockPixleeService.postProduct = function (payload) {
+            mockPixleeService.postProduct = function () {
                 totalExported++;
             };
 
@@ -336,8 +332,8 @@ describe('Category Processing - Integration Tests', function () {
             };
 
             // Test just under threshold (should use SingleMapStrategy)
-            var smallCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(1700);
-            mockCatalogMgr.__testUtils.setMockCatalogData(smallCatalog);
+            var smallCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(1700);
+            mockCatalogMgr.testUtils.setMockCatalogData(smallCatalog);
 
             var jobParameters = {
                 'Products Source': 'CATALOG',
@@ -357,11 +353,11 @@ describe('Category Processing - Integration Tests', function () {
 
             // Reset for large catalog test
             logMessages = [];
-            mockCatalogMgr.__testUtils.reset();
+            mockCatalogMgr.testUtils.reset();
 
             // Test over threshold (should use HybridBFSStrategy)
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(2000);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2000);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
             // Create fresh ProductExportPayload instance to clear module-level cache
             var FreshProductExportPayload = proxyquire('../../../cartridges/int_pixlee_core/cartridge/scripts/pixlee/models/productExportPayload', {
@@ -455,10 +451,7 @@ describe('Category Processing - Integration Tests', function () {
             // Should not crash, should fall back gracefully
             var result = ExportProducts.execute(jobParameters);
 
-            // Should log fallback message
-            var fallbackMessage = logMessages.find(function (msg) {
-                return msg.indexOf('Falling back') > -1;
-            });
+            // Should log fallback message (not checked in assertion)
 
             // Fallback behavior may vary, but should not crash the job
             assert.isObject(result, 'Should return result object even with initialization failures');
@@ -467,8 +460,8 @@ describe('Category Processing - Integration Tests', function () {
 
     describe('Cache and Memory Management Integration', function () {
         it('should properly manage cache statistics throughout job execution', function () {
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(2200);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(2200);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
             var logMessages = [];
             var cacheStatsLogged = false;
@@ -501,13 +494,13 @@ describe('Category Processing - Integration Tests', function () {
 
             if (stats.hybridBFS) {
                 assert.isObject(stats.hybridBFS.bfsMap, 'Should have BFS map statistics');
-                assert.isObject(stats.hybridBFS.unmappedCache, 'Should have unmapped cache statistics');
+                assert.isObject(stats.hybridBFS.additionalMap, 'Should have additional map statistics');
             }
         });
 
         it('should handle session cache limits during large exports', function () {
-            var largeCatalog = mockCatalogMgr.__testUtils.createLargeCatalogMock(3000);
-            mockCatalogMgr.__testUtils.setMockCatalogData(largeCatalog);
+            var largeCatalog = mockCatalogMgr.testUtils.createLargeCatalogMock(3000);
+            mockCatalogMgr.testUtils.setMockCatalogData(largeCatalog);
 
             var warnMessages = [];
 
@@ -533,10 +526,7 @@ describe('Category Processing - Integration Tests', function () {
             // Job should complete despite any session warnings
             assert.equal(result.status, 'OK', 'Job should complete successfully with session management');
 
-            // Check for session size warnings (informational)
-            var sessionWarnings = warnMessages.filter(function (msg) {
-                return msg.indexOf('Session cache') > -1;
-            });
+            // Session warnings are informational only
 
             // Warnings are OK, but should not cause failures
             assert.equal(result.status, 'OK', 'Session warnings should not cause job failure');

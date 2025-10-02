@@ -23,7 +23,7 @@ describe('ExportProducts Job', function () {
 
         // Setup Logger mock
         mockLogger = require('../../../mocks/dw/system/Logger');
-        mockLogger.__testUtils.clearLogs();
+        mockLogger.testUtils.clearLogs();
 
         // Setup Status mock
         mockStatus = function (status, code, message) {
@@ -73,7 +73,7 @@ describe('ExportProducts Job', function () {
         };
 
         // Setup ProductExportPayload mock
-        mockProductExportPayload = function (product, options) {
+        mockProductExportPayload = function (product) {
             this.product = {
                 sku: product.ID,
                 name: product.name || 'Test Product',
@@ -109,16 +109,16 @@ describe('ExportProducts Job', function () {
                 return {
                     count: 3,
                     hasNext: function () {
-                        return this._index < this._products.length;
+                        return this.index < this.products.length;
                     },
                     next: function () {
-                        return this._products[this._index++];
+                        return this.products[this.index++];
                     },
                     close: function () {
                         // Mock close
                     },
-                    _index: 0,
-                    _products: [
+                    index: 0,
+                    products: [
                         { ID: 'product-1', name: 'Product 1', online: true, searchable: true, variant: false },
                         { ID: 'product-2', name: 'Product 2', online: true, searchable: true, variant: false },
                         { ID: 'product-3', name: 'Product 3', online: true, searchable: true, variant: false }
@@ -138,13 +138,13 @@ describe('ExportProducts Job', function () {
         mockProductSearchModel.prototype.getProductSearchHits = function () {
             return {
                 hasNext: function () {
-                    return this._index < this._hits.length;
+                    return this.index < this.hits.length;
                 },
                 next: function () {
-                    return this._hits[this._index++];
+                    return this.hits[this.index++];
                 },
-                _index: 0,
-                _hits: [
+                index: 0,
+                hits: [
                     { product: { ID: 'search-product-1', name: 'Search Product 1', online: true, searchable: true, variant: false } },
                     { product: { ID: 'search-product-2', name: 'Search Product 2', online: true, searchable: true, variant: false } }
                 ]
@@ -273,14 +273,14 @@ describe('ExportProducts Job', function () {
                 return {
                     count: 2,
                     hasNext: function () {
-                        return this._index < this._products.length;
+                        return this.index < this.products.length;
                     },
                     next: function () {
-                        return this._products[this._index++];
+                        return this.products[this.index++];
                     },
                     close: function () {},
-                    _index: 0,
-                    _products: [
+                    index: 0,
+                    products: [
                         { ID: 'fail-product', name: 'Fail Product', online: true, searchable: true, variant: false },
                         { ID: 'fail-product', name: 'Fail Product 2', online: true, searchable: true, variant: false }
                     ]
@@ -302,14 +302,14 @@ describe('ExportProducts Job', function () {
                 return {
                     count: 3,
                     hasNext: function () {
-                        return this._index < this._products.length;
+                        return this.index < this.products.length;
                     },
                     next: function () {
-                        return this._products[this._index++];
+                        return this.products[this.index++];
                     },
                     close: function () {},
-                    _index: 0,
-                    _products: [
+                    index: 0,
+                    products: [
                         { ID: 'good-product', name: 'Good Product', online: true, searchable: true, variant: false },
                         { ID: 'bad-product', name: 'Bad Product', online: true, searchable: true, variant: false },
                         { ID: 'never-reached', name: 'Never Reached', online: true, searchable: true, variant: false }
@@ -336,7 +336,7 @@ describe('ExportProducts Job', function () {
             assert.equal(result.status, 'ERROR', 'Should return ERROR status when break after threshold is reached');
 
             // Verify only 2 products were processed (1 success + 1 failure = stop)
-            var logs = mockLogger.__testUtils.getLogMessages('info');
+            var logs = mockLogger.testUtils.getLogMessages('info');
             var processingLogs = logs.filter(function(log) {
                 return log.includes('Processing product');
             });
@@ -358,14 +358,14 @@ describe('ExportProducts Job', function () {
                 return {
                     count: 4,
                     hasNext: function () {
-                        return this._index < this._products.length;
+                        return this.index < this.products.length;
                     },
                     next: function () {
-                        return this._products[this._index++];
+                        return this.products[this.index++];
                     },
                     close: function () {},
-                    _index: 0,
-                    _products: [
+                    index: 0,
+                    products: [
                         { ID: 'online-product', name: 'Online Product', online: true, searchable: true, variant: false },
                         { ID: 'offline-product', name: 'Offline Product', online: false, searchable: true, variant: false },
                         { ID: 'unsearchable-product', name: 'Unsearchable Product', online: true, searchable: false, variant: false },
@@ -386,14 +386,14 @@ describe('ExportProducts Job', function () {
                 return {
                     count: 2,
                     hasNext: function () {
-                        return this._index < this._products.length;
+                        return this.index < this.products.length;
                     },
                     next: function () {
-                        return this._products[this._index++];
+                        return this.products[this.index++];
                     },
                     close: function () {},
-                    _index: 0,
-                    _products: [
+                    index: 0,
+                    products: [
                         { ID: 'fail-product', name: 'Fail Product', online: true, searchable: true, variant: false },
                         { ID: 'success-product', name: 'Success Product', online: true, searchable: true, variant: false }
                     ]
@@ -412,7 +412,7 @@ describe('ExportProducts Job', function () {
 
             assert.equal(result.status, 'OK', 'Should complete successfully');
 
-            var logs = mockLogger.__testUtils.getLogMessages('info');
+            var logs = mockLogger.testUtils.getLogMessages('info');
             assert.isTrue(logs.length > 0, 'Should have logged progress information');
 
             // Check for specific log patterns
@@ -431,14 +431,14 @@ describe('ExportProducts Job', function () {
                         return undefined; // This will cause totalProductsToProcess to be undefined
                     },
                     hasNext: function () {
-                        return this._index < this._products.length;
+                        return this.index < this.products.length;
                     },
                     next: function () {
-                        return this._products[this._index++];
+                        return this.products[this.index++];
                     },
                     close: function () {},
-                    _index: 0,
-                    _products: [
+                    index: 0,
+                    products: [
                         { ID: 'test-product-1', name: 'Test Product 1', online: true, searchable: true, variant: false },
                         { ID: 'test-product-2', name: 'Test Product 2', online: true, searchable: true, variant: false }
                     ]
@@ -451,7 +451,7 @@ describe('ExportProducts Job', function () {
             assert.equal(result.status, 'OK', 'Should complete successfully with unknown total count');
 
             // Check that logs show "unknown" instead of "undefined"
-            var logs = mockLogger.__testUtils.getLogMessages('info');
+            var logs = mockLogger.testUtils.getLogMessages('info');
             var hasUnknownLog = logs.some(function (log) {
                 return log.includes('/unknown') && log.includes('Processing product');
             });
@@ -487,7 +487,7 @@ describe('ExportProducts Job', function () {
 
             assert.equal(result.status, 'OK', 'Should complete successfully despite category init failure');
 
-            var logs = mockLogger.__testUtils.getLogMessages('warn');
+            var logs = mockLogger.testUtils.getLogMessages('warn');
             var hasCategoryWarning = logs.some(function (log) {
                 return log.includes('Failed to build category processing');
             });
@@ -499,7 +499,7 @@ describe('ExportProducts Job', function () {
 
             assert.equal(result.status, 'OK', 'Should complete successfully');
 
-            var logs = mockLogger.__testUtils.getLogMessages('info');
+            var logs = mockLogger.testUtils.getLogMessages('info');
             var hasCacheStats = logs.some(function (log) {
                 return log.includes('Final cache statistics');
             });
@@ -535,14 +535,14 @@ describe('ExportProducts Job', function () {
                 return {
                     count: 1,
                     hasNext: function () {
-                        return this._index < this._products.length;
+                        return this.index < this.products.length;
                     },
                     next: function () {
-                        return this._products[this._index++];
+                        return this.products[this.index++];
                     },
                     close: function () {},
-                    _index: 0,
-                    _products: [
+                    index: 0,
+                    products: [
                         { ID: 'offline-product', name: 'Offline Product', online: false, searchable: true, variant: false }
                     ]
                 };
@@ -562,16 +562,16 @@ describe('ExportProducts Job', function () {
                 return {
                     count: 1,
                     hasNext: function () {
-                        return this._index < this._products.length;
+                        return this.index < this.products.length;
                     },
                     next: function () {
-                        return this._products[this._index++];
+                        return this.products[this.index++];
                     },
                     close: function () {
                         throw new Error('Iterator close failed');
                     },
-                    _index: 0,
-                    _products: [
+                    index: 0,
+                    products: [
                         { ID: 'test-product', name: 'Test Product', online: true, searchable: true, variant: false }
                     ]
                 };
@@ -581,7 +581,7 @@ describe('ExportProducts Job', function () {
 
             assert.equal(result.status, 'OK', 'Should complete successfully despite iterator close failure');
 
-            var logs = mockLogger.__testUtils.getLogMessages('error');
+            var logs = mockLogger.testUtils.getLogMessages('error');
             var hasIteratorError = logs.some(function (log) {
                 return log.includes('Failed to close iterator');
             });

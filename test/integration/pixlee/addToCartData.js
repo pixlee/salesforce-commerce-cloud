@@ -1,3 +1,5 @@
+'use strict';
+
 var assert = require('chai').assert;
 var request = require('request');
 var config = require('../it.config');
@@ -16,9 +18,9 @@ describe('Add To Cart', function () {
     // Configure request - either real HTTP or mocked responses
     before(function() {
         if (useMockRequests) {
-            console.log('  ℹ️  Using mocked HTTP requests (no baseUrl configured)');
+            // Using mocked HTTP requests (no baseUrl configured)
         } else {
-            console.log('  ℹ️  Using live HTTP requests to: ' + config.baseUrl);
+            // Using live HTTP requests to: ' + config.baseUrl
         }
     });
 

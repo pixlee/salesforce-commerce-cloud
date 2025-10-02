@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Mock CatalogMgr for testing category processing strategies
  */
@@ -21,12 +19,11 @@ function createMockCategory(id, name, children, parent) {
 
 function createLargeCatalogMock(totalCategories) {
     var categories = {};
-    var rootChildren = [];
+    var rootChildren;
     var categoryCount = 0;
 
     // Create a balanced tree structure
     var levelsDeep = Math.ceil(Math.log(totalCategories) / Math.log(4)); // 4 children per category
-    var categoriesPerLevel = Math.ceil(totalCategories / levelsDeep);
 
     function createCategoryTree(parentId, parentName, level, maxLevel) {
         if (level >= maxLevel || categoryCount >= totalCategories) {
@@ -43,7 +40,7 @@ function createLargeCatalogMock(totalCategories) {
 
             var grandChildren = createCategoryTree(childId, childName, level + 1, maxLevel);
             var category = createMockCategory(childId, 'Category ' + categoryCount, grandChildren, null);
-            
+
             categories[childId] = category;
             children.push(category);
         }
@@ -94,7 +91,7 @@ var CatalogMgr = {
 };
 
 // Test utilities
-CatalogMgr.__testUtils = {
+CatalogMgr.testUtils = {
     setMockCatalogData: setMockCatalogData,
     createLargeCatalogMock: createLargeCatalogMock,
     createMockCategory: createMockCategory,

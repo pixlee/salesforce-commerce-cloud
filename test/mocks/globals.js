@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Mock global objects for SFCC testing environment
  */
@@ -34,12 +32,7 @@ global.System = {
 };
 
 // SFCC String extensions for testing environment
-if (!String.prototype.equalsIgnoreCase) {
-    String.prototype.equalsIgnoreCase = function(other) {
-        if (typeof other !== 'string') return false;
-        return this.toLowerCase() === other.toLowerCase();
-    };
-}
+// Note: equalsIgnoreCase polyfill removed - use toLowerCase() comparisons instead
 
 // Reset function for tests
 function resetGlobals() {

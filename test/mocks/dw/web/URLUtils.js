@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Mock for dw.web.URLUtils
  * Based on SFRA7 patterns with enhanced functionality for Pixlee testing
@@ -38,7 +36,7 @@ module.exports = {
      * @param {...*} args - Additional arguments
      * @returns {string} - Mock HTTPS URL
      */
-    https: function (action) {
+    https: function () {
         var httpUrl = this.http.apply(this, arguments);
         return httpUrl.replace('http://', 'https://');
     },
@@ -49,7 +47,7 @@ module.exports = {
      * @param {...*} args - Additional arguments
      * @returns {string} - Mock URL
      */
-    url: function (action) {
+    url: function () {
         var httpUrl = this.http.apply(this, arguments);
         return httpUrl.replace('http://', '//');
     },
@@ -60,7 +58,7 @@ module.exports = {
      * @returns {string} - Mock static URL
      */
     staticURL: function (path) {
-        return 'http://test-site.com/static/' + (path || 'default.css');
+        return 'https://test-site.com/static/' + (path || 'default.css');
     },
 
     /**
@@ -69,7 +67,7 @@ module.exports = {
      * @param {...*} args - Additional arguments
      * @returns {string} - Mock absolute URL
      */
-    abs: function (action) {
+    abs: function () {
         return this.http.apply(this, arguments);
     },
 
@@ -78,7 +76,7 @@ module.exports = {
      * @returns {string} - Mock home URL
      */
     home: function () {
-        return 'http://test-site.com/';
+        return 'https://test-site.com/';
     },
 
     /**
@@ -87,6 +85,6 @@ module.exports = {
      * @returns {string} - Mock absolute static URL
      */
     absStatic: function (path) {
-        return 'http://test-site.com/static/' + (path || 'default.css');
+        return 'https://test-site.com/static/' + (path || 'default.css');
     }
 };

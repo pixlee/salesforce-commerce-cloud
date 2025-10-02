@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Mock for dw.util.Currency
  * Based on SFRA7 patterns for currency handling

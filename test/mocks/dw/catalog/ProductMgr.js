@@ -1,22 +1,20 @@
-'use strict';
-
 /**
  * Mock ProductMgr for testing product export functionality
  */
 
 function createMockProduct(id, options) {
-    options = options || {};
+    var opts = options || {};
 
-    var mockCategoryAssignments = options.categoryAssignments || [];
+    var mockCategoryAssignments = opts.categoryAssignments || [];
 
     return {
         ID: id,
-        name: options.name || 'Mock Product ' + id,
-        UPC: options.upc || null,
-        online: options.online !== false,
-        searchable: options.searchable !== false,
-        variant: options.variant || false,
-        master: options.master || false,
+        name: opts.name || 'Mock Product ' + id,
+        UPC: opts.upc || null,
+        online: opts.online !== false,
+        searchable: opts.searchable !== false,
+        variant: opts.variant || false,
+        master: opts.master || false,
 
         getCategoryAssignments: function () {
             return mockCategoryAssignments.map(function (catId) {
@@ -45,7 +43,7 @@ function createMockProduct(id, options) {
         getVariationModel: function () {
             return {
                 getDefaultVariant: function () {
-                    return options.hasVariant ? {
+                    return opts.hasVariant ? {
                         getPriceModel: function () {
                             return {
                                 getPrice: function () {
@@ -79,7 +77,7 @@ function createMockProduct(id, options) {
         },
 
         getImages: function () {
-            var imageCount = options.imageCount || 1;
+            var imageCount = opts.imageCount || 1;
             var images = [];
             for (var i = 0; i < imageCount; i++) {
                 (function(imageIndex) {
@@ -92,11 +90,11 @@ function createMockProduct(id, options) {
         },
 
         getVariants: function () {
-            var variantCount = options.variantCount || 0;
+            var variantCount = opts.variantCount || 0;
             var variants = [];
 
             // Create mock variants if this is a master product
-            if (options.master && variantCount > 0) {
+            if (opts.master && variantCount > 0) {
                 for (var i = 0; i < variantCount; i++) {
                     (function(variantIndex) {
                         variants.push({
@@ -111,7 +109,7 @@ function createMockProduct(id, options) {
                                 };
                             },
                             getImages: function () {
-                                var imagesPerVariant = options.imagesPerVariant || 1;
+                                var imagesPerVariant = opts.imagesPerVariant || 1;
                                 var variantImages = [];
                                 for (var j = 0; j < imagesPerVariant; j++) {
                                     (function(imageIndex) {
@@ -167,7 +165,7 @@ var ProductMgr = {
 };
 
 // Test utilities
-ProductMgr.__testUtils = {
+ProductMgr.testUtils = {
     createMockProduct: createMockProduct
 };
 
