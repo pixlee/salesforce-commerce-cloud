@@ -467,8 +467,8 @@ describe('ProductExportPayload', function () {
 
             // Verify SFCC object size compliance for both internal maps
             var internalObjects = ProductExportPayload.testUtils ? ProductExportPayload.testUtils.getInternalObjects() : null;
-            if (internalObjects && internalObjects.topLevelCategoryMap && internalObjects.additionalCategoryMap) {
-                assertSFCCObjectSizeCompliance(internalObjects.topLevelCategoryMap, 'HybridBFSStrategy.topLevelCategoryMap');
+            if (internalObjects && internalObjects.bfsCategoryMap && internalObjects.additionalCategoryMap) {
+                assertSFCCObjectSizeCompliance(internalObjects.bfsCategoryMap, 'HybridBFSStrategy.bfsCategoryMap');
                 assertSFCCObjectSizeCompliance(internalObjects.additionalCategoryMap, 'HybridBFSStrategy.additionalCategoryMap');
             }
 
@@ -514,8 +514,8 @@ describe('ProductExportPayload', function () {
                     if (internalObjects.categoriesMap) {
                         assertSFCCObjectSizeCompliance(internalObjects.categoriesMap, 'SingleMapStrategy.categoriesMap (' + testCase.description + ')');
                     }
-                    if (internalObjects.topLevelCategoryMap && internalObjects.additionalCategoryMap) {
-                        assertSFCCObjectSizeCompliance(internalObjects.topLevelCategoryMap, 'HybridBFSStrategy.topLevelCategoryMap (' + testCase.description + ')');
+                    if (internalObjects.bfsCategoryMap && internalObjects.additionalCategoryMap) {
+                        assertSFCCObjectSizeCompliance(internalObjects.bfsCategoryMap, 'HybridBFSStrategy.bfsCategoryMap (' + testCase.description + ')');
                         assertSFCCObjectSizeCompliance(internalObjects.additionalCategoryMap, 'HybridBFSStrategy.additionalCategoryMap (' + testCase.description + ')');
                     }
                 }
@@ -643,8 +643,8 @@ describe('ProductExportPayload', function () {
 
                 // Test the fix by directly calling the internal objects if available
                 var internalObjects = FreshProductExportPayload.testUtils ? FreshProductExportPayload.testUtils.getInternalObjects() : null;
-                if (internalObjects && internalObjects.topLevelCategoryMap) {
-                    var mapSize = Object.keys(internalObjects.topLevelCategoryMap).length;
+                if (internalObjects && internalObjects.bfsCategoryMap) {
+                    var mapSize = Object.keys(internalObjects.bfsCategoryMap).length;
                     // DEBUG: BFS map size and sample categories
 
                     // The fix ensures that when hybridLookup finds a mapped ancestor,

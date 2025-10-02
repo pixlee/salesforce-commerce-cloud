@@ -5,7 +5,10 @@
 
 var DEFAULT_IMAGE_VIEW_TYPE = 'large';
 var DEFAULT_NO_IMAGE_PATH = '/images/noimagesmall.png';
-var OBJECT_SAFETY_LIMIT = 650; // Avoid SFCC 2000 property limit assumes 3 properties per item
+var THREE_PROPERTY_LIMIT = 650; // Avoid SFCC 2000 property limit assumes 3 properties per item
+var CATEGORY_LIMIT = THREE_PROPERTY_LIMIT;
+var VARIANT_LIMIT = THREE_PROPERTY_LIMIT;
+
 var MAX_RECURSION_DEPTH = 20;
 
 var Logger = require('dw/system/Logger');
@@ -466,7 +469,7 @@ function getProductVariants(product) {
         var variantIterator = product.getVariants().iterator();
         var variantCount = 0;
 
-        while (variantIterator.hasNext() && variantCount < OBJECT_SAFETY_LIMIT) {
+        while (variantIterator.hasNext() && variantCount < VARIANT_LIMIT) {
             var variant = variantIterator.next();
 
             var variantID = variant.getID();
@@ -486,7 +489,7 @@ function getProductVariants(product) {
         // Log warning if we hit the cap
         if (variantIterator.hasNext()) {
             Logger.warn('Product {0} has more than {1} variants. Only first {1} variants included to prevent SFCC object size limit.',
-                product.ID, OBJECT_SAFETY_LIMIT);
+                product.ID, VARIANT_LIMIT);
         }
     }
 
@@ -517,13 +520,13 @@ function estimateCategoryCount(catalog) {
     var count = 0;
     var queue = [];
     var root = catalog.getRoot();
-    var topLevelCategories = root.getSubCategories();
+    var categoryCollection = root.getSubCategories();
 
-    for (var i = 0; i < topLevelCategories.length; i += 1) {
-        queue.push(topLevelCategories[i]);
+    for (var i = 0; i < categoryCollection.length; i += 1) {
+        queue.push(categoryCollection[i]);
     }
 
-    while (queue.length > 0 && count <= OBJECT_SAFETY_LIMIT) { // Stop once we know it's a large catalog
+    while (queue.length > 0 && count <= CATEGORY_LIMIT) { // Stop once we know it's a large catalog
         var category = queue.shift();
         count += 1;
 
@@ -547,7 +550,7 @@ function estimateCategoryCount(catalog) {
  * 1. Get direct category assignments from product
  * 2. For each assigned category, use lookupFunction to get category data
  * 3. Recursively add parent categories from the hierarchy
- * 4. Enforce OBJECT_SAFETY_LIMIT to prevent runaway processing
+ * 4. Enforce CATEGORY_LIMIT to prevent runaway processing
  * 5. Return deduplicated category list
  *
  * @param {dw.catalog.Product} product - SFCC Product object with category assignments
@@ -562,7 +565,7 @@ function getProductCategoriesGeneric(product, lookupFunction) {
     var categoryAssignments = product.getCategoryAssignments();
     var processedCount = 0;
 
-    for (var i = 0; i < categoryAssignments.length && processedCount < OBJECT_SAFETY_LIMIT; i += 1) {
+    for (var i = 0; i < categoryAssignments.length && processedCount < CATEGORY_LIMIT; i += 1) {
         var category = categoryAssignments[i].getCategory();
         var categoryId = category.getID();
 
@@ -578,7 +581,7 @@ function getProductCategoriesGeneric(product, lookupFunction) {
 
             // Add parent categories
             var parentCategoriesIds = categoryInfo.parentIDs && categoryInfo.parentIDs.length > 0 ? categoryInfo.parentIDs.split(',') : [];
-            for (var j = 0; j < parentCategoriesIds.length && processedCount < OBJECT_SAFETY_LIMIT; j += 1) {
+            for (var j = 0; j < parentCategoriesIds.length && processedCount < CATEGORY_LIMIT; j += 1) {
                 var parentCategoryId = parentCategoriesIds[j];
                 if (!parentCategoryId) {
                     // Skip empty parent IDs
@@ -644,11 +647,11 @@ function SingleMapStrategy() {
 
         // Standard BFS approach (safe for small catalogs)
         var queue = [];
-        var topLevelCategories = root.getSubCategories();
+        var categoryCollection = root.getSubCategories();
 
-        for (var i = 0; i < topLevelCategories.length; i += 1) {
+        for (var i = 0; i < categoryCollection.length; i += 1) {
             queue.push({
-                node: topLevelCategories[i],
+                node: categoryCollection[i],
                 path: []
             });
         }
@@ -717,12 +720,12 @@ function SingleMapStrategy() {
 }
 
 /**
- * Hybrid BFS Strategy for large catalogs (1800+ categories)
+ * Hybrid BFS Strategy for large catalogs (> CATEGORY_LIMIT)
  * @extends CategoryStrategy
  */
 function HybridBFSStrategy() {
     CategoryStrategy.call(this);
-    var topLevelCategoryMap = {}; // BFS map for highest level (parent) categories
+    var bfsCategoryMap = {}; // BFS map for highest levels of category tree
     var additionalCategoryMap = {}; // Additional lower-level categories that did not fit in primary BFS map
     var isBuilt = false;
 
@@ -738,18 +741,18 @@ function HybridBFSStrategy() {
         var queue = [];
         var count = 0;
 
-        // Initialize BFS queue with top-level categories
-        var topLevelCategories = root.getSubCategories();
-        for (var i = 0; i < topLevelCategories.length; i += 1) {
+        // Initialize BFS queue with top levels of category tree
+        var categoryCollection = root.getSubCategories();
+        for (var i = 0; i < categoryCollection.length; i += 1) {
             queue.push({
-                category: topLevelCategories[i],
+                category: categoryCollection[i],
                 path: [],
                 pathNames: [] // Store parent names directly in queue items
             });
         }
 
         // BFS traversal until we hit the map size limit
-        while (queue.length > 0 && count < OBJECT_SAFETY_LIMIT) {
+        while (queue.length > 0 && count < CATEGORY_LIMIT) {
             var item = queue.shift();
             var category = item.category;
             var categoryId = category.getID();
@@ -763,7 +766,7 @@ function HybridBFSStrategy() {
                 : categoryName;
 
             // Store in BFS map (SINGLE object only)
-            topLevelCategoryMap[categoryId] = {
+            bfsCategoryMap[categoryId] = {
                 fullName: fullPath,
                 parentIDs: pathToNode.join(',')
             };
@@ -777,7 +780,7 @@ function HybridBFSStrategy() {
             newPathNames.push(categoryName);
 
             for (var j = 0; j < children.length; j += 1) {
-                if (count < OBJECT_SAFETY_LIMIT) { // Only add if we haven't hit the limit
+                if (count < CATEGORY_LIMIT) { // Only add if we haven't hit the limit
                     queue.push({
                         category: children[j],
                         path: newPath,
@@ -798,8 +801,8 @@ function HybridBFSStrategy() {
      */
     function hybridLookup(categoryId) {
         // First check: BFS map (O(1) lookup)
-        if (topLevelCategoryMap[categoryId]) {
-            return topLevelCategoryMap[categoryId];
+        if (bfsCategoryMap[categoryId]) {
+            return bfsCategoryMap[categoryId];
         }
 
         // Second check: additional categories map
@@ -822,8 +825,8 @@ function HybridBFSStrategy() {
             var currentId = currentCategory.getID();
 
             // Found a BFS-mapped category!
-            if (topLevelCategoryMap[currentId]) {
-                var mappedCategory = topLevelCategoryMap[currentId];
+            if (bfsCategoryMap[currentId]) {
+                var mappedCategory = bfsCategoryMap[currentId];
 
                 // Build full path: mapped category path + traversed path
                 var fullPath = mappedCategory.fullName;
@@ -856,7 +859,7 @@ function HybridBFSStrategy() {
                 };
 
                 // Store the result if we have room
-                if (Object.keys(additionalCategoryMap).length < OBJECT_SAFETY_LIMIT) {
+                if (Object.keys(additionalCategoryMap).length < CATEGORY_LIMIT) {
                     additionalCategoryMap[categoryId] = result;
                 }
 
@@ -894,16 +897,16 @@ function HybridBFSStrategy() {
     this.getCacheStats = function () {
         return {
             bfsMap: {
-                size: Object.keys(topLevelCategoryMap).length,
-                maxSize: OBJECT_SAFETY_LIMIT,
-                utilization: (Object.keys(topLevelCategoryMap).length / OBJECT_SAFETY_LIMIT * 100).toFixed(1) + '%'
+                size: Object.keys(bfsCategoryMap).length,
+                maxSize: CATEGORY_LIMIT,
+                utilization: (Object.keys(bfsCategoryMap).length / CATEGORY_LIMIT * 100).toFixed(1) + '%'
             },
             additionalMap: {
                 size: Object.keys(additionalCategoryMap).length,
-                maxSize: OBJECT_SAFETY_LIMIT,
-                utilization: (Object.keys(additionalCategoryMap).length / OBJECT_SAFETY_LIMIT * 100).toFixed(1) + '%'
+                maxSize: CATEGORY_LIMIT,
+                utilization: (Object.keys(additionalCategoryMap).length / CATEGORY_LIMIT * 100).toFixed(1) + '%'
             },
-            totalCachedCategories: Object.keys(topLevelCategoryMap).length + Object.keys(additionalCategoryMap).length
+            totalCachedCategories: Object.keys(bfsCategoryMap).length + Object.keys(additionalCategoryMap).length
         };
     };
 
@@ -925,7 +928,7 @@ function HybridBFSStrategy() {
     if (typeof global !== 'undefined' && global.describe) {
         this.getInternalObjectsForTesting = function () {
             return {
-                topLevelCategoryMap: topLevelCategoryMap,
+                bfsCategoryMap: bfsCategoryMap,
                 additionalCategoryMap: additionalCategoryMap
             };
         };
@@ -946,7 +949,7 @@ function initializeCategoryStrategy() {
         }
         var categoryCount = ModuleLevelCache.categoryCount;
 
-        if (categoryCount < OBJECT_SAFETY_LIMIT) {
+        if (categoryCount < CATEGORY_LIMIT) {
             Logger.info('Detected ' + categoryCount + ' categories. Using SingleMapStrategy');
             return new SingleMapStrategy();
         }
