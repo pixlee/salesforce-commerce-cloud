@@ -27,7 +27,8 @@ function getCountryCodeFromLocale(locale) {
 exports.getCurrencyForLocale = function (locale) {
     if (!locale) {
         return null;
-    } else if ('default'.equalsIgnoreCase(locale)) {
+    }
+    if ('default'.toLowerCase() === locale.toLowerCase()) {
         return require('dw/system/Site').getCurrent().getDefaultCurrency();
     }
 

@@ -1,5 +1,3 @@
-'use strict';
-
 var proxyquire = require('proxyquire').noCallThru().noPreserveCache();
 
 var PixleeHelper = require('../../../../mocks/scripts/pixlee/helpers/pixleeHelper');
