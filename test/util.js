@@ -1,4 +1,3 @@
-'use strict';
 var ArrayList = require('./mocks/dw/util/Collection');
 
 module.exports = function toProductMock(mock) {
