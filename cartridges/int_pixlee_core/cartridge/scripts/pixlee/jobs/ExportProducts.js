@@ -2,6 +2,121 @@
 
 var Logger = require('dw/system/Logger');
 var Status = require('dw/system/Status');
+var Site = require('dw/system/Site');
+var PixleeService = require('~/cartridge/scripts/pixlee/services/PixleeService');
+var ProductExportPayload = require('~/cartridge/scripts/pixlee/models/productExportPayload');
+
+/**
+ * @function hasValidConfiguration
+ * @description Checks if Pixlee is properly configured for the current site.
+ * @returns {boolean} - True if configured and ready, false if intentionally disabled
+ * @throws {Error} - If enabled but misconfigured
+ */
+function hasValidConfiguration() {
+    var currentSite = Site.getCurrent();
+    if (!currentSite.getCustomPreferenceValue('PixleeEnabled')) {
+        Logger.info('Pixlee integration is disabled for {0}', currentSite.ID);
+        return false;
+    }
+
+    // If enabled but missing required configuration, that's an error
+    if (!currentSite.getCustomPreferenceValue('PixleePrivateApiKey')) {
+        throw new Error('Pixlee is enabled but Private API Key is not set for ' + currentSite.ID);
+    }
+    if (!currentSite.getCustomPreferenceValue('PixleeSecretKey')) {
+        throw new Error('Pixlee is enabled but Secret Key is not set for ' + currentSite.ID);
+    }
+
+    return true;
+}
+
+/**
+ * Job state object to maintain state across chunk script method calls
+ */
+var jobState = {
+    /** @type {Object} productsIterator - Iterator for products to export */
+    productsIterator: null,
+    /** @type {number} totalProductsToProcess - Total count of products in iterator */
+    totalProductsToProcess: 0,
+    /** @type {string} jobId - Unique ID for this job execution */
+    jobId: '',
+    /** @type {Object} exportOptions - Options for export (imageViewType, onlyRegionalDetails) */
+    exportOptions: null,
+    /** @type {number} breakAfter - Maximum consecutive failures before stopping */
+    breakAfter: 0,
+    /** @type {number} consecutiveFails - Current count of consecutive failures */
+    consecutiveFails: 0,
+    /** @type {number} totalFails - Total count of failures in this job */
+    totalFails: 0,
+    /** @type {number} productsExported - Count of successfully exported products */
+    productsExported: 0,
+    /** @type {number} processedCount - Count of products processed (including skipped) */
+    processedCount: 0,
+    /** @type {number} progressLogInterval - How often to log progress */
+    progressLogInterval: 100,
+    /** @type {boolean} isConfigured - Whether Pixlee is properly configured */
+    isConfigured: false,
+
+    /**
+     * Reset all state variables to their initial values
+     */
+    reset: function () {
+        this.productsIterator = null;
+        this.totalProductsToProcess = 0;
+        this.jobId = '';
+        this.exportOptions = null;
+        this.breakAfter = 0;
+        this.consecutiveFails = 0;
+        this.totalFails = 0;
+        this.productsExported = 0;
+        this.processedCount = 0;
+        this.progressLogInterval = 100;
+        this.isConfigured = false;
+    },
+
+    /**
+     * Check if the job state has been properly initialized and ready to process
+     * @returns {boolean} true if state is initialized and ready
+     */
+    isInitialized: function () {
+        return this.isConfigured &&
+            jobState.totalProductsToProcess &&
+            !empty(this.jobId);
+    },
+
+    /**
+     * Record a successful product export
+     */
+    recordSuccess: function () {
+        this.productsExported += 1;
+        this.consecutiveFails = 0;
+    },
+
+    /**
+     * Record a failed product export
+     */
+    recordFailure: function () {
+        this.totalFails += 1;
+        this.consecutiveFails += 1;
+    },
+
+    /**
+     * Check if consecutive failure limit has been reached
+     * @returns {boolean} true if limit reached and job should stop
+     */
+    shouldStopDueToFailures: function () {
+        return this.breakAfter > 0 && this.consecutiveFails >= this.breakAfter;
+    },
+
+    /**
+     * Check if progress should be logged for this product count
+     * @param {number} count - Current product count to check
+     * @returns {boolean} true if progress should be logged
+     */
+    shouldLogProgress: function (count) {
+        return count <= 10 || count % this.progressLogInterval === 0;
+    }
+};
 
 /**
  * @function SingleProductIterator
@@ -64,22 +179,22 @@ function SingleProductIterator(productId) {
  */
 function ProductsIterator(fromIndex) {
     var count;
-    var productsIterator;
+    var internalIterator;
 
     if (fromIndex) {
         var ProductSearchModel = require('dw/catalog/ProductSearchModel');
         var psm = new ProductSearchModel();
         psm.categoryID = 'root';
         psm.search();
-        productsIterator = psm.getProductSearchHits();
+        internalIterator = psm.getProductSearchHits();
         count = psm.count;
     } else {
         var ProductMgr = require('dw/catalog/ProductMgr');
-        productsIterator = ProductMgr.queryAllSiteProducts();
-        if (productsIterator && typeof productsIterator.getCount === 'function') {
-            count = productsIterator.getCount();
+        internalIterator = ProductMgr.queryAllSiteProducts();
+        if (internalIterator && typeof internalIterator.getCount === 'function') {
+            count = internalIterator.getCount();
         } else {
-            count = productsIterator && typeof productsIterator.count === 'number' ? productsIterator.count : 0
+            count = internalIterator && typeof internalIterator.count === 'number' ? internalIterator.count : 0;
         }
     }
 
@@ -98,7 +213,7 @@ function ProductsIterator(fromIndex) {
      * @return {boolean} - True if there are more products.
      */
     this.hasNext = function () {
-        return productsIterator.hasNext();
+        return internalIterator.hasNext();
     };
 
     /**
@@ -108,8 +223,8 @@ function ProductsIterator(fromIndex) {
      */
     this.next = function () {
         return fromIndex
-            ? productsIterator.next().product
-            : productsIterator.next();
+            ? internalIterator.next().product
+            : internalIterator.next();
     };
 
     /**
@@ -118,9 +233,9 @@ function ProductsIterator(fromIndex) {
     this.close = function () {
         if (!fromIndex) {
             try {
-                productsIterator.close();
+                internalIterator.close();
             } catch (e) {
-                Logger.error('Failed to close iterator, original error message was {0}', e);
+                Logger.error('Failed to close iterator, original error message was {0}: {1}', e, e.stack);
             }
         }
     };
@@ -137,97 +252,400 @@ function generateUniqueId() {
 }
 
 /**
- * @function execute
- * @description Main job step entry point.
- * @param {Object} jobParameters - A map of parameters configured for the job step
- *   in Business Manager.
+ * Chunk Script Method: beforeStep
+ * Called once before processing begins. Used to initialize resources.
+ *
+ * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
+ * @returns {void}
+ */
+exports.beforeStep = function (parameters) {
+    if (parameters.IsDisabled) {
+        Logger.info('Job step is disabled');
+        return;
+    }
+
+    jobState.reset();
+    jobState.isConfigured = hasValidConfiguration();
+    if (!jobState.isConfigured) {
+        return;
+    }
+
+    try {
+        var useSearchIndex = parameters['Products Source'] === 'SEARCH_INDEX';
+        jobState.breakAfter = parseInt(parameters['Break After'], 10);
+        // eslint-disable-next-line no-restricted-globals
+        jobState.breakAfter = isNaN(jobState.breakAfter) ? 0 : jobState.breakAfter;
+
+        jobState.exportOptions = {
+            imageViewType: parameters['Images View Type'] || 'large',
+            onlyRegionalDetails: parameters['Main site ID'] && (Site.getCurrent().ID !== parameters['Main site ID'])
+        };
+
+        var testProductId = parameters['Test Product ID'] || null;
+
+        jobState.jobId = generateUniqueId();
+        Logger.info('Starting Pixlee export job {0}', jobState.jobId);
+
+        jobState.productsIterator = testProductId
+            ? new SingleProductIterator(testProductId)
+            : new ProductsIterator(useSearchIndex);
+
+        jobState.totalProductsToProcess = jobState.productsIterator.getCount();
+        Logger.info('Total products to process: {0}', jobState.totalProductsToProcess);
+
+        if (jobState.totalProductsToProcess === 0) {
+            Logger.warn('No products found in catalog to export');
+        }
+
+        // eslint-disable-next-line no-restricted-globals
+        jobState.progressLogInterval = (jobState.totalProductsToProcess && !isNaN(jobState.totalProductsToProcess) && jobState.totalProductsToProcess > 0)
+            ? Math.max(100, Math.floor(jobState.totalProductsToProcess / 20))
+            : 500;
+
+        PixleeService.notifyExportStatus('started', jobState.jobId, jobState.totalProductsToProcess);
+
+        try {
+            ProductExportPayload.preInitializeCategoryProcessing();
+        } catch (e) {
+            Logger.warn('Failed to pre-initialize category processing: {0}\n{1}', e.message, e.stack || '');
+        }
+    } catch (e) {
+        Logger.error('Failed to initialize Pixlee export job: {0}\n{1}', e.message, e.stack || '');
+        jobState.reset();
+        throw e;
+    }
+};
+
+/**
+ * Chunk Script Method: getTotalCount
+ * Returns the total number of items to be processed.
+ *
+ * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
+ * @returns {number} - Total count of products to process
+ */
+exports.getTotalCount = function (parameters) {
+    if (parameters.IsDisabled || !jobState.isInitialized()) {
+        return 0;
+    }
+    return jobState.totalProductsToProcess;
+};
+
+/**
+ * Chunk Script Method: beforeChunk
+ * Called before each chunk is processed.
+ *
+ * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
+ * @returns {void}
+ */
+exports.beforeChunk = function (parameters) {
+    if (parameters.IsDisabled || !jobState.isInitialized()) {
+        return;
+    }
+    Logger.debug('Starting new chunk. Products exported so far: {0}, Total failures: {1}',
+        jobState.productsExported, jobState.totalFails);
+};
+
+/**
+ * Chunk Script Method: read
+ * Returns the next item to process, or null when there are no more items.
+ * This method is called repeatedly until it returns null.
+ *
+ * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
+ * @returns {dw.catalog.Product|string|null} - Next product to process, empty string to skip, or null when done
+ */
+exports.read = function (parameters) {
+    if (parameters.IsDisabled || !jobState.isInitialized()) {
+        return null;
+    }
+
+    try {
+        if (jobState.shouldStopDueToFailures()) {
+            Logger.error('Reached maximum consecutive failures ({0}). Stopping export.', jobState.consecutiveFails);
+            return null;
+        }
+
+        if (!jobState.productsIterator || !jobState.productsIterator.hasNext()) {
+            return null;
+        }
+
+        var product = jobState.productsIterator.next();
+
+        if (!product) {
+            Logger.warn('Iterator returned null product. Skipping.');
+            return '';
+        }
+
+        jobState.processedCount += 1;
+
+        if (!product.online || !product.searchable || product.variant) {
+            return '';
+        }
+
+        if (jobState.shouldLogProgress(jobState.processedCount)) {
+            var totalText = jobState.totalProductsToProcess ? jobState.totalProductsToProcess.toString() : 'unknown';
+            Logger.info('Reading product {0} ({1}/{2})', product.ID, jobState.processedCount, totalText);
+        }
+
+        return product;
+    } catch (e) {
+        Logger.error('Failed on read step: {0}\n{1}', e.message, e.stack || '');
+        return null;
+    }
+};
+
+/**
+ * Chunk Script Method: process
+ * Processes a single item returned by read(). Returns the processed result.
+ *
+ * @param {dw.catalog.Product} product - Product to process
+ * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
+ * @returns {Object|null} - Processed product payload, or null if processing failed
+ */
+exports.process = function (product, parameters) {
+    if (parameters.IsDisabled || !jobState.isInitialized() || empty(product)) {
+        return null;
+    }
+
+    try {
+        var productPayload = new ProductExportPayload(product, jobState.exportOptions);
+
+        return {
+            payload: productPayload,
+            productId: product.ID
+        };
+    } catch (e) {
+        Logger.error('Failed to create payload for product {0}: {1}\n{2}',
+            product.ID, e.message, e.stack || '');
+        jobState.recordFailure();
+        return null;
+    }
+};
+
+/**
+ * Chunk Script Method: write
+ * Writes a chunk of processed items. This is where we send products to Pixlee.
+ *
+ * @param {Array} items - Array of processed items from process()
+ * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
+ * @returns {void}
+ */
+exports.write = function (items, parameters) {
+    if (parameters.IsDisabled || !jobState.isInitialized() || !items || items.length === 0) {
+        return;
+    }
+
+    try {
+        Logger.info('Writing {0} products to Pixlee', items.length);
+
+        for (var i = 0; i < items.length; i += 1) {
+            var item = items[i];
+            if (item && item.payload) {
+                try {
+                    PixleeService.postProduct(item.payload);
+                    jobState.recordSuccess();
+
+                    if (jobState.shouldLogProgress(jobState.productsExported)) {
+                        Logger.info('Product {0} exported ({1} total)', item.productId, jobState.productsExported);
+                    }
+                } catch (e) {
+                    Logger.error('Failed to export product {0}: {1}\n{2}',
+                        item.productId, e.message, e.stack || '');
+                    jobState.recordFailure();
+                }
+            }
+        }
+    } catch (e) {
+        Logger.error('Failed on write step: {0}\n{1}', e.message, e.stack || '');
+    }
+};
+
+/**
+ * Chunk Script Method: afterChunk
+ * Called after each chunk is processed.
+ *
+ * @param {boolean} success - Whether chunk processed successfully
+ * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
+ * @returns {void}
+ */
+exports.afterChunk = function (success, parameters) {
+    if (parameters.IsDisabled || !jobState.isInitialized()) {
+        return;
+    }
+
+    if (!success) {
+        Logger.warn('Chunk completed with errors. Consecutive failures: {0}', jobState.consecutiveFails);
+    }
+};
+
+/**
+ * Chunk Script Method: afterStep
+ * Called once after all chunks have been processed (or if step fails).
+ * Used for cleanup and final reporting.
+ *
+ * @param {boolean} success - Whether the step completed successfully
+ * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
+ * @param {dw.job.StepExecution} stepExecution - Step execution context for setting exit status
+ * @returns {void}
+ */
+exports.afterStep = function (success, parameters, stepExecution) {
+    if (parameters.IsDisabled || !jobState.isInitialized()) {
+        try {
+            if (jobState.productsIterator && typeof jobState.productsIterator.close === 'function') {
+                jobState.productsIterator.close();
+            }
+        } catch (e) {
+            Logger.warn('Failed to close iterator: {0}', e.message);
+        }
+        jobState.reset();
+        return;
+    }
+
+    try {
+        Logger.info('Pixlee export job {0} finishing. Success: {1}', jobState.jobId, success);
+
+        try {
+            var cacheStats = ProductExportPayload.getCacheStatistics();
+            Logger.info('Cache statistics: ' + JSON.stringify(cacheStats));
+        } catch (e) {
+            Logger.warn('Failed to get cache statistics: {0}', e.message);
+        }
+
+        try {
+            PixleeService.notifyExportStatus('finished', jobState.jobId, jobState.totalProductsToProcess);
+        } catch (e) {
+            Logger.warn('Failed to notify Pixlee: {0}', e.message);
+        }
+
+        if (jobState.productsIterator && typeof jobState.productsIterator.close === 'function') {
+            try {
+                jobState.productsIterator.close();
+            } catch (e) {
+                Logger.error('Failed to close iterator: {0}\n{1}', e.message, e.stack || '');
+            }
+        }
+
+        Logger.info('Export completed. Exported: {0}, Failures: {1}, Processed: {2}/{3}',
+            jobState.productsExported, jobState.totalFails, jobState.processedCount, jobState.totalProductsToProcess);
+
+        if (!success) {
+            Logger.error('Job step reported failure');
+        }
+
+        if (jobState.totalProductsToProcess > 0 && jobState.productsExported === 0) {
+            Logger.error('No products exported despite {0} available', jobState.totalProductsToProcess);
+        }
+
+        if (jobState.totalFails > 0) {
+            Logger.warn('Export completed with {0} failures out of {1} processed',
+                jobState.totalFails, jobState.processedCount);
+        }
+
+        if (!success || (jobState.totalProductsToProcess > 0 && jobState.productsExported === 0)) {
+            var msg = 'Export failed. Exported: ' + jobState.productsExported +
+                ', Failures: ' + jobState.totalFails + ', Available: ' + jobState.totalProductsToProcess;
+            Logger.error(msg);
+            stepExecution.setExitStatus(new Status(Status.ERROR));
+            stepExecution.setNote(msg);
+        }
+        jobState.reset();
+    } catch (e) {
+        Logger.error('Failed on afterStep: {0}\n{1}', e.message, e.stack || '');
+        jobState.reset();
+        throw e;
+    }
+};
+
+/**
+ * Legacy execute method - kept for backward compatibility.
+ * This method is no longer called when using chunk-script-module-step,
+ * but keeping it allows reverting to script-module-step if needed.
+ *
+ * @deprecated
+ * @param {Object} jobParameters - Job parameters from Business Manager
  * @returns {dw.system.Status} - Status OK or ERROR
  */
 exports.execute = function (jobParameters) {
-    var PixleeService = require('~/cartridge/scripts/pixlee/services/PixleeService');
-    var ProductExportPayload = require('~/cartridge/scripts/pixlee/models/productExportPayload');
-    var currentSite = require('dw/system/Site').getCurrent();
+    var currentSite = Site.getCurrent();
     if (!currentSite.getCustomPreferenceValue('PixleeEnabled')) {
         Logger.info('Pixlee integration is disabled');
-        return new Status(Status.OK, 'OK', 'Pixlee integration is disabled');
+        return new Status(Status.OK, 'OK', 'Pixlee integration is disabled for {0}', currentSite.ID);
     }
     if (!currentSite.getCustomPreferenceValue('PixleePrivateApiKey')) {
-        Logger.warn('Pixlee Private API Key not set');
-        return new Status(Status.ERROR, 'FINISHED_WITH_WARNINGS', 'Pixlee Private API Key not set');
+        Logger.error('Pixlee is enabled but Private API Key is not set');
+        return new Status(Status.ERROR, 'ERROR', 'Pixlee Private API Key not set for {0}', currentSite.ID);
     }
     if (!currentSite.getCustomPreferenceValue('PixleeSecretKey')) {
-        Logger.warn('Pixlee Secret Key Key not set');
-        return new Status(Status.ERROR, 'FINISHED_WITH_WARNINGS', 'Pixlee Secret Key Key not set');
+        Logger.error('Pixlee is enabled but Secret Key is not set');
+        return new Status(Status.ERROR, 'ERROR', 'Pixlee Secret Key not set for {0}', currentSite.ID);
     }
 
-    var useSearchIndex = jobParameters['Products Source'] === 'SEARCH_INDEX';
-    var breakAfter = parseInt(jobParameters['Break After'], 10);
+    var breakAfterParam = parseInt(jobParameters['Break After'], 10);
     // eslint-disable-next-line no-restricted-globals
-    breakAfter = isNaN(breakAfter) ? 0 : breakAfter;
-    var exportOptions = {
+    breakAfterParam = isNaN(breakAfterParam) ? 0 : breakAfterParam;
+    var legacyExportOptions = {
         imageViewType: jobParameters['Images View Type'] || null,
         onlyRegionalDetails: jobParameters['Main site ID'] && (currentSite.ID !== jobParameters['Main site ID'])
     };
     var testProductId = jobParameters['Test Product ID'] || null;
 
-    var jobId = generateUniqueId();
+    var legacyJobId = generateUniqueId();
 
     var productsIter;
-    var totalProductsToProcess;
-    var productsExported = 0;
-    var totalFails = 0;
-    var consecutiveFails = 0;
+    var totalProducts;
+    var productsExportedCount = 0;
+    var totalFailsCount = 0;
+    var consecutiveFailsCount = 0;
 
     try {
+        var useSearchIndex = jobParameters['Products Source'] === 'SEARCH_INDEX';
         productsIter = testProductId
             ? new SingleProductIterator(testProductId)
             : new ProductsIterator(useSearchIndex);
 
-        totalProductsToProcess = productsIter.getCount();
+        totalProducts = productsIter.getCount();
 
-        PixleeService.notifyExportStatus('started', jobId, totalProductsToProcess);
+        PixleeService.notifyExportStatus('started', legacyJobId, totalProducts);
 
         try {
-            // This call will initialize and cache the category strategy and maps
             ProductExportPayload.preInitializeCategoryProcessing();
             Logger.info('Category processing strategy successfully built');
         } catch (e) {
             Logger.warn('Failed to build category processing: ' + e.message + '. Will initialize per-product.');
         }
 
-        var processedCount = 0;
+        var processedCountLocal = 0;
         // eslint-disable-next-line no-restricted-globals
-        var progressLogInterval = (totalProductsToProcess && !isNaN(totalProductsToProcess) && totalProductsToProcess > 0)
-            ? Math.max(100, Math.floor(totalProductsToProcess / 20))
+        var progressLogIntervalLocal = (totalProducts && !isNaN(totalProducts) && totalProducts > 0)
+            ? Math.max(100, Math.floor(totalProducts / 20))
             : 500;
 
         while (productsIter.hasNext()) {
             var product = productsIter.next();
-            processedCount += 1;
+            processedCountLocal += 1;
 
             if (product.online && product.searchable && !product.variant) {
                 try {
-                    if (processedCount % progressLogInterval === 0 || processedCount <= 10) {
-                        var totalText = totalProductsToProcess ? totalProductsToProcess.toString() : 'unknown';
-                        Logger.info('Processing product {0} ({1}/{2})', product.ID, processedCount, totalText);
+                    if (processedCountLocal % progressLogIntervalLocal === 0 || processedCountLocal <= 10) {
+                        var totalText = totalProducts ? totalProducts.toString() : 'unknown';
+                        Logger.info('Processing product {0} ({1}/{2})', product.ID, processedCountLocal, totalText);
                     }
 
-                    var productPayload = new ProductExportPayload(product, exportOptions);
+                    var productPayload = new ProductExportPayload(product, legacyExportOptions);
                     PixleeService.postProduct(productPayload);
-                    productsExported += 1;
-                    consecutiveFails = 0;
+                    productsExportedCount += 1;
+                    consecutiveFailsCount = 0;
 
-                    if (productsExported <= 5 || productsExported % progressLogInterval === 0) {
-                        Logger.info('Product {0} successfully exported ({1} total)', product.ID, productsExported);
+                    if (productsExportedCount <= 5 || productsExportedCount % progressLogIntervalLocal === 0) {
+                        Logger.info('Product {0} successfully exported ({1} total)', product.ID, productsExportedCount);
                     }
                 } catch (e) {
-                    Logger.error('Failed to export product {0}, original error was {1}', product.ID, e);
-                    consecutiveFails += 1;
-                    totalFails += 1;
+                    Logger.error('Failed to export product {0}: {1}\n{2}', product.ID, e.message, e.stack || '');
+                    consecutiveFailsCount += 1;
+                    totalFailsCount += 1;
                 }
             }
 
-            if (breakAfter && (consecutiveFails >= breakAfter)) {
+            if (breakAfterParam && (consecutiveFailsCount >= breakAfterParam)) {
                 throw new Error('Reached the maximum number of consecutive product export failures');
             }
         }
@@ -236,21 +654,21 @@ exports.execute = function (jobParameters) {
             var cacheStats = ProductExportPayload.getCacheStatistics();
             Logger.info('Final cache statistics: ' + JSON.stringify(cacheStats));
         } catch (e) {
-            Logger.warn('Failed to get final cache statistics: ' + e.message);
+            Logger.warn('Failed to get final cache statistics: {0}', e.message);
         }
 
-        if (totalProductsToProcess && !productsExported) {
+        if (totalProducts && !productsExportedCount) {
             throw new Error('No products exported');
-        } else if (totalFails) {
-            return new Status(Status.ERROR, 'FINISHED_WITH_WARNINGS', totalFails + ' products failed to export');
+        } else if (totalFailsCount) {
+            return new Status(Status.ERROR, 'ERROR', totalFailsCount + ' products failed to export');
         }
 
-        return new Status(Status.OK, 'OK', 'job id: ' + jobId + ', ' + productsExported + ' products exported');
+        return new Status(Status.OK, 'OK', 'job id: ' + legacyJobId + ', ' + productsExportedCount + ' products exported');
     } catch (e) {
-        Logger.error('Failed to export products, job id: {0}, original error was: {1}', jobId, e);
+        Logger.error('Failed to export products, job id: {0}, error: {1}\n{2}', legacyJobId, e.message, e.stack || '');
         return new Status(Status.ERROR, 'ERROR', e);
     } finally {
-        PixleeService.notifyExportStatus('finished', jobId, totalProductsToProcess);
+        PixleeService.notifyExportStatus('finished', legacyJobId, totalProducts);
 
         if (productsIter) {
             productsIter.close();
