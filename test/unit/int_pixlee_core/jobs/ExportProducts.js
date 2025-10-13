@@ -188,7 +188,7 @@ describe('ExportProducts Job', function () {
             var result = ExportProducts.execute({});
 
             assert.equal(result.status, 'ERROR', 'Should return ERROR status');
-            assert.equal(result.code, 'FINISHED_WITH_WARNINGS', 'Should return FINISHED_WITH_WARNINGS code');
+            assert.equal(result.code, 'ERROR', 'Should return ERROR code');
             assert.include(result.message, 'Private API Key', 'Should indicate missing Private API Key');
         });
 
@@ -203,7 +203,7 @@ describe('ExportProducts Job', function () {
             var result = ExportProducts.execute({});
 
             assert.equal(result.status, 'ERROR', 'Should return ERROR status');
-            assert.equal(result.code, 'FINISHED_WITH_WARNINGS', 'Should return FINISHED_WITH_WARNINGS code');
+            assert.equal(result.code, 'ERROR', 'Should return ERROR code');
             assert.include(result.message, 'Secret Key', 'Should indicate missing Secret Key');
         });
     });
@@ -403,7 +403,7 @@ describe('ExportProducts Job', function () {
             var result = ExportProducts.execute({});
 
             assert.equal(result.status, 'ERROR', 'Should return ERROR status with warnings');
-            assert.equal(result.code, 'FINISHED_WITH_WARNINGS', 'Should indicate warnings');
+            assert.equal(result.code, 'ERROR', 'Should indicate warnings');
             assert.include(result.message, 'failed to export', 'Should indicate export failures');
         });
 
