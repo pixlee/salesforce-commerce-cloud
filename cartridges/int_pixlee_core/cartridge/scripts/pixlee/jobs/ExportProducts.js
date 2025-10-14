@@ -6,6 +6,41 @@ var Site = require('dw/system/Site');
 var PixleeService = require('~/cartridge/scripts/pixlee/services/PixleeService');
 var ProductExportPayload = require('~/cartridge/scripts/pixlee/models/productExportPayload');
 
+var PROGRESS_LOG_DEFAULTS = {
+    DEFAULT_INTERVAL: 500,
+    MIN_INTERVAL: 100,
+    PERCENTAGE_DIVISOR: 20,
+    ALWAYS_LOG_FIRST: 5
+};
+
+var JOB_STATE_DEFAULTS = {
+    productsIterator: null,
+    totalProductsToProcess: 0,
+    jobId: '',
+    exportOptions: null,
+    breakAfter: 0,
+    consecutiveFails: 0,
+    totalFails: 0,
+    productsExported: 0,
+    processedCount: 0,
+    progressLogInterval: PROGRESS_LOG_DEFAULTS.DEFAULT_INTERVAL,
+    isConfigured: false
+};
+
+/**
+ * Applies default values to a target object
+ * @param {Object} target - The object to apply defaults to
+ * @param {Object} defaults - The default values to apply
+ */
+function applyDefaults(target, defaults) {
+    var keys = Object.keys(defaults);
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        // eslint-disable-next-line no-param-reassign
+        target[key] = defaults[key];
+    }
+}
+
 /**
  * @function hasValidConfiguration
  * @description Checks if Pixlee is properly configured for the current site.
@@ -21,10 +56,10 @@ function hasValidConfiguration() {
 
     // If enabled but missing required configuration, that's an error
     if (!currentSite.getCustomPreferenceValue('PixleePrivateApiKey')) {
-        throw new Error('Pixlee is enabled but Private API Key is not set for ' + currentSite.ID);
+        throw new Error('Pixlee Private API Key is not set for ' + currentSite.ID);
     }
     if (!currentSite.getCustomPreferenceValue('PixleeSecretKey')) {
-        throw new Error('Pixlee is enabled but Secret Key is not set for ' + currentSite.ID);
+        throw new Error('Pixlee Secret Key is not set for ' + currentSite.ID);
     }
 
     return true;
@@ -35,43 +70,33 @@ function hasValidConfiguration() {
  */
 var jobState = {
     /** @type {Object} productsIterator - Iterator for products to export */
-    productsIterator: null,
+    productsIterator: JOB_STATE_DEFAULTS.productsIterator,
     /** @type {number} totalProductsToProcess - Total count of products in iterator */
-    totalProductsToProcess: 0,
+    totalProductsToProcess: JOB_STATE_DEFAULTS.totalProductsToProcess,
     /** @type {string} jobId - Unique ID for this job execution */
-    jobId: '',
+    jobId: JOB_STATE_DEFAULTS.jobId,
     /** @type {Object} exportOptions - Options for export (imageViewType, onlyRegionalDetails) */
-    exportOptions: null,
+    exportOptions: JOB_STATE_DEFAULTS.exportOptions,
     /** @type {number} breakAfter - Maximum consecutive failures before stopping */
-    breakAfter: 0,
+    breakAfter: JOB_STATE_DEFAULTS.breakAfter,
     /** @type {number} consecutiveFails - Current count of consecutive failures */
-    consecutiveFails: 0,
+    consecutiveFails: JOB_STATE_DEFAULTS.consecutiveFails,
     /** @type {number} totalFails - Total count of failures in this job */
-    totalFails: 0,
+    totalFails: JOB_STATE_DEFAULTS.totalFails,
     /** @type {number} productsExported - Count of successfully exported products */
-    productsExported: 0,
+    productsExported: JOB_STATE_DEFAULTS.productsExported,
     /** @type {number} processedCount - Count of products processed (including skipped) */
-    processedCount: 0,
+    processedCount: JOB_STATE_DEFAULTS.processedCount,
     /** @type {number} progressLogInterval - How often to log progress */
-    progressLogInterval: 100,
+    progressLogInterval: JOB_STATE_DEFAULTS.progressLogInterval,
     /** @type {boolean} isConfigured - Whether Pixlee is properly configured */
-    isConfigured: false,
+    isConfigured: JOB_STATE_DEFAULTS.isConfigured,
 
     /**
      * Reset all state variables to their initial values
      */
     reset: function () {
-        this.productsIterator = null;
-        this.totalProductsToProcess = 0;
-        this.jobId = '';
-        this.exportOptions = null;
-        this.breakAfter = 0;
-        this.consecutiveFails = 0;
-        this.totalFails = 0;
-        this.productsExported = 0;
-        this.processedCount = 0;
-        this.progressLogInterval = 100;
-        this.isConfigured = false;
+        applyDefaults(this, JOB_STATE_DEFAULTS);
     },
 
     /**
@@ -114,7 +139,7 @@ var jobState = {
      * @returns {boolean} true if progress should be logged
      */
     shouldLogProgress: function (count) {
-        return count <= 10 || count % this.progressLogInterval === 0;
+        return count <= PROGRESS_LOG_DEFAULTS.ALWAYS_LOG_FIRST || count % this.progressLogInterval === 0;
     }
 };
 
@@ -298,9 +323,12 @@ exports.beforeStep = function (parameters) {
         }
 
         // eslint-disable-next-line no-restricted-globals
-        jobState.progressLogInterval = (jobState.totalProductsToProcess && !isNaN(jobState.totalProductsToProcess) && jobState.totalProductsToProcess > 0)
-            ? Math.max(100, Math.floor(jobState.totalProductsToProcess / 20))
-            : 500;
+        if (jobState.totalProductsToProcess && !isNaN(jobState.totalProductsToProcess) && jobState.totalProductsToProcess > 0) {
+            jobState.progressLogInterval = Math.max(
+                PROGRESS_LOG_DEFAULTS.MIN_INTERVAL,
+                Math.floor(jobState.totalProductsToProcess / PROGRESS_LOG_DEFAULTS.PERCENTAGE_DIVISOR)
+            );
+        }
 
         PixleeService.notifyExportStatus('started', jobState.jobId, jobState.totalProductsToProcess);
 
@@ -435,8 +463,6 @@ exports.write = function (items, parameters) {
     }
 
     try {
-        Logger.info('Writing {0} products to Pixlee', items.length);
-
         for (var i = 0; i < items.length; i += 1) {
             var item = items[i];
             if (item && item.payload) {
@@ -484,23 +510,14 @@ exports.afterChunk = function (success, parameters) {
  *
  * @param {boolean} success - Whether the step completed successfully
  * @param {dw.job.JobParameters} parameters - Job parameters from Business Manager
- * @param {dw.job.StepExecution} stepExecution - Step execution context for setting exit status
  * @returns {void}
  */
-exports.afterStep = function (success, parameters, stepExecution) {
-    if (parameters.IsDisabled || !jobState.isInitialized()) {
-        try {
-            if (jobState.productsIterator && typeof jobState.productsIterator.close === 'function') {
-                jobState.productsIterator.close();
-            }
-        } catch (e) {
-            Logger.warn('Failed to close iterator: {0}', e.message);
-        }
-        jobState.reset();
-        return;
-    }
-
+exports.afterStep = function (success, parameters) {
     try {
+        if (parameters.IsDisabled || !jobState.isInitialized()) {
+            return;
+        }
+
         Logger.info('Pixlee export job {0} finishing. Success: {1}', jobState.jobId, success);
 
         try {
@@ -514,14 +531,6 @@ exports.afterStep = function (success, parameters, stepExecution) {
             PixleeService.notifyExportStatus('finished', jobState.jobId, jobState.totalProductsToProcess);
         } catch (e) {
             Logger.warn('Failed to notify Pixlee: {0}', e.message);
-        }
-
-        if (jobState.productsIterator && typeof jobState.productsIterator.close === 'function') {
-            try {
-                jobState.productsIterator.close();
-            } catch (e) {
-                Logger.error('Failed to close iterator: {0}\n{1}', e.message, e.stack || '');
-            }
         }
 
         Logger.info('Export completed. Exported: {0}, Failures: {1}, Processed: {2}/{3}',
@@ -543,15 +552,20 @@ exports.afterStep = function (success, parameters, stepExecution) {
         if (!success || (jobState.totalProductsToProcess > 0 && jobState.productsExported === 0)) {
             var msg = 'Export failed. Exported: ' + jobState.productsExported +
                 ', Failures: ' + jobState.totalFails + ', Available: ' + jobState.totalProductsToProcess;
-            Logger.error(msg);
-            stepExecution.setExitStatus(new Status(Status.ERROR));
-            stepExecution.setNote(msg);
+            throw new Error(msg);
         }
-        jobState.reset();
     } catch (e) {
         Logger.error('Failed on afterStep: {0}\n{1}', e.message, e.stack || '');
-        jobState.reset();
         throw e;
+    } finally {
+        try {
+            if (jobState.productsIterator && typeof jobState.productsIterator.close === 'function') {
+                jobState.productsIterator.close();
+            }
+        } catch (e) {
+            Logger.warn('Failed to close iterator: {0}', e.message);
+        }
+        jobState.reset();
     }
 };
 
@@ -595,6 +609,7 @@ exports.execute = function (jobParameters) {
     var productsExportedCount = 0;
     var totalFailsCount = 0;
     var consecutiveFailsCount = 0;
+    var progressLogIntervalLocal = PROGRESS_LOG_DEFAULTS.DEFAULT_INTERVAL;
 
     try {
         var useSearchIndex = jobParameters['Products Source'] === 'SEARCH_INDEX';
@@ -615,9 +630,12 @@ exports.execute = function (jobParameters) {
 
         var processedCountLocal = 0;
         // eslint-disable-next-line no-restricted-globals
-        var progressLogIntervalLocal = (totalProducts && !isNaN(totalProducts) && totalProducts > 0)
-            ? Math.max(100, Math.floor(totalProducts / 20))
-            : 500;
+        if (totalProducts && !isNaN(totalProducts) && totalProducts > 0) {
+            progressLogIntervalLocal = Math.max(
+                PROGRESS_LOG_DEFAULTS.MIN_INTERVAL,
+                Math.floor(totalProducts / PROGRESS_LOG_DEFAULTS.PERCENTAGE_DIVISOR)
+            );
+        }
 
         while (productsIter.hasNext()) {
             var product = productsIter.next();
@@ -625,7 +643,7 @@ exports.execute = function (jobParameters) {
 
             if (product.online && product.searchable && !product.variant) {
                 try {
-                    if (processedCountLocal % progressLogIntervalLocal === 0 || processedCountLocal <= 10) {
+                    if (processedCountLocal % progressLogIntervalLocal === 0 || processedCountLocal <= PROGRESS_LOG_DEFAULTS.ALWAYS_LOG_FIRST) {
                         var totalText = totalProducts ? totalProducts.toString() : 'unknown';
                         Logger.info('Processing product {0} ({1}/{2})', product.ID, processedCountLocal, totalText);
                     }
@@ -635,7 +653,7 @@ exports.execute = function (jobParameters) {
                     productsExportedCount += 1;
                     consecutiveFailsCount = 0;
 
-                    if (productsExportedCount <= 5 || productsExportedCount % progressLogIntervalLocal === 0) {
+                    if (productsExportedCount <= PROGRESS_LOG_DEFAULTS.ALWAYS_LOG_FIRST || productsExportedCount % progressLogIntervalLocal === 0) {
                         Logger.info('Product {0} successfully exported ({1} total)', product.ID, productsExportedCount);
                     }
                 } catch (e) {
