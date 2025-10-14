@@ -7,3 +7,4 @@ metadata/pixlee_site_template.zip
 package-lock.json
 /cartridges/*
 !/cartridges/int_pixlee*
+/*-test
