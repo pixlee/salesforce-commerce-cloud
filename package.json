@@ -1,6 +1,6 @@
 {
   "name": "int_pixlee_sfra",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Emplifi's official UGC cartridge for SFRA and SiteGenesis",
   "engines": {
     "node": ">=18",

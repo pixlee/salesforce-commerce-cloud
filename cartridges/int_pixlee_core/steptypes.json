@@ -1,6 +1,6 @@
 {
     "step-types": {
-        "script-module-step": [
+        "chunk-script-module-step": [
             {
                 "@type-id": "custom.PixleeExportProducts",
                 "@supports-parallel-execution": "false",
@@ -8,8 +8,16 @@
                 "@supports-organization-context": "false",
                 "description": "Exports products to Pixlee",
                 "module": "int_pixlee_core/cartridge/scripts/pixlee/jobs/ExportProducts.js",
+                "before-step-function": "beforeStep",
+                "total-count-function": "getTotalCount",
+                "before-chunk-function": "beforeChunk",
+                "read-function": "read",
+                "process-function": "process",
+                "write-function": "write",
+                "after-chunk-function": "afterChunk",
+                "after-step-function": "afterStep",
+                "chunk-size": 10,
                 "transactional": "false",
-                "timeout-in-seconds": "1800",
                 "parameters": {
                     "parameter": [
                         {
@@ -65,6 +73,14 @@
                             "@trim": "true",
                             "description": "ID of a single product to export for test purposes. Should be left blank for production exports",
                             "default-value": ""
+                        },
+                        {
+                          "@name": "IsDisabled",
+                          "@type": "boolean",
+                          "@required": "false",
+                          "@trim": "true",
+                          "description": "Mark the step as disabled. This will skip the step and returns a OK status",
+                          "default-value": "false"
                         }
                     ]
                 },
@@ -77,10 +93,6 @@
                         {
                             "@code": "OK",
                             "description": "Used when the step finished successfully."
-                        },
-                        {
-                            "@code": "FINISHED_WITH_WARNINGS",
-                            "description": "Used when the step finished with warnings."
                         }
                     ]
                 }
