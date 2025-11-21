@@ -1,3 +1,12 @@
-cartridges/int_pixlee_sfra/cartridge/static/
+node_modules/
+cartridges/**/cartridge/static/
+coverage/
+doc/
+bin/
+codecept.conf.js
+
+webpack.config.js
+workspace/
 documentation/
+
 cartridges/int_pixlee/cartridge/scripts/pixlee/pipelets/

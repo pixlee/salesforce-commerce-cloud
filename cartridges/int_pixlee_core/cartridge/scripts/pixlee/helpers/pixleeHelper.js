@@ -1,5 +1,6 @@
 'use strict';
 
+// eslint-disable-next-line no-redeclare
 /* global session */
 
 /**
@@ -60,7 +61,6 @@ exports.isTrackingAllowed = function (trackingConsent) {
     }
 
     switch (pixleeTrackingPreference.value) {
-        default:
         case 'TRACK_ALWAYS':
             return true;
         case 'TRACK_IF_NOT_OPTED_OUT':
@@ -69,6 +69,8 @@ exports.isTrackingAllowed = function (trackingConsent) {
             return trackingConsent === true; // tracking NOT allowed if trackingConsent is null
         case 'TRACK_NEVER':
             return false;
+        default:
+            return true;
     }
 };
 
@@ -109,20 +111,19 @@ function getMatchingLineItem(basket, productId) {
  */
 exports.getAddToCartEvents = function (productsAdded) {
     var ProductMgr = require('dw/catalog/ProductMgr');
-    var pixleeHelper = require('./pixleeHelper');
     var pixleeEvents = [];
 
     if (Array.isArray(productsAdded) && productsAdded.length) {
         var BasketMgr = require('dw/order/BasketMgr');
         var currentBasket = BasketMgr.getCurrentOrNewBasket();
-        var PixleeEvent = require('~/cartridge/scripts/pixlee/models/eventModel').PixleeEvent;
+        var PixleeEvent = require('*/cartridge/scripts/pixlee/models/eventModel').PixleeEvent;
+        var self = this
 
         productsAdded.forEach(function (productAdded) {
             var product = ProductMgr.getProduct(productAdded.pid);
             var pli = getMatchingLineItem(currentBasket, product.ID);
-
-            var productId = pixleeHelper.getPixleeProductId(product);
-            var productSKU = pixleeHelper.getPixleeProductSKU(product);
+            var productId = self.getPixleeProductId(product);
+            var productSKU = self.getPixleeProductSKU(product);
             var quantity = parseInt(productAdded.qty, 10);
             var price = ((pli.priceValue / pli.quantityValue) * quantity).toFixed(2);
             var currency = currentBasket.currencyCode;

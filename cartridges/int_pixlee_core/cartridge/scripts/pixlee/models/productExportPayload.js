@@ -17,8 +17,28 @@ var Resource = require('dw/web/Resource');
 var URLUtils = require('dw/web/URLUtils');
 var CatalogMgr = require('dw/catalog/CatalogMgr');
 var Currency = require('dw/util/Currency');
-var pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
-var currencyLookupHelper = require('*/cartridge/scripts/pixlee/helpers/currencyLookupHelper');
+var pixleeHelper;
+var currencyLookupHelper;
+
+/**
+ * @returns {Object} The pixleeHelper module
+ */
+function getPixleeHelper() {
+    if (!pixleeHelper) {
+        pixleeHelper = require('*/cartridge/scripts/pixlee/helpers/pixleeHelper');
+    }
+    return pixleeHelper;
+}
+
+/**
+ * @returns {Object} The currencyLookupHelper module
+ */
+function getCurrencyLookupHelper() {
+    if (!currencyLookupHelper) {
+        currencyLookupHelper = require('*/cartridge/scripts/pixlee/helpers/currencyLookupHelper');
+    }
+    return currencyLookupHelper;
+}
 
 // Cache expensive Resource.msg calls to avoid repeated string operations
 var VERSION_HASH = (function () {
@@ -1030,7 +1050,7 @@ function getRegionalInfo(product, variantsJSON, cachedProductData) {
             var cacheKey = 'pixlee:localeCurrency:' + encodeURIComponent(currentLocale);
             var localeCurrency = RequestCache.get(cacheKey, (function (locale) {
                 return function () {
-                    return currencyLookupHelper.getCurrencyForLocale(locale);
+                    return getCurrencyLookupHelper().getCurrencyForLocale(locale);
                 };
             }(currentLocale)));
 
@@ -1190,7 +1210,7 @@ function ProductExportPayload(product, options) {
 
     this.title = product.name || '';
     this.product = {
-        sku: pixleeHelper.getPixleeProductSKU(product),
+        sku: getPixleeHelper().getPixleeProductSKU(product),
         upc: product.UPC || null,
         native_product_id: product.ID,
         regional_info: regionalInfo
