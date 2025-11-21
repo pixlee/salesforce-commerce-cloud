@@ -8,7 +8,7 @@ var Logger = require('dw/system/Logger');
  * Generates a signature (hash) for a payload object.
  *
  * @param {Object} payload - Payload object to generate signature for
- * @return {string} - SHA-1 hash (signature) of the payload
+ * @return {string} - Base64-encoded HMAC-SHA256 signature for the payload
  */
 function getPayloadSignature(payload) {
     var Encoding = require('dw/crypto/Encoding');
@@ -63,6 +63,7 @@ var pixleeService = LocalServiceRegistry.createService('pixlee.http.service', {
 
         if (requestObject.signature) {
             svc.addHeader('Signature', requestObject.signature);
+            svc.addHeader('Signature-Algorithm', 'hmac-sha256');
         }
 
         if (requestObject.payload) {
