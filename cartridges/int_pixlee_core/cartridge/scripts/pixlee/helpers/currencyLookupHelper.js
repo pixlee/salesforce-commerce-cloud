@@ -1,5 +1,7 @@
 'use strict';
 
+var Logger = require('dw/system/Logger');
+
 /**
  * Returns a country code for a locale.
  *
@@ -52,12 +54,16 @@ exports.getCurrencyForLocale = function (locale) {
 
     // retrieve the map by making a web service call to Pixlee
     if (!currenciesMap) {
-        var PixleeService = require('~/cartridge/scripts/pixlee/services/PixleeService');
+        var PixleeService = require('*/cartridge/scripts/pixlee/services/PixleeService');
 
         currenciesMap = PixleeService.getCountriesMap();
 
         if (currenciesMap) {
-            require('dw/system/System').preferences.custom.PixleeCountriesMap = JSON.stringify(currenciesMap, null, 4);
+            try {
+                require('dw/system/System').preferences.custom.PixleeCountriesMap = JSON.stringify(currenciesMap, null, 4);
+            } catch (e) {
+                Logger.warn('Could not cache currencies map to system preferences (no transaction available): ' + e.message);
+            }
         }
     }
 
